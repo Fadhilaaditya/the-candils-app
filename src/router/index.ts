@@ -1,5 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import HomeView from '../views/HomeView.vue'
+import HomeView from '@/views/user/Home/HomeView.vue'
+import AdminLogin from '@/views/admin/auth/Login.vue'
+import AdminResetPassword from '@/views/admin/auth/ResetPassword.vue'
+import AdminDashboard from '@/views/admin/dashboard/Dashboard/Dashboard.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -9,13 +12,60 @@ const router = createRouter({
       name: 'home',
       component: HomeView,
     },
+    // Admin routes
     {
-      path: '/about',
-      name: 'about',
-      // route level code-splitting
-      // this generates a separate chunk (About.[hash].js) for this route
-      // which is lazy-loaded when the route is visited.
-      component: () => import('../views/AboutView.vue'),
+      path: '/admin/login',
+      name: 'admin-login',
+      component: AdminLogin,
+    },
+    {
+      path: '/admin/reset-password',
+      name: 'admin-reset-password',
+      component: AdminResetPassword,
+    },
+    {
+      path: '/admin',
+      redirect: '/admin/dashboard',
+    },
+    {
+      path: '/admin/dashboard',
+      name: 'admin-dashboard',
+      component: () => import('@/views/admin/dashboard/App.vue'),
+      children: [
+        {
+          path: '',
+          name: 'admin-dashboard-main',
+          component: AdminDashboard,
+        },
+        {
+          path: 'products',
+          name: 'admin-products',
+          redirect: '/admin/dashboard/products/kelola',
+        },
+        {
+          path: 'products/kelola',
+          name: 'admin-products-kelola',
+          component: () => import('@/views/admin/dashboard/Product/KelolaProduct.vue'),
+        },
+        {
+          path: 'products/detail',
+          name: 'admin-products-detail',
+          component: () => import('@/views/admin/dashboard/Product/DetailProduct.vue'),
+        },
+        {
+          path: 'sales',
+          name: 'admin-sales',
+          component: () => import('@/views/admin/dashboard/Penjualan/Penjualan.vue'),
+        },
+      ],
+      beforeEnter: (to, from, next) => {
+        const isAuthenticated = localStorage.getItem('adminAuthenticated') === 'true'
+        if (!isAuthenticated) {
+          next('/admin/login')
+        } else {
+          next()
+        }
+      },
     },
   ],
 })
