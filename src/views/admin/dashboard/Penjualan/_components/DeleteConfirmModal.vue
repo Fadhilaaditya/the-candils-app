@@ -1,0 +1,167 @@
+<template>
+  <div
+    v-if="isVisible"
+    class="fixed inset-0 z-50 flex items-center justify-center"
+    style="background-color: rgba(0, 0, 0, 0.7)"
+    @click="handleBackdropClick"
+  >
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 p-6" @click.stop>
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-xl font-bold text-gray-800">Konfirmasi Hapus</h2>
+        <button @click="handleClose" class="text-gray-400 hover:text-gray-600 transition-colors">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M6 18L18 6M6 6l12 12"
+            ></path>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Confirmation Content -->
+      <div class="mb-6">
+        <div class="flex items-center mb-4">
+          <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mr-4">
+            <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+              ></path>
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-lg font-semibold text-gray-800">Hapus Data Penjualan</h3>
+            <p class="text-sm text-gray-600">Tindakan ini tidak dapat dibatalkan</p>
+          </div>
+        </div>
+
+        <!-- Sale Details -->
+        <div v-if="saleData" class="bg-gray-50 rounded-lg p-4">
+          <h4 class="font-medium text-gray-800 mb-2">Detail yang akan dihapus:</h4>
+          <div class="space-y-2 text-sm text-gray-600">
+            <div class="flex justify-between">
+              <span>Produk:</span>
+              <span class="font-medium">{{ saleData.productName }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Kuantitas:</span>
+              <span class="font-medium">{{ saleData.quantity }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Harga:</span>
+              <span class="font-medium">{{ formatCurrency(saleData.price) }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Lokasi:</span>
+              <span class="font-medium">{{ saleData.location }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Tanggal:</span>
+              <span class="font-medium">{{ formatDate(saleData.date) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <p class="text-gray-600 text-sm">
+          Apakah Anda yakin ingin menghapus data penjualan ini? Data yang sudah dihapus tidak dapat
+          dikembalikan.
+        </p>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex justify-end gap-4">
+        <button
+          type="button"
+          @click="handleClose"
+          class="px-6 py-3 bg-gray-500 text-white rounded-lg font-medium hover:bg-gray-600 transition-colors duration-200"
+        >
+          BATALKAN
+        </button>
+        <button
+          type="button"
+          @click="handleConfirmDelete"
+          :disabled="isDeleting"
+          class="px-6 py-3 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+        >
+          {{ isDeleting ? 'Menghapus...' : 'HAPUS' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref } from 'vue'
+
+interface SalesData {
+  id: number
+  productName: string
+  quantity: number
+  price: number
+  location: string
+  date: string
+}
+
+interface Props {
+  isVisible: boolean
+  saleData: SalesData | null
+}
+
+const props = defineProps<Props>()
+
+const emit = defineEmits<{
+  close: []
+  confirm: [sale: SalesData]
+}>()
+
+// Component state
+const isDeleting = ref(false)
+
+// Methods
+const handleClose = () => {
+  emit('close')
+}
+
+const handleBackdropClick = () => {
+  handleClose()
+}
+
+const handleConfirmDelete = async () => {
+  if (!props.saleData) return
+
+  isDeleting.value = true
+
+  try {
+    // Emit confirmation to parent
+    emit('confirm', props.saleData)
+  } catch (error) {
+    console.error('Error in delete confirmation:', error)
+  } finally {
+    isDeleting.value = false
+  }
+}
+
+// Utility functions
+const formatCurrency = (amount: number): string => {
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount)
+}
+
+const formatDate = (dateString: string): string => {
+  const date = new Date(dateString)
+  return date.toLocaleDateString('id-ID', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  })
+}
+</script>
