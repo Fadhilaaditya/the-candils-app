@@ -1,10 +1,5 @@
 <template>
   <div class="p-8">
-    <!-- Page Title -->
-    <div class="mb-8">
-      <h1 class="text-3xl font-bold text-gray-800">Laporan Penjualan</h1>
-      <p class="text-gray-600 mt-2">Kelola data penjualan dan laporan</p>
-    </div>
 
     <!-- Sales Table Section -->
     <SalesTable

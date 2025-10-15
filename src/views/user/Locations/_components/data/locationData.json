@@ -1,0 +1,62 @@
+{
+  "branches": [
+    {
+      "id": "ciputat",
+      "name": "Ciputat",
+      "address": "Bukit Nusa Indah No. 1859, Ciputat, Tangerang Selatan",
+      "lat": -6.3018,
+      "lng": 106.7344,
+      "type": "branch",
+      "phone": "0895-3361-72392",
+      "hours": "08:00 - 22:00"
+    },
+    {
+      "id": "bukit-indah",
+      "name": "Bukit Indah",
+      "address": "Jl. Bukit Indah Raya (Depan Store Haus), Tangerang Selatan",
+      "lat": -6.2856,
+      "lng": 106.7308,
+      "type": "branch",
+      "phone": "0895-3361-72392",
+      "hours": "08:00 - 22:00"
+    },
+    {
+      "id": "pamulang",
+      "name": "Pamulang",
+      "address": "Alun Alun Pamulang (Depan Masjid Raya Pamulang), Tangerang Selatan",
+      "lat": -6.3428,
+      "lng": 106.7383,
+      "type": "branch",
+      "phone": "0895-3361-72392",
+      "hours": "08:00 - 22:00"
+    }
+  ],
+  "competitors": [
+    {
+      "id": "bi-coffee",
+      "name": "Bi Coffee",
+      "address": "Jl. Cendana, Tangerang Selatan",
+      "lat": -6.295,
+      "lng": 106.732,
+      "type": "competitor"
+    },
+    {
+      "id": "teras-ice-cream",
+      "name": "Teras ice cream andrawina",
+      "address": "Jl. Vila Dago Tol, Tangerang Selatan",
+      "lat": -6.29,
+      "lng": 106.728,
+      "type": "competitor"
+    }
+  ],
+  "landmarks": [
+    {
+      "id": "rumah-bukit-nusa",
+      "name": "Rumah bukit Nusa indah ciputat",
+      "address": "Jl. Bukit Nusa Indah, Ciputat",
+      "lat": -6.3,
+      "lng": 106.735,
+      "type": "landmark"
+    }
+  ]
+}

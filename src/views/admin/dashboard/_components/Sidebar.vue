@@ -96,7 +96,7 @@
     </nav>
 
     <!-- User Info -->
-    <div class="absolute bottom-0 left-6 right-6">
+    <div class="fixed bottom-6 left-6 right-6">
       <button
         @click="handleLogout"
         class="w-53 mt-3 px-4 py-2 bg-[#959253] bg-opacity-20 rounded-lg text-sm font-medium hover:bg-[#69673b] transition-colors duration-200"

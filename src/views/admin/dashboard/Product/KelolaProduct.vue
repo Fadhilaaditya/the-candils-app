@@ -1,10 +1,6 @@
 <template>
   <div class="p-8">
-    <!-- Page Title -->
-    <div class="mb-8">
-      <h1 class="text-3xl font-bold text-gray-800">Kelola Produk</h1>
-      <p class="text-gray-600 mt-2">Kelola data produk, stok, dan inventori</p>
-    </div>
+
 
     <!-- Product Table Section -->
     <ProductTable

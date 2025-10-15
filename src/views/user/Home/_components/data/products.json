@@ -1,0 +1,22 @@
+{
+  "heading": "Produk Unggulan",
+  "subheading": "The Candil's",
+  "items": [
+    {
+      "name": "Bubur Manis Komplit",
+      "description": "sumsum pandan, sumsum ori, candil ubi merah, candil ubi ungu, sagu Mutiara, kacang hijau dan ketan hitam.",
+      "imageUrl": "/product.svg"
+    },
+    {
+      "name": "Ubi Duo Twin",
+      "description": "sumsum pandan, sumsum ori, candil ubi merah, candil ubi ungu, sagu Mutiara, kacang hijau dan ketan hitam.",
+      "imageUrl": "/product.svg"
+    },
+    {
+      "name": "Candil 3 Rasa",
+      "description": "sumsum pandan, sumsum ori, candil ubi merah, candil ubi ungu, sagu Mutiara, kacang hijau dan ketan hitam.",
+      "imageUrl": "/product.svg"
+    }
+  ],
+  "cta": { "label": "All Product", "href": "/product" }
+}

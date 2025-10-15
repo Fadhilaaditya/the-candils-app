@@ -1,0 +1,14 @@
+{
+  "brandTitle": "The Candil's",
+  "brandText": "Melestarikan cita rasa tradisional Indonesia melalui makanan yang otentik, sehat, dan penuh makna.",
+  "navLinks": [
+    { "label": "Beranda", "href": "/" },
+    { "label": "Kisah Kami", "href": "/about" },
+    { "label": "Produk", "href": "/products" },
+    { "label": "Lokasi", "href": "/locations" }
+  ],
+  "social": {
+    "instagram": "@thecandils",
+    "whatsapp": "0895-3361-72392"
+  }
+}
