@@ -250,7 +250,12 @@ const loadGoogleMapsScript = (): Promise<void> => {
     }
 
     // Check if API key exists
-    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
+    // const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
+    // Ganti ini:
+// const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
+
+// Menjadi seperti ini (untuk sementara):
+    const apiKey = "AIzaSyCuo89YsWYELNjNkv04h1QS7PMzVC_Wcso";
     console.log('API Key loaded:', apiKey ? 'Yes' : 'No')
     if (!apiKey) {
       console.error(
