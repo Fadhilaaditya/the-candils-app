@@ -6,7 +6,6 @@
     @click="handleBackdropClick"
   >
     <div class="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 p-6" @click.stop>
-      <!-- Modal Header -->
       <div class="flex items-center justify-between mb-6">
         <h2 class="text-xl font-bold text-gray-800">Konfirmasi Hapus</h2>
         <button @click="handleClose" class="text-gray-400 hover:text-gray-600 transition-colors">
@@ -21,7 +20,6 @@
         </button>
       </div>
 
-      <!-- Confirmation Content -->
       <div class="mb-6">
         <div class="flex items-center mb-4">
           <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mr-4">
@@ -40,40 +38,27 @@
           </div>
         </div>
 
-        <!-- Sale Details -->
-        <div v-if="saleData" class="bg-gray-50 rounded-lg p-4">
+        <div v-if="saleData" class="bg-gray-50 rounded-lg p-4 text-sm text-gray-600 space-y-2">
           <h4 class="font-medium text-gray-800 mb-2">Detail yang akan dihapus:</h4>
-          <div class="space-y-2 text-sm text-gray-600">
-            <div class="flex justify-between">
-              <span>Produk:</span>
-              <span class="font-medium">{{ saleData.productName }}</span>
-            </div>
-            <div class="flex justify-between">
-              <span>Kuantitas:</span>
-              <span class="font-medium">{{ saleData.quantity }}</span>
-            </div>
-            <div class="flex justify-between">
-              <span>Harga:</span>
-              <span class="font-medium">{{ formatCurrency(saleData.price) }}</span>
-            </div>
-            <div class="flex justify-between">
-              <span>Lokasi:</span>
-              <span class="font-medium">{{ saleData.location }}</span>
-            </div>
-            <div class="flex justify-between">
-              <span>Tanggal:</span>
-              <span class="font-medium">{{ formatDate(saleData.date) }}</span>
-            </div>
+          <div class="flex justify-between">
+            <span>Produk:</span>
+            <span class="font-medium">{{ saleData.productName }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span>Total Harga:</span>
+            <span class="font-medium">{{ formatCurrency(saleData.price) }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span>Lokasi:</span>
+            <span class="font-medium">{{ saleData.location }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span>Tanggal:</span>
+            <span class="font-medium">{{ formatDate(saleData.date) }}</span>
           </div>
         </div>
-
-        <p class="text-gray-600 text-sm">
-          Apakah Anda yakin ingin menghapus data penjualan ini? Data yang sudah dihapus tidak dapat
-          dikembalikan.
-        </p>
       </div>
 
-      <!-- Action Buttons -->
       <div class="flex justify-end gap-4">
         <button
           type="button"
@@ -119,10 +104,8 @@ const emit = defineEmits<{
   confirm: [sale: SalesData]
 }>()
 
-// Component state
 const isDeleting = ref(false)
 
-// Methods
 const handleClose = () => {
   emit('close')
 }
@@ -135,19 +118,19 @@ const handleConfirmDelete = async () => {
   if (!props.saleData) return
 
   isDeleting.value = true
-
   try {
-    // Emit confirmation to parent
     emit('confirm', props.saleData)
   } catch (error) {
     console.error('Error in delete confirmation:', error)
   } finally {
     isDeleting.value = false
+    // Note: The modal is closed by the parent component after the delete logic is complete
   }
 }
 
 // Utility functions
 const formatCurrency = (amount: number): string => {
+  if (typeof amount !== 'number') return ''
   return new Intl.NumberFormat('id-ID', {
     style: 'currency',
     currency: 'IDR',
@@ -157,6 +140,7 @@ const formatCurrency = (amount: number): string => {
 }
 
 const formatDate = (dateString: string): string => {
+  if (!dateString) return ''
   const date = new Date(dateString)
   return date.toLocaleDateString('id-ID', {
     day: '2-digit',

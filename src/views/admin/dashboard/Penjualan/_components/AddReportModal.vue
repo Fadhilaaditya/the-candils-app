@@ -6,7 +6,6 @@
     @click="handleBackdropClick"
   >
     <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl mx-4 p-6" @click.stop>
-      <!-- Modal Header -->
       <div class="flex items-center justify-between mb-6">
         <h2 class="text-2xl font-bold text-gray-800">Daily Report</h2>
         <button @click="handleClose" class="text-gray-400 hover:text-gray-600 transition-colors">
@@ -21,9 +20,7 @@
         </button>
       </div>
 
-      <!-- Form -->
       <form @submit.prevent="handleSubmit" class="space-y-6">
-        <!-- Row 1: Product Name and Quantity -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label for="productName" class="block text-sm font-medium text-gray-700 mb-2">
@@ -36,8 +33,8 @@
               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#BAB772] focus:border-transparent transition-colors"
             >
               <option value="">Pilih produk</option>
-              <option v-for="product in uniqueProductNames" :key="product" :value="product">
-                {{ product }}
+              <option v-for="product in masterProductList" :key="product.name" :value="product.name">
+                {{ product.name }}
               </option>
             </select>
           </div>
@@ -57,7 +54,6 @@
           </div>
         </div>
 
-        <!-- Row 2: Location and Date -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label for="location" class="block text-sm font-medium text-gray-700 mb-2">
@@ -87,41 +83,30 @@
           </div>
         </div>
 
-        <!-- Row 3: Price and Total Price -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label for="price" class="block text-sm font-medium text-gray-700 mb-2"> HARGA </label>
+            <label for="price" class="block text-sm font-medium text-gray-700 mb-2"> HARGA SATUAN </label>
             <div class="relative">
-              <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500"
-                >Rp</span
-              >
+              <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">Rp</span>
               <input
                 id="price"
                 v-model="formData.price"
+                type="text"
                 disabled
-                type="number"
-                min="0"
-                step="1000"
-                required
                 placeholder="0"
-                class="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#BAB772] focus:border-transparent transition-colors"
+                class="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 cursor-not-allowed"
               />
             </div>
-            <p v-if="selectedProductPrice" class="text-sm text-gray-500 mt-1">
-              Harga dari data: {{ formatCurrency(selectedProductPrice) }}
-            </p>
           </div>
           <div>
             <label for="totalPrice" class="block text-sm font-medium text-gray-700 mb-2">
               TOTAL HARGA
             </label>
             <div class="relative">
-              <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500"
-                >Rp</span
-              >
+              <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">Rp</span>
               <input
                 id="totalPrice"
-                :value="totalPrice"
+                :value="totalPriceFormatted"
                 type="text"
                 disabled
                 placeholder="0"
@@ -131,7 +116,6 @@
           </div>
         </div>
 
-        <!-- Action Buttons -->
         <div class="flex justify-end gap-4 pt-4">
           <button
             type="button"
@@ -155,36 +139,25 @@
 
 <script setup lang="ts">
 import { ref, reactive, watch, computed } from 'vue'
-
-interface SalesData {
-  id: number
-  productName: string
-  quantity: number
-  price: number
-  location: string
-  date: string
-}
+// PERUBAHAN: Impor data JSON secara langsung
+import localData from '../data/SalesData.json'
 
 interface FormData {
-  productName: string
-  quantity: number
-  location: string
-  date: string
-  price: number
+  productName: string;
+  quantity: number;
+  location: string;
+  date: string;
+  price: number; // Ini akan menjadi harga satuan
 }
 
 interface Props {
-  isVisible: boolean
-  existingSalesData?: SalesData[]
+  isVisible: boolean;
 }
 
-const props = withDefaults(defineProps<Props>(), {
-  existingSalesData: () => [],
-})
-
+const props = defineProps<Props>()
 const emit = defineEmits<{
-  close: []
-  submit: [data: FormData]
+  close: [];
+  submit: [data: FormData];
 }>()
 
 // Form data
@@ -196,59 +169,51 @@ const formData = reactive<FormData>({
   price: 0,
 })
 
-// Form state
 const isSubmitting = ref(false)
 
-// Get unique product names from existing sales data
-const uniqueProductNames = computed(() => {
-  if (!props.existingSalesData || props.existingSalesData.length === 0) {
-    return []
-  }
-
-  const productNames = props.existingSalesData.map((sale) => sale.productName)
-  return [...new Set(productNames)].sort()
-})
-
-// Get the price of the selected product
-const selectedProductPrice = computed(() => {
-  if (!formData.productName || !props.existingSalesData || props.existingSalesData.length === 0) {
-    return null
-  }
-
-  // Find the most recent price for the selected product
-  const productSales = props.existingSalesData
-    .filter((sale) => sale.productName === formData.productName)
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-
-  return productSales.length > 0 ? productSales[0].price : null
-})
-
-// Auto-fill price when product is selected
-watch(
-  () => formData.productName,
-  (newProductName) => {
-    if (newProductName && selectedProductPrice.value) {
-      formData.price = selectedProductPrice.value
+// PERUBAHAN: Buat "Master Product List" dari data JSON
+// Ini akan berisi nama produk unik beserta harga satuannya
+const masterProductList = computed(() => {
+  const productMap = new Map<string, number>()
+  // Kita proses data 'sales' untuk mendapatkan harga satuan setiap produk
+  for (const sale of localData.sales) {
+    if (!productMap.has(sale.productName)) {
+      // Hitung harga satuan dari data transaksi
+      const unitPrice = sale.price / sale.quantity;
+      productMap.set(sale.productName, unitPrice);
     }
-  },
-)
+  }
+  // Ubah Map menjadi array objek agar bisa di-loop
+  return Array.from(productMap, ([name, price]) => ({ name, price })).sort((a,b) => a.name.localeCompare(b.name));
+});
 
-// Calculate total price
+
+// PERUBAHAN: Logika pengisian harga otomatis menjadi lebih sederhana
+watch(() => formData.productName, (newProductName) => {
+  if (newProductName) {
+    const selectedProduct = masterProductList.value.find(p => p.name === newProductName);
+    formData.price = selectedProduct ? selectedProduct.price : 0;
+  } else {
+    formData.price = 0;
+  }
+});
+
+// Hitung total harga
 const totalPrice = computed(() => {
-  return formData.quantity * formData.price
+  return formData.quantity * formData.price;
+});
+
+// Format harga untuk ditampilkan di input
+const totalPriceFormatted = computed(() => {
+    return totalPrice.value.toLocaleString('id-ID');
 })
 
-// Set default date to today when modal opens
-watch(
-  () => props.isVisible,
-  (newValue) => {
-    if (newValue) {
-      formData.date = new Date().toISOString().split('T')[0]
-    }
-  },
-)
+watch(() => props.isVisible, (newValue) => {
+  if (newValue) {
+    formData.date = new Date().toISOString().split('T')[0];
+  }
+});
 
-// Methods
 const handleClose = () => {
   resetForm()
   emit('close')
@@ -260,50 +225,27 @@ const handleBackdropClick = () => {
 
 const handleSubmit = async () => {
   if (!formData.productName || !formData.location || !formData.date || formData.price <= 0) {
-    alert('Mohon lengkapi semua field yang diperlukan')
-    return
+    alert('Mohon lengkapi semua field yang diperlukan');
+    return;
   }
-
-  isSubmitting.value = true
-
+  isSubmitting.value = true;
   try {
-    // Emit the form data to parent component
-    emit('submit', { ...formData })
-
-    // Reset form and close modal
-    resetForm()
-    emit('close')
+    emit('submit', { ...formData, price: totalPrice.value }); // Kirim total harga sebagai price
+    resetForm();
+    emit('close');
   } catch (error) {
-    console.error('Error submitting form:', error)
-    alert('Terjadi kesalahan. Silakan coba lagi.')
+    console.error('Error submitting form:', error);
+    alert('Terjadi kesalahan. Silakan coba lagi.');
   } finally {
-    isSubmitting.value = false
+    isSubmitting.value = false;
   }
 }
 
 const resetForm = () => {
-  formData.productName = ''
-  formData.quantity = 1
-  formData.location = ''
-  formData.date = ''
-  formData.price = 0
+  formData.productName = '';
+  formData.quantity = 1;
+  formData.location = '';
+  formData.date = '';
+  formData.price = 0;
 }
-
-// Utility function to format currency
-const formatCurrency = (amount: number): string => {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount)
-}
-
-// Expose methods for parent component
-defineExpose({
-  resetForm,
-  setFormData: (data: Partial<FormData>) => {
-    Object.assign(formData, data)
-  },
-})
 </script>

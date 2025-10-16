@@ -58,14 +58,14 @@ const chartData = computed(() => ({
     {
       label: 'Omset Harian',
       data: props.graphData.data,
-      borderColor: '#4A90E2',
+      borderColor: '#BAB772',
       tension: 0.4,
       fill: true,
-      backgroundColor: 'rgba(74, 144, 226, 0.1)',
-      pointBackgroundColor: '#4A90E2',
+      backgroundColor: '#BAB772',
+      pointBackgroundColor: '#BAB772',
       pointBorderColor: '#fff',
       pointHoverRadius: 6,
-      pointHoverBackgroundColor: '#4A90E2',
+      pointHoverBackgroundColor: '#BAB772',
     }
   ],
 }));
