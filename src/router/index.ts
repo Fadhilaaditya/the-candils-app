@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '@/views/user/Home/HomeView.vue'
 import AboutUs from '@/views/user/AboutUs/AboutUs.vue'
 import Product from '@/views/user/Product/ProductView.vue'
+import ProductDetail from '@/views/user/Product/[slug]/DetailProduct.vue'
 import Location from '@/views/user/Locations/LocationView.vue'
 import AdminLogin from '@/views/admin/auth/Login.vue'
 import AdminResetPassword from '@/views/admin/auth/ResetPassword.vue'
@@ -24,6 +25,12 @@ const router = createRouter({
       path: '/products',
       name: 'products',
       component: Product,
+    },
+    {
+      path: '/products/:slug',
+      name: 'product-detail',
+      component: ProductDetail,
+      props: true,
     },
     {
       path: '/locations',
