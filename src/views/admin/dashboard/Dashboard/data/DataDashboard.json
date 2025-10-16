@@ -1,0 +1,52 @@
+{
+  "locations": [
+    {
+      "id": 1,
+      "name": "Lokasi Ciputat",
+      "dailyRevenue": 450000,
+      "productsSold": 28
+    },
+    {
+      "id": 2,
+      "name": "Lokasi Pamulang",
+      "dailyRevenue": 515000,
+      "productsSold": 32
+    },
+    {
+      "id": 3,
+      "name": "Lokasi Bukit Indah",
+      "dailyRevenue": 320000,
+      "productsSold": 20
+    }
+  ],
+  "productReviews": [
+    {
+      "id": 1,
+      "name": "Bubur Manis Komplit",
+      "rating": 4.7,
+      "reviews": 124
+    },
+    {
+      "id": 2,
+      "name": "Singkong Thailand",
+      "rating": 4.7,
+      "reviews": 110
+    },
+    {
+      "id": 3,
+      "name": "Ubi Duo Twin",
+      "rating": 4.7,
+      "reviews": 105
+    },
+    {
+      "id": 4,
+      "name": "Hijau Hitam Legenda",
+      "rating": 4.7,
+      "reviews": 98
+    }
+  ],
+  "salesGraph": {
+    "labels": ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"],
+    "data": [320000, 300000, 280000, 350000, 500000, 700000, 800000]
+  }
+}

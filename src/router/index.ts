@@ -6,7 +6,7 @@ import ProductDetail from '@/views/user/Product/[slug]/DetailProduct.vue'
 import Location from '@/views/user/Locations/LocationView.vue'
 import AdminLogin from '@/views/admin/auth/Login.vue'
 import AdminResetPassword from '@/views/admin/auth/ResetPassword.vue'
-import AdminDashboard from '@/views/admin/dashboard/Dashboard/Dashboard.vue'
+import AdminDashboard from '@/views/admin/dashboard/Dashboard/MainDashboard.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -80,7 +80,7 @@ const router = createRouter({
         {
           path: 'sales',
           name: 'admin-sales',
-          component: () => import('@/views/admin/dashboard/Penjualan/Penjualan.vue'),
+          component: () => import('@/views/admin/dashboard/Penjualan/PenjualanProduct.vue'),
         },
       ],
       beforeEnter: (to, from, next) => {

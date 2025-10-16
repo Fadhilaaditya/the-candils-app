@@ -1,46 +1,28 @@
 <template>
-  <div class="bg-white rounded-xl shadow-lg overflow-hidden">
-    <div class="bg-[#BAB772] text-white px-6 py-4">
-      <h3 class="text-lg font-semibold">{{ location.name }}</h3>
-    </div>
-    <div class="p-6 bg-gray-50">
-      <div class="space-y-3">
-        <div>
-          <p class="text-sm text-gray-600">Omset Harian</p>
-          <p class="text-2xl font-bold text-gray-800">
-            {{ formatCurrency(location.dailyRevenue) }}
-          </p>
-        </div>
-        <div>
-          <p class="text-sm text-gray-600">Produk Terjual</p>
-          <p class="text-xl font-semibold text-gray-800">{{ location.productsSold }}</p>
-        </div>
-      </div>
-    </div>
+  <div class="bg-white p-6 rounded-lg shadow-md">
+    <h3 class="text-gray-500 text-sm font-medium">{{ location.name }}</h3>
+    <p class="text-2xl font-bold text-gray-800 mt-2">
+      Rp {{ formatCurrency(location.dailyRevenue) }}
+    </p>
+    <p class="text-gray-500 text-sm mt-1">
+      Produk Terjual: <span class="font-semibold text-gray-600">{{ location.productsSold }}</span>
+    </p>
   </div>
 </template>
 
 <script setup lang="ts">
-interface LocationData {
-  id: number
-  name: string
-  dailyRevenue: number
-  productsSold: number
-}
+import { defineProps } from 'vue';
 
-interface Props {
-  location: LocationData
-}
+// Define props to accept location data
+defineProps({
+  location: {
+    type: Object,
+    required: true
+  }
+});
 
-const props = defineProps<Props>()
-
-// Utility function to format currency
-const formatCurrency = (amount: number): string => {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount)
-}
+// Helper function to format number into currency string
+const formatCurrency = (value: number) => {
+  return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+};
 </script>
