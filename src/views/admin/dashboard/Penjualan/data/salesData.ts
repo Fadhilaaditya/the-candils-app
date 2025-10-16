@@ -95,19 +95,19 @@ export const mockSalesData: SalesData[] = [
 // Mock data for revenue chart
 export const mockRevenueData: RevenueData[] = [
   { location: 'Ciputat', revenue: 640000 },
-  { location: 'Pamulang', revenue: 520000 },
-  { location: 'Bukit Indah', revenue: 380000 },
+  { location: 'Pamulang', revenue: 560000 },
+  { location: 'Bukit Indah', revenue: 400000 },
 ]
 
 // Mock data for products sold chart
 export const mockProductsSoldData: ProductSoldData[] = [
-  { productCode: 'BMK', productName: 'Bubur Manis Komplit', quantity: 24 },
-  { productCode: 'ST', productName: 'Singkong Thailand', quantity: 21 },
-  { productCode: 'UDT', productName: 'Ubi Duo Twin', quantity: 16 },
-  { productCode: 'HHL', productName: 'Hijau Hitam Legenda', quantity: 24 },
-  { productCode: 'SPL', productName: 'Singkong Premium Legenda', quantity: 21 },
-  { productCode: 'UDT2', productName: 'Ubi Duo Twin Special', quantity: 16 },
-  { productCode: 'MSM', productName: 'Mie Sapi Mantap', quantity: 16 },
+  { productCode: 'BMK', productName: 'Bubur Manis Komplit', quantity: 25 },
+  { productCode: 'ST', productName: 'Singkong Thailand', quantity: 22 },
+  { productCode: 'UDT', productName: 'Ubi Duo Twin', quantity: 15 },
+  { productCode: 'HHL', productName: 'Hijau Hitam Legenda', quantity: 25 },
+  { productCode: 'SPL', productName: 'Singkong Premium Legenda', quantity: 22 },
+  { productCode: 'UDT2', productName: 'Ubi Duo Twin Special', quantity: 15 },
+  { productCode: 'MSM', productName: 'Mie Sapi Mantap', quantity: 15 },
 ]
 
 export class SalesDataService {

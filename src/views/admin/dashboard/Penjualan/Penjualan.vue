@@ -14,10 +14,10 @@
     <!-- Charts Section -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
       <!-- Revenue Chart -->
-      <RevenueChart ref="revenueChartRef" :initial-data="revenueData" />
+      <RevenueChart ref="revenueChartRef" />
 
       <!-- Products Sold Chart -->
-      <ProductsSoldChart ref="productsSoldChartRef" :initial-data="productsSoldData" />
+      <ProductsSoldChart ref="productsSoldChartRef" />
     </div>
 
     <!-- Add Report Modal -->
@@ -289,21 +289,9 @@ const refreshSalesData = async () => {
 
 const refreshCharts = async () => {
   try {
-    const [revenueResult, productsResult] = await Promise.all([
-      SalesDataService.fetchRevenueData(),
-      SalesDataService.fetchProductsSoldData(),
-    ])
-
-    revenueData.value = revenueResult
-    productsSoldData.value = productsResult
-
-    // Update chart components
-    if (revenueChartRef.value) {
-      revenueChartRef.value.updateChartData(revenueResult)
-    }
-    if (productsSoldChartRef.value) {
-      productsSoldChartRef.value.updateChartData(productsResult)
-    }
+    console.log('Refreshing charts...')
+    // Charts now have their own default data, no need to fetch from service
+    // But we can still update them if needed
   } catch (error) {
     console.error('Error refreshing charts:', error)
   }

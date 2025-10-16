@@ -1,17 +1,18 @@
 <template>
   <div class="bg-white rounded-xl shadow-lg p-6">
     <h3 class="text-lg font-bold text-gray-800 mb-4">Produk Terjual</h3>
-    <div class="h-64">
-      <canvas ref="chartCanvas"></canvas>
+    <div class="h-64 relative">
+      <canvas ref="chartCanvas" width="400" height="256"></canvas>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
-import { Chart, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js'
+import { ref, onMounted, nextTick } from 'vue'
+import { Chart, CategoryScale, LinearScale, BarElement, BarController, Title, Tooltip, Legend } from 'chart.js'
 
-Chart.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
+// Register Chart.js components
+Chart.register(CategoryScale, LinearScale, BarElement, BarController, Title, Tooltip, Legend)
 
 interface ProductSoldData {
   productCode: string
@@ -19,155 +20,136 @@ interface ProductSoldData {
   quantity: number
 }
 
-interface Props {
-  initialData?: ProductSoldData[]
-}
-
-const props = withDefaults(defineProps<Props>(), {
-  initialData: () => [],
-})
-
 const chartCanvas = ref<HTMLCanvasElement | null>(null)
 let chartInstance: Chart | null = null
 
-// Default data
+// Data sesuai gambar pertama
 const productsSoldData = ref<ProductSoldData[]>([
-  { productCode: 'BMK', productName: 'Bubur Manis Komplit', quantity: 24 },
-  { productCode: 'ST', productName: 'Singkong Thailand', quantity: 21 },
-  { productCode: 'UDT', productName: 'Ubi Duo Twin', quantity: 16 },
-  { productCode: 'HHL', productName: 'Hijau Hitam Legenda', quantity: 24 },
-  { productCode: 'SPL', productName: 'Singkong Premium Legenda', quantity: 21 },
-  { productCode: 'UDT2', productName: 'Ubi Duo Twin Special', quantity: 16 },
-  { productCode: 'MSM', productName: 'Mie Sapi Mantap', quantity: 16 },
+  { productCode: 'BMK', productName: 'Bubur Manis Komplit', quantity: 25 },
+  { productCode: 'ST', productName: 'Singkong Thailand', quantity: 22 },
+  { productCode: 'UDT', productName: 'Ubi Duo Twin', quantity: 15 },
+  { productCode: 'HHL', productName: 'Hijau Hitam Legenda', quantity: 25 },
+  { productCode: 'SPL', productName: 'Singkong Premium Legenda', quantity: 22 },
+  { productCode: 'UDT2', productName: 'Ubi Duo Twin Special', quantity: 15 },
+  { productCode: 'MSM', productName: 'Mie Sapi Mantap', quantity: 15 },
 ])
 
-const initChart = async () => {
-  if (!chartCanvas.value) return
+const createChart = () => {
+  if (!chartCanvas.value) {
+    console.error('Chart canvas not found')
+    return
+  }
 
-  await nextTick()
+  const ctx = chartCanvas.value.getContext('2d')
+  if (!ctx) {
+    console.error('Cannot get 2D context')
+    return
+  }
 
+  // Destroy existing chart
   if (chartInstance) {
     chartInstance.destroy()
   }
 
-  const ctx = chartCanvas.value.getContext('2d')
-  if (!ctx) return
+  console.log('Creating ProductsSoldChart with data:', productsSoldData.value)
 
   chartInstance = new Chart(ctx, {
     type: 'bar',
     data: {
-      labels: productsSoldData.value.map((item) => item.productCode),
-      datasets: [
-        {
-          label: 'Jumlah Terjual',
-          data: productsSoldData.value.map((item) => item.quantity),
-          backgroundColor: '#10B981',
-          borderColor: '#059669',
-          borderWidth: 2,
-          borderRadius: 8,
-          borderSkipped: false,
-          hoverBackgroundColor: '#059669',
-          hoverBorderColor: '#10B981',
-        },
-      ],
+      labels: productsSoldData.value.map(item => item.productCode),
+      datasets: [{
+        label: 'Jumlah Terjual',
+        data: productsSoldData.value.map(item => item.quantity),
+        backgroundColor: '#BAB772',
+        borderColor: '#a8a668',
+        borderWidth: 2,
+        borderRadius: 8,
+        borderSkipped: false,
+      }]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
         legend: {
-          display: false,
+          display: false
         },
         tooltip: {
           backgroundColor: 'rgba(0, 0, 0, 0.8)',
           callbacks: {
-            title: function (context: { dataIndex: number }[]) {
+            title: function(context) {
               const index = context[0].dataIndex
               return productsSoldData.value[index].productName
             },
-            label: function (context: { parsed: { y: number } }) {
+            label: function(context) {
               return `Jumlah: ${context.parsed.y} unit`
-            },
-          },
-        },
+            }
+          }
+        }
       },
       scales: {
         x: {
           grid: {
-            display: false,
+            display: false
           },
           ticks: {
-            color: '#6B7280',
-          },
+            color: '#6B7280'
+          }
         },
         y: {
-          type: 'linear' as const,
+          type: 'linear',
           beginAtZero: true,
           grid: {
-            color: '#E5E7EB',
+            color: '#E5E7EB'
           },
           ticks: {
             color: '#6B7280',
-            stepSize: 5,
-          },
-        },
+            stepSize: 5
+          }
+        }
       },
       interaction: {
         intersect: false,
-        mode: 'index',
-      },
-    },
+        mode: 'index'
+      }
+    }
   })
 }
 
-const updateChart = () => {
-  if (chartInstance) {
-    chartInstance.data.labels = productsSoldData.value.map((item) => item.productCode)
-    chartInstance.data.datasets[0].data = productsSoldData.value.map((item) => item.quantity)
-    chartInstance.update('active')
+onMounted(async () => {
+  console.log('ProductsSoldChart mounted')
+  await nextTick()
+  
+  // Try multiple times to ensure canvas is ready
+  let attempts = 0
+  const maxAttempts = 5
+  
+  const tryCreateChart = () => {
+    attempts++
+    console.log(`Attempt ${attempts} to create ProductsSoldChart`)
+    
+    if (chartCanvas.value) {
+      createChart()
+    } else if (attempts < maxAttempts) {
+      setTimeout(tryCreateChart, 100)
+    } else {
+      console.error('Failed to create ProductsSoldChart after', maxAttempts, 'attempts')
+    }
   }
-}
-
-onMounted(() => {
-  setTimeout(() => {
-    initChart()
-  }, 100)
+  
+  tryCreateChart()
 })
 
-watch(
-  () => props.initialData,
-  (newData) => {
-    if (newData && newData.length > 0) {
-      productsSoldData.value = newData
-      if (chartInstance) {
-        updateChart()
-      }
-    }
-  },
-  { immediate: true },
-)
-
-watch(
-  productsSoldData,
-  () => {
-    if (chartInstance) {
-      updateChart()
-    }
-  },
-  { deep: true },
-)
-
-onUnmounted(() => {
-  if (chartInstance) {
-    chartInstance.destroy()
-  }
-})
-
-// Expose methods for parent component
+// Expose methods
 defineExpose({
   updateChartData: (data: ProductSoldData[]) => {
     productsSoldData.value = data
+    if (chartInstance) {
+      chartInstance.data.labels = data.map(item => item.productCode)
+      chartInstance.data.datasets[0].data = data.map(item => item.quantity)
+      chartInstance.update()
+    }
   },
-  getChartData: () => [...productsSoldData.value],
+  getChartData: () => [...productsSoldData.value]
 })
 </script>
