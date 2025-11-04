@@ -1,0 +1,9 @@
+# Abaikan folder dependensi
+node_modules/
+
+# Abaikan file environment
+.env
+
+# Abaikan log
+npm-debug.log
+*.log
