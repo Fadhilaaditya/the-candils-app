@@ -10,19 +10,16 @@ const authRoutes = require('./routes/auth');
 const productRoutes = require('./routes/productRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
 const pesananRoutes = require('./routes/pesananRoutes'); 
-// --- VVV PASTIKAN BARIS INI ADA VVV ---
 const cartRoutes = require('./routes/cart'); 
-// ------------------------------------
+// 💡 TAMBAHKAN INI: Impor Pool dari file konfigurasi database
+const pool = require('./config/db'); 
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // --- Middleware ---
-// Ini sudah benar, mengizinkan semua domain
 app.use(cors()); 
 app.use(express.json());
-
-// Middleware untuk menyajikan file statis (gambar)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // --- Rute ---
@@ -30,23 +27,39 @@ app.get('/', (req, res) => {
   res.send('Server API The Candils berjalan!');
 });
 
-// Rute untuk Autentikasi
+// ... (Pendaftaran Rute Lain) ...
 app.use('/api/auth', authRoutes);
-
-// Rute untuk Produk & Ulasan
 app.use('/api/products/:produkId/reviews', reviewRoutes);
 app.use('/api/products', productRoutes);
-
-// Rute untuk Pesanan
 app.use('/api/pesanan', pesananRoutes);
-
-// --- VVV PASTIKAN RUTE INI DIDAFTARKAN VVV ---
-// Ini mendaftarkan semua rute dari 'cart.js' 
-// (GET /, POST /add, PUT /update, DELETE /remove)
-// di bawah prefix /api/cart
 app.use('/api/cart', cartRoutes);
-// -------------------------------------------
 
-app.listen(PORT, () => {
-  console.log(`Server berjalan di http://localhost:${PORT}`);
-});
+
+// ----------------------------------------------------
+// ⚠️ MODIFIKASI DIMULAI DI SINI: Membuat Server Menunggu DB
+// ----------------------------------------------------
+
+async function startServer() {
+  try {
+    // 1. Cek Koneksi Database (Memaksa error muncul jika gagal)
+    console.log("🟡 Memeriksa koneksi database...");
+    const connection = await pool.getConnection();
+    connection.release();
+    console.log("✅ Koneksi database berhasil diverifikasi!");
+
+    // 2. Jika sukses, baru jalankan Express.js
+    app.listen(PORT, () => {
+      // Perbarui log agar lebih jelas di Railway
+      console.log(`✅ Server Express.js berjalan di port ${PORT} dan siap melayani!`);
+    });
+    
+  } catch (err) {
+    // 3. Jika ada error koneksi DB, tampilkan detail error dan matikan proses
+    console.error("🔴 SERVER GAGAL START. Error Koneksi Database:", err.message || JSON.stringify(err));
+    // Mematikan proses penting agar Railway tahu server gagal
+    process.exit(1); 
+  }
+}
+
+// Jalankan server
+startServer();
