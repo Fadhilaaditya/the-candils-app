@@ -1,6 +1,5 @@
 // config/db.js
 const mysql = require('mysql2');
-// Pastikan package 'dotenv' sudah terinstal: npm install dotenv
 require('dotenv').config(); 
 
 // 1. Tentukan apakah menggunakan DATABASE_URL (disediakan oleh Railway)
@@ -10,18 +9,13 @@ let connectionConfig = {};
 
 if (isRailwayDeployment) {
   // --- KONFIGURASI UNTUK RAILWAY ---
-  // Railway menyediakan seluruh info koneksi dalam satu string (URI)
   connectionConfig = {
     uri: process.env.DATABASE_URL,
-    // Beberapa layanan cloud memerlukan SSL, ini opsional dan bisa dihapus/diubah.
-    // Jika koneksi gagal, coba hapus baris ini (atau ubah menjadi ssl: {})
-    ssl: {
-        rejectUnauthorized: false
-    } 
+    // ⚠️ PENTING: Konfigurasi SSL dihilangkan karena sering menyebabkan kegagalan koneksi di lingkungan container.
+    // Jika koneksi berhasil setelah ini, masalahnya adalah SSL.
   };
 } else {
   // --- KONFIGURASI UNTUK LOKAL (Development) ---
-  // Menggunakan variabel lingkungan terpisah dari file .env lokal
   connectionConfig = {
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
@@ -34,27 +28,26 @@ if (isRailwayDeployment) {
 
 // Buat Pool Koneksi
 const pool = mysql.createPool({
-  ...connectionConfig, // Sebarkan konfigurasi yang telah dipilih
+  ...connectionConfig, 
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
 }).promise();
 
 
-// 2. Tambahkan Logging untuk Memverifikasi Koneksi (Wajib untuk Debugging Deployment)
-// Ini akan memaksa error koneksi muncul di logs Railway jika gagal.
+// 2. Tambahkan Logging untuk Memverifikasi Koneksi dan Menangkap Seluruh Objek Error
 pool.getConnection()
   .then(connection => {
     // Jika koneksi berhasil
     console.log("✅ KONEKSI DATABASE BERHASIL!");
-    connection.release(); // Lepaskan koneksi kembali ke pool
+    connection.release(); 
   })
   .catch(err => {
-    // ❌ Jika koneksi gagal, tampilkan error spesifik di log
-    console.error("❌ ERROR KONEKSI DATABASE GAGAL:", err.message);
-    // Ini penting agar Anda dapat melihat penyebab kegagalan di logs Railway.
+    // ❌ TANGKAP SELURUH OBJEK ERROR (bukan hanya .message)
+    // Ini memastikan kita mendapatkan detail error, meskipun properti .message kosong.
+    console.error("❌ ERROR KONEKSI DATABASE GAGAL. Detail:", err);
   });
 
 
-// Ekspor promise pool agar bisa digunakan di route handler Anda
+// Ekspor promise pool
 module.exports = pool;
