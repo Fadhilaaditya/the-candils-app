@@ -1,0 +1,106 @@
+<template>
+  <div
+    class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow duration-200"
+  >
+
+    <div class="flex items-start justify-between mb-3">
+      <div class="flex items-center gap-3">
+        <div
+          class="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden"
+        >
+          <div
+            class="w-full h-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-semibold text-sm"
+          >
+            {{ getInitial(review.namaReviewer) }}
+          </div>
+        </div>
+
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="font-medium text-gray-800">{{ review.namaReviewer || 'User Anonim' }}</span>
+          </div>
+          <div class="text-sm text-gray-500">{{ formatRelativeTime(review.tanggalUlasan) }}</div>
+        </div>
+      </div>
+
+      <div class="flex items-center">
+        <svg
+          v-for="star in 5"
+          :key="star"
+          class="w-4 h-4"
+          :class="star <= review.rating ? 'text-yellow-400' : 'text-gray-300'"
+          fill="currentColor"
+          viewBox="0 0 20 20"
+        >
+          <path
+            d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l..."
+          />
+        </svg>
+      </div>
+    </div>
+
+    <p class="text-gray-700 leading-relaxed mb-3">
+      {{ review.komentar || 'User tidak memberikan komentar.' }}
+    </p>
+
+    <div class="flex items-center justify-end text-sm text-gray-500">
+      <div class="text-xs">
+        {{ formatDateTime(review.tanggalUlasan) }}
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import type { Ulasan } from '@/services/productService'
+
+interface Props {
+  review: Ulasan
+}
+defineProps<Props>()
+
+// --- Helper Functions (Tidak Berubah) ---
+
+const formatDateTime = (dateString: string | undefined | null): string => {
+  if (!dateString) return 'Tanggal tidak valid';
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return 'Tanggal tidak valid';
+  return date.toLocaleDateString('id-ID', {
+    year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+  })
+}
+
+const formatRelativeTime = (dateString: string | undefined | null): string => {
+  if (!dateString) return 'Tanggal tidak valid';
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return 'Tanggal tidak valid';
+  const now = new Date();
+  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+  if (seconds < 60) return "Baru saja";
+  let interval = seconds / 60;
+  if (interval < 60) return Math.floor(interval) + " menit lalu";
+  interval = seconds / 3600;
+  if (interval < 24) return Math.floor(interval) + " jam lalu";
+  interval = seconds / 86400;
+  if (interval < 30) return Math.floor(interval) + " hari lalu";
+  interval = seconds / 2592000;
+  if (interval < 12) return Math.floor(interval) + " bulan lalu";
+  interval = seconds / 31536000;
+  return Math.floor(interval) + " tahun lalu";
+}
+
+const getInitial = (name: string | undefined | null): string => {
+  if (!name || name.trim() === '') return '?';
+  const parts = name.trim().split(' ');
+  
+  const firstInitial = parts[0][0]?.toUpperCase() || '';
+  
+  if (parts.length > 1) {
+    const lastInitial = parts[parts.length - 1][0]?.toUpperCase() || '';
+    return firstInitial + lastInitial;
+  }
+  
+  return name.substring(0, 2).toUpperCase();
+}
+</script>
