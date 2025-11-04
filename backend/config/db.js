@@ -1,21 +1,26 @@
 // config/db.js
 const mysql = require('mysql2');
+const url = require('url'); // 💡 TAMBAHKAN INI
 require('dotenv').config(); 
 
-// 1. Tentukan apakah menggunakan DATABASE_URL (disediakan oleh Railway)
 const isRailwayDeployment = process.env.DATABASE_URL;
-
 let connectionConfig = {};
 
 if (isRailwayDeployment) {
   // --- KONFIGURASI UNTUK RAILWAY ---
+  const dbUrl = new URL(process.env.DATABASE_URL); // Urai string URI
+
   connectionConfig = {
-    uri: process.env.DATABASE_URL,
-    // ⚠️ PENTING: Konfigurasi SSL dihilangkan karena sering menyebabkan kegagalan koneksi di lingkungan container.
-    // Jika koneksi berhasil setelah ini, masalahnya adalah SSL.
+    // Gunakan komponen yang diurai
+    host: dbUrl.hostname,
+    user: dbUrl.username,
+    password: dbUrl.password,
+    database: dbUrl.pathname.substring(1), // Menghilangkan garis miring awal (/)
+    port: dbUrl.port,
+    // SSL tetap dihilangkan
   };
 } else {
-  // --- KONFIGURASI UNTUK LOKAL (Development) ---
+  // --- KONFIGURASI UNTUK LOKAL ---
   connectionConfig = {
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
@@ -35,19 +40,16 @@ const pool = mysql.createPool({
 }).promise();
 
 
-// 2. Tambahkan Logging untuk Memverifikasi Koneksi dan Menangkap Seluruh Objek Error
+// 2. Logging
 pool.getConnection()
   .then(connection => {
-    // Jika koneksi berhasil
     console.log("✅ KONEKSI DATABASE BERHASIL!");
     connection.release(); 
   })
   .catch(err => {
-    // ❌ TANGKAP SELURUH OBJEK ERROR (bukan hanya .message)
-    // Ini memastikan kita mendapatkan detail error, meskipun properti .message kosong.
+    // ❌ Sekarang kita menangkap seluruh objek error
     console.error("❌ ERROR KONEKSI DATABASE GAGAL. Detail:", err);
   });
 
 
-// Ekspor promise pool
 module.exports = pool;
