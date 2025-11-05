@@ -1,26 +1,26 @@
 <template>
   <div class="space-y-4">
-    <div 
-      v-for="item in items" 
+    <div
+      v-for="item in items"
       :key="item.keranjangItemId"
       class="bg-white rounded-lg shadow-sm p-6 flex gap-6"
     >
       <div class="w-24 h-24 bg-gray-200 rounded-lg flex-shrink-0 overflow-hidden">
-        <img 
-          v-if="item.foto" 
-          :src="`http://localhost:3000${item.foto}`" 
+        <img
+          v-if="item.foto"
+          :src="`https://backend-the-candils.vercel.app${item.foto}`"
           :alt="item.namaProduk"
           class="w-full h-full object-cover"
           @error="handleImageError"
         />
-        <div v-else class="w-full h-full flex items-center justify-center text-gray-400">
-          📦
-        </div>
+        <div v-else class="w-full h-full flex items-center justify-center text-gray-400">📦</div>
       </div>
 
       <div class="flex-grow">
         <h3 class="text-lg font-semibold text-gray-800">{{ item.namaProduk }}</h3>
-        <p class="text-gray-600 text-sm mt-1">{{ item.deskripsi || 'Produk tradisional Indonesia' }}</p>
+        <p class="text-gray-600 text-sm mt-1">
+          {{ item.deskripsi || 'Produk tradisional Indonesia' }}
+        </p>
         <div class="flex items-center gap-4 mt-4">
           <div class="text-lg font-bold text-[#BAB772]">
             Rp {{ formatPrice(item.harga_satuan) }}
@@ -32,16 +32,23 @@
       </div>
 
       <div class="flex flex-col items-end justify-between">
-        <button 
+        <button
           @click="$emit('removeItem', item.keranjangItemId)"
           class="text-red-500 hover:text-red-700 mb-5 transition-colors"
           title="Hapus dari keranjang"
         >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+            />
+          </svg>
         </button>
 
         <div class="flex items-center gap-2 border border-gray-300 rounded-lg">
-          <button 
+          <button
             @click="$emit('decreaseQty', item)"
             class="px-3 py-1 hover:bg-gray-100 transition-colors"
             :disabled="item.jumlah <= 1"
@@ -49,7 +56,7 @@
             -
           </button>
           <span class="px-3 py-1 font-medium">{{ item.jumlah }}</span>
-          <button 
+          <button
             @click="$emit('increaseQty', item)"
             class="px-3 py-1 hover:bg-gray-100 transition-colors"
           >

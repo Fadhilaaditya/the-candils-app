@@ -33,14 +33,12 @@
         >
           {{ ukuran.namaUkuran }}
           <span v-if="ukuran.hargaTambahan > 0" class="text-xs ml-1">
-             (+{{ formatCurrency(ukuran.hargaTambahan) }})
+            (+{{ formatCurrency(ukuran.hargaTambahan) }})
           </span>
         </button>
       </div>
     </div>
-     <div v-else class="mb-6 text-sm text-gray-500">
-       Produk ini tidak memiliki varian ukuran.
-     </div>
+    <div v-else class="mb-6 text-sm text-gray-500">Produk ini tidak memiliki varian ukuran.</div>
 
     <div class="mb-8">
       <h3 class="text-lg font-semibold text-gray-900 mb-3">Jumlah</h3>
@@ -50,7 +48,9 @@
           :disabled="quantity <= 1"
           class="w-10 h-10 border border-gray-300 rounded-lg flex items-center justify-center hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" /></svg>
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" />
+          </svg>
         </button>
 
         <input
@@ -67,7 +67,14 @@
           :disabled="quantity >= product.stok"
           class="w-10 h-10 border border-gray-300 rounded-lg flex items-center justify-center hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+            />
+          </svg>
         </button>
       </div>
       <p class="text-sm text-gray-500 mt-2">Tersedia {{ product.stok }} stok</p>
@@ -79,7 +86,13 @@
         :disabled="!isCheckoutEnabled"
         class="flex-1 bg-white border-2 border-[#BAB772] text-[#BAB772] hover:bg-[#FAFAD2] disabled:bg-gray-100 disabled:border-gray-300 disabled:text-gray-400 disabled:cursor-not-allowed font-semibold py-4 px-6 rounded-lg transition-colors duration-200 text-lg"
       >
-        {{ isCheckoutEnabled ? '🛒 Tambah ke Keranjang' : (product.stok <= 0 ? 'Stok Habis' : 'Pilih Ukuran') }}
+        {{
+          isCheckoutEnabled
+            ? '🛒 Tambah ke Keranjang'
+            : product.stok <= 0
+              ? 'Stok Habis'
+              : 'Pilih Ukuran'
+        }}
       </button>
 
       <button
@@ -87,7 +100,13 @@
         :disabled="!isCheckoutEnabled"
         class="flex-1 bg-[#BAB772] hover:bg-[#a8a668] disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold py-4 px-6 rounded-lg transition-colors duration-200 text-lg"
       >
-        {{ isCheckoutEnabled ? '⚡ Checkout Sekarang' : (product.stok <= 0 ? 'Stok Habis' : 'Pilih Ukuran') }}
+        {{
+          isCheckoutEnabled
+            ? '⚡ Checkout Sekarang'
+            : product.stok <= 0
+              ? 'Stok Habis'
+              : 'Pilih Ukuran'
+        }}
       </button>
     </div>
   </div>
@@ -110,32 +129,35 @@ const selectedUkuran = ref<Ukuran | null>(null)
 const quantity = ref<number>(1)
 
 // API Base URL
-const API_BASE_URL = 'http://localhost:3000/api/cart'
+const API_BASE_URL = 'https://backend-the-candils.vercel.app/api/cart'
 
 // Computed: Harga final (Tidak Berubah)
 const currentFinalPrice = computed(() => {
-  const basePrice = parseFloat(props.product.hargaUnit as any) || 0;
-  const additionalPrice = parseFloat(selectedUkuran.value?.hargaTambahan as any) || 0;
-  const pricePerItem = basePrice + additionalPrice;
-  return pricePerItem * quantity.value;
-});
+  const basePrice = parseFloat(props.product.hargaUnit as any) || 0
+  const additionalPrice = parseFloat(selectedUkuran.value?.hargaTambahan as any) || 0
+  const pricePerItem = basePrice + additionalPrice
+  return pricePerItem * quantity.value
+})
 
 // Computed: Cek tombol enabled (Tidak Berubah)
 const isCheckoutEnabled = computed(() => {
-  return props.product.stok > 0 && (!props.product.ukurans || props.product.ukurans.length === 0 || selectedUkuran.value !== null);
-});
+  return (
+    props.product.stok > 0 &&
+    (!props.product.ukurans || props.product.ukurans.length === 0 || selectedUkuran.value !== null)
+  )
+})
 
 // Get Cart Session ID (Tidak Berubah)
 const getCartSessionId = (): string => {
   let cartSessionId = localStorage.getItem('cartSessionId')
-  
+
   if (!cartSessionId) {
     const timestamp = Date.now()
     const random = Math.random().toString(36).substring(2, 15)
     cartSessionId = `session_${timestamp}_${random}`
     localStorage.setItem('cartSessionId', cartSessionId)
   }
-  
+
   return cartSessionId
 }
 
@@ -160,47 +182,47 @@ const decreaseQuantity = () => {
 
 // Validate Quantity (Tidak Berubah)
 const validateQuantity = () => {
-    if (quantity.value > props.product.stok) {
-        quantity.value = props.product.stok;
-    }
-    if (quantity.value < 1) {
-        quantity.value = 1;
-    }
+  if (quantity.value > props.product.stok) {
+    quantity.value = props.product.stok
+  }
+  if (quantity.value < 1) {
+    quantity.value = 1
+  }
 }
 
 // Format Currency (Tidak Berubah)
 const formatCurrency = (value: number | undefined | null): string => {
   if (value === undefined || value === null || isNaN(value)) {
-    return 'Rp -';
+    return 'Rp -'
   }
   return new Intl.NumberFormat('id-ID', {
     style: 'currency',
     currency: 'IDR',
     minimumFractionDigits: 0,
-    maximumFractionDigits: 0 
-  }).format(value);
+    maximumFractionDigits: 0,
+  }).format(value)
 }
 
 // Add to Cart (Tidak Berubah)
 const handleAddToCart = async () => {
   if (!isCheckoutEnabled.value) {
-     if (props.product.stok <= 0) {
-       toast.error('Maaf, stok produk ini habis.')
-     } else if (props.product.ukurans && props.product.ukurans.length > 0 && !selectedUkuran.value) {
-       toast.warning('Silakan pilih varian ukuran terlebih dahulu.')
-     }
+    if (props.product.stok <= 0) {
+      toast.error('Maaf, stok produk ini habis.')
+    } else if (props.product.ukurans && props.product.ukurans.length > 0 && !selectedUkuran.value) {
+      toast.warning('Silakan pilih varian ukuran terlebih dahulu.')
+    }
     return
   }
 
-  const cartSessionId = getCartSessionId();
+  const cartSessionId = getCartSessionId()
   const apiData = {
     cartSessionId: cartSessionId,
     produkId: props.product.produkId,
     ukuranId: selectedUkuran.value?.ukuranId || null,
-    jumlah: quantity.value
-  };
+    jumlah: quantity.value,
+  }
 
-  console.log('🛒 Add to Cart (Sending to API):', apiData);
+  console.log('🛒 Add to Cart (Sending to API):', apiData)
 
   try {
     const response = await fetch(`${API_BASE_URL}/add`, {
@@ -208,25 +230,27 @@ const handleAddToCart = async () => {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(apiData)
-    });
+      body: JSON.stringify(apiData),
+    })
 
-    const result = await response.json();
+    const result = await response.json()
 
     if (result.success) {
-      toast.success(`Berhasil menambahkan ${apiData.jumlah}x ${props.product.namaProduk} ke keranjang!`)
-      window.dispatchEvent(new Event('cartUpdated'));
-      
+      toast.success(
+        `Berhasil menambahkan ${apiData.jumlah}x ${props.product.namaProduk} ke keranjang!`,
+      )
+      window.dispatchEvent(new Event('cartUpdated'))
+
       // Reset setelah add to cart
-      quantity.value = 1;
+      quantity.value = 1
       if (props.product.ukurans && props.product.ukurans.length > 1) {
-        selectedUkuran.value = null;
+        selectedUkuran.value = null
       }
     } else {
       toast.error(`Gagal menambahkan: ${result.message || 'Error tidak diketahui'}`)
     }
   } catch (error) {
-    console.error('Error adding to cart:', error);
+    console.error('Error adding to cart:', error)
     toast.error('Terjadi kesalahan. Tidak dapat terhubung ke server.')
   }
 }
@@ -236,20 +260,20 @@ const handleAddToCart = async () => {
 const handleDirectCheckout = () => {
   // 1. Cek apakah tombol enabled
   if (!isCheckoutEnabled.value) {
-     if (props.product.stok <= 0) {
-       toast.error('Maaf, stok produk ini habis.')
-     } else if (props.product.ukurans && props.product.ukurans.length > 0 && !selectedUkuran.value) {
-       toast.warning('Silakan pilih varian ukuran terlebih dahulu.')
-     }
+    if (props.product.stok <= 0) {
+      toast.error('Maaf, stok produk ini habis.')
+    } else if (props.product.ukurans && props.product.ukurans.length > 0 && !selectedUkuran.value) {
+      toast.warning('Silakan pilih varian ukuran terlebih dahulu.')
+    }
     return
   }
 
   // 2. Siapkan data item yang dipilih
-  const basePrice = parseFloat(props.product.hargaUnit as any) || 0;
-  const additionalPrice = parseFloat(selectedUkuran.value?.hargaTambahan as any) || 0;
-  const pricePerItem = basePrice + additionalPrice;
-  const subtotal = currentFinalPrice.value; // (pricePerItem * quantity)
-  
+  const basePrice = parseFloat(props.product.hargaUnit as any) || 0
+  const additionalPrice = parseFloat(selectedUkuran.value?.hargaTambahan as any) || 0
+  const pricePerItem = basePrice + additionalPrice
+  const subtotal = currentFinalPrice.value // (pricePerItem * quantity)
+
   const checkoutData = {
     // Data ini akan dibaca oleh Checkout.vue
     // Ini adalah array yang HANYA berisi item ini
@@ -265,33 +289,37 @@ const handleDirectCheckout = () => {
         namaUkuran: selectedUkuran.value?.namaUkuran || null,
         foto: props.product.foto,
         deskripsi: props.product.deskripsi,
-        cartSessionId: '' // Dummy
-      }
+        cartSessionId: '', // Dummy
+      },
     ],
     // Tandai sebagai 'direct checkout'
-    isDirectCheckout: true 
-  };
+    isDirectCheckout: true,
+  }
 
   // 3. Simpan ke sessionStorage
-  sessionStorage.setItem('directCheckoutData', JSON.stringify(checkoutData));
+  sessionStorage.setItem('directCheckoutData', JSON.stringify(checkoutData))
 
   // 4. Langsung pindah ke halaman checkout
-  console.log('⚡ Menyimpan data direct checkout dan navigasi...', checkoutData);
-  router.push('/checkout');
+  console.log('⚡ Menyimpan data direct checkout dan navigasi...', checkoutData)
+  router.push('/checkout')
 }
 // --- [AKHIR PERUBAHAN] ---
 
 // Watch product changes (Tidak Berubah)
-watch(() => props.product, (newProduct) => {
+watch(
+  () => props.product,
+  (newProduct) => {
     if (newProduct && newProduct.ukurans && newProduct.ukurans.length > 0) {
-        if (newProduct.ukurans.length === 1) {
-             selectedUkuran.value = newProduct.ukurans[0];
-        } else {
-             selectedUkuran.value = null;
-        }
+      if (newProduct.ukurans.length === 1) {
+        selectedUkuran.value = newProduct.ukurans[0]
+      } else {
+        selectedUkuran.value = null
+      }
     } else {
-        selectedUkuran.value = null;
+      selectedUkuran.value = null
     }
-    quantity.value = 1;
-}, { immediate: true });
+    quantity.value = 1
+  },
+  { immediate: true },
+)
 </script>

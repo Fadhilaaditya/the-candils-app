@@ -1,5 +1,5 @@
 <template>
-  <ConfirmModal 
+  <ConfirmModal
     ref="confirmModalRef"
     title="Hapus Produk?"
     message="Anda yakin ingin menghapus produk ini dari keranjang?"
@@ -27,8 +27,8 @@
         <div class="text-6xl mb-4">🛒</div>
         <h2 class="text-2xl font-semibold text-gray-800 mb-2">Keranjang Kosong</h2>
         <p class="text-gray-600 mb-6">Belum ada produk di keranjang Anda</p>
-        <router-link 
-          to="/products" 
+        <router-link
+          to="/products"
           class="inline-block bg-[#BAB772] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#a8a668] transition-colors duration-300 no-underline"
         >
           Mulai Belanja
@@ -36,7 +36,6 @@
       </div>
 
       <div v-else class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
         <CartListComponent
           class="lg:col-span-2"
           :items="cartItems"
@@ -51,7 +50,6 @@
           :total-price="totalPrice"
           @checkout="checkout"
         />
-
       </div>
     </div>
   </div>
@@ -64,7 +62,7 @@ import CartSummaryComponent from './_components/CartSummaryComponent.vue' // Ses
 
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useToast } from "vue-toastification";
+import { useToast } from 'vue-toastification'
 import ConfirmModal from '@/components/ConfirmModal.vue' // Path modal Anda
 
 interface CartItem {
@@ -82,12 +80,12 @@ interface CartItem {
 }
 
 const router = useRouter()
-const toast = useToast();
+const toast = useToast()
 
 const confirmModalRef = ref<InstanceType<typeof ConfirmModal> | null>(null)
 const cartItems = ref<CartItem[]>([])
 const loading = ref(true)
-const API_BASE_URL = 'http://localhost:3000/api/cart'
+const API_BASE_URL = 'https://backend-the-candils.vercel.app/api/cart'
 
 // SEMUA FUNGSI LOGIKA TETAP DI INDUK INI
 // (getCartSessionId, loadCart, increaseQuantity, decreaseQuantity, removeItem, checkout)
@@ -107,7 +105,9 @@ const getCartSessionId = (): string => {
 // Load cart (anti-glitch)
 const loadCart = async (showLoading = true) => {
   try {
-    if (showLoading) { loading.value = true }
+    if (showLoading) {
+      loading.value = true
+    }
     const cartSessionId = getCartSessionId()
     const response = await fetch(`${API_BASE_URL}/${cartSessionId}`)
     const result = await response.json()
@@ -116,9 +116,11 @@ const loadCart = async (showLoading = true) => {
     }
   } catch (error) {
     console.error('Error loading cart:', error)
-    if (showLoading) toast.error('Gagal memuat keranjang') 
+    if (showLoading) toast.error('Gagal memuat keranjang')
   } finally {
-    if (showLoading) { loading.value = false }
+    if (showLoading) {
+      loading.value = false
+    }
   }
 }
 
@@ -128,11 +130,11 @@ const increaseQuantity = async (item: CartItem) => {
     const response = await fetch(`${API_BASE_URL}/update/${item.keranjangItemId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ jumlah: item.jumlah + 1 })
+      body: JSON.stringify({ jumlah: item.jumlah + 1 }),
     })
     const result = await response.json()
     if (result.success) {
-      await loadCart(false) 
+      await loadCart(false)
       window.dispatchEvent(new Event('cartUpdated'))
     } else {
       toast.error(result.message || 'Gagal mengupdate jumlah')
@@ -150,11 +152,11 @@ const decreaseQuantity = async (item: CartItem) => {
     const response = await fetch(`${API_BASE_URL}/update/${item.keranjangItemId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ jumlah: item.jumlah - 1 })
+      body: JSON.stringify({ jumlah: item.jumlah - 1 }),
     })
     const result = await response.json()
     if (result.success) {
-      await loadCart(false) 
+      await loadCart(false)
       window.dispatchEvent(new Event('cartUpdated'))
     } else {
       toast.error(result.message || 'Gagal mengupdate jumlah')
@@ -167,16 +169,16 @@ const decreaseQuantity = async (item: CartItem) => {
 
 // Remove item
 const removeItem = async (keranjangItemId: number) => {
-  const confirmed = await confirmModalRef.value?.open();
-  if (!confirmed) return 
-  
+  const confirmed = await confirmModalRef.value?.open()
+  if (!confirmed) return
+
   try {
     const response = await fetch(`${API_BASE_URL}/remove/${keranjangItemId}`, {
-      method: 'DELETE'
+      method: 'DELETE',
     })
     const result = await response.json()
     if (result.success) {
-      await loadCart(true) 
+      await loadCart(true)
       window.dispatchEvent(new Event('cartUpdated'))
       toast.success('Produk berhasil dihapus')
     } else {
@@ -224,7 +226,7 @@ const checkout = () => {
 onMounted(() => {
   console.log('=== CART DEBUG START ===')
   console.log('Cart Session ID:', getCartSessionId())
-  loadCart() 
+  loadCart()
   window.addEventListener('cartUpdated', loadCartOnEvent)
 })
 
