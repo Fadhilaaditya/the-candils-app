@@ -1,8 +1,8 @@
-// backend/index.js
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
 // 💡 SOLUSI: Mengarahkan dotenv ke file .env.development
+// Ini memastikan variabel dimuat sebelum modul lain dieksekusi.
 require('dotenv').config({ 
     path: path.resolve(__dirname, '.env.development') 
 });
@@ -14,11 +14,15 @@ const reviewRoutes = require('./routes/reviewRoutes');
 const pesananRoutes = require('./routes/pesananRoutes'); 
 const cartRoutes = require('./routes/cart'); 
 
+// ⚠️ Catatan: Module database harus di-require oleh controller/route, 
+// bukan di sini (untuk menghindari pemuatan ganda).
+
 const app = express();
 
 // --- Middleware ---
 app.use(cors()); 
 app.use(express.json());
+// Pastikan folder 'uploads' dapat diakses secara statis
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // --- Rute ---
@@ -56,11 +60,13 @@ app.use((err, req, res, next) => {
   console.error('Error:', err);
   res.status(500).json({ 
     message: 'Server error',
+    // Tampilkan detail error hanya saat development
     error: process.env.NODE_ENV === 'development' ? err.message : 'Internal error'
   });
 });
 
-// ✅ PENTING: Untuk local development SAJA
+// ✅ PENTING: Server Listening HANYA untuk local development
+// Vercel akan mengabaikan bagian ini karena NODE_ENV='production'
 const PORT = process.env.PORT || 3000;
 if (process.env.NODE_ENV !== 'production') {
   app.listen(PORT, () => {
@@ -68,5 +74,6 @@ if (process.env.NODE_ENV !== 'production') {
   });
 }
 
-// ✅ CRITICAL: Export untuk Vercel
+// ✅ CRITICAL: Export objek 'app' untuk Vercel
+// Ini adalah format yang dibutuhkan Vercel sebagai Serverless Function.
 module.exports = app;
