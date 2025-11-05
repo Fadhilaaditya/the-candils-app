@@ -2,7 +2,10 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-require('dotenv').config();
+// 💡 SOLUSI: Mengarahkan dotenv ke file .env.development
+require('dotenv').config({ 
+    path: path.resolve(__dirname, '.env.development') 
+});
 
 // Impor Rute
 const authRoutes = require('./routes/auth');
