@@ -25,7 +25,8 @@ DELIMITER $$
 --
 -- Procedures
 --
-CREATE DEFINER=`root`@`localhost` PROCEDURE `checkout` (IN `p_cartSessionId` VARCHAR(255), IN `p_pesananId` INT)   BEGIN
+-- Dihapus: CREATE DEFINER=`root`@`localhost`
+CREATE PROCEDURE `checkout` (IN `p_cartSessionId` VARCHAR(255), IN `p_pesananId` INT)   BEGIN
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
     BEGIN
         ROLLBACK;
@@ -60,12 +61,14 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `checkout` (IN `p_cartSessionId` VAR
     COMMIT;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `hapusItem` (IN `p_keranjangItemId` INT)   BEGIN
+-- Dihapus: CREATE DEFINER=`root`@`localhost`
+CREATE PROCEDURE `hapusItem` (IN `p_keranjangItemId` INT)   BEGIN
     DELETE FROM `Keranjang Item` 
     WHERE keranjangItemId = p_keranjangItemId;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `mergeGuestCartToUser` (IN `p_guestSessionId` VARCHAR(255), IN `p_userSessionId` VARCHAR(255))   BEGIN
+-- Dihapus: CREATE DEFINER=`root`@`localhost`
+CREATE PROCEDURE `mergeGuestCartToUser` (IN `p_guestSessionId` VARCHAR(255), IN `p_userSessionId` VARCHAR(255))   BEGIN
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
     BEGIN
         ROLLBACK;
@@ -89,7 +92,8 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `mergeGuestCartToUser` (IN `p_guestS
     COMMIT;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `tambahItem` (IN `p_cartSessionId` VARCHAR(255), IN `p_produkId` INT, IN `p_ukuranId` INT, IN `p_jumlah` INT)   BEGIN
+-- Dihapus: CREATE DEFINER=`root`@`localhost`
+CREATE PROCEDURE `tambahItem` (IN `p_cartSessionId` VARCHAR(255), IN `p_produkId` INT, IN `p_ukuranId` INT, IN `p_jumlah` INT)   BEGIN
     -- Deklarasi variabel (Sudah Benar)
     DECLARE v_harga_dasar DECIMAL(10, 2) DEFAULT 0;
     DECLARE v_harga_tambahan DECIMAL(10, 2) DEFAULT 0;
