@@ -1,6 +1,8 @@
 // config/db.js
 const mysql = require('mysql2');
-require('dotenv').config(); 
+const url = require('url'); // Pastikan ini ada jika Anda menggunakan URL parsing
+
+// ⚠️ HAPUS BARIS INI: require('dotenv').config(); 
 
 const isRailwayDeployment = process.env.DATABASE_URL;
 let connectionConfig = {};
@@ -15,13 +17,13 @@ if (isRailwayDeployment) {
     password: dbUrl.password,
     database: dbUrl.pathname.substring(1),
     port: dbUrl.port,
-    // ✅ TAMBAHKAN SSL
+    // Kita aktifkan SSL lagi karena sudah menghapus dotenv
     ssl: {
-      rejectUnauthorized: false // Railway butuh ini
+      rejectUnauthorized: false
     }
   };
 } else {
-  // --- KONFIGURASI UNTUK LOKAL ---
+  // --- KONFIGURASI UNTUK LOKAL (Pastikan Anda menggunakan dotenv di luar file ini) ---
   connectionConfig = {
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
@@ -39,15 +41,15 @@ const pool = mysql.createPool({
   queueLimit: 0
 }).promise();
 
-// Test Connection (opsional, bisa dihapus di production)
+// Test Connection (Gunakan logic ini, tetapi pastikan sudah dihapus dari index.js)
 pool.getConnection()
   .then(connection => {
     console.log("✅ KONEKSI DATABASE BERHASIL!");
     connection.release(); 
   })
   .catch(err => {
+    // ⚠️ Jika Anda masih dapat error ini, coba matikan konfigurasi SSL
     console.error("❌ ERROR KONEKSI DATABASE:", err.message);
-    // Jangan log full error di production (bisa expose credentials)
   });
 
 module.exports = pool;
