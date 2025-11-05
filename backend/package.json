@@ -1,12 +1,13 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "description": "",
+  "description": "Candils Backend API",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node index.js",
-    "dev": "nodemon index.js"
+    "dev": "dotenv -e .env.development nodemon index.js",
+    "prod:test": "dotenv -e .env.production node index.js"
   },
   "keywords": [],
   "author": "",
@@ -23,6 +24,10 @@
     "mysql2": "^3.15.3"
   },
   "devDependencies": {
+    "dotenv-cli": "^11.0.0",
     "nodemon": "^3.1.10"
+  },
+  "engines": {
+    "node": ">=18.x"
   }
 }
