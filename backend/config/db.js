@@ -1,6 +1,5 @@
 // config/db.js
 const mysql = require('mysql2');
-const url = require('url'); // 💡 TAMBAHKAN INI
 require('dotenv').config(); 
 
 const isRailwayDeployment = process.env.DATABASE_URL;
@@ -8,16 +7,18 @@ let connectionConfig = {};
 
 if (isRailwayDeployment) {
   // --- KONFIGURASI UNTUK RAILWAY ---
-  const dbUrl = new URL(process.env.DATABASE_URL); // Urai string URI
+  const dbUrl = new URL(process.env.DATABASE_URL);
 
   connectionConfig = {
-    // Gunakan komponen yang diurai
     host: dbUrl.hostname,
     user: dbUrl.username,
     password: dbUrl.password,
-    database: dbUrl.pathname.substring(1), // Menghilangkan garis miring awal (/)
+    database: dbUrl.pathname.substring(1),
     port: dbUrl.port,
-    // SSL tetap dihilangkan
+    // ✅ TAMBAHKAN SSL
+    ssl: {
+      rejectUnauthorized: false // Railway butuh ini
+    }
   };
 } else {
   // --- KONFIGURASI UNTUK LOKAL ---
@@ -30,7 +31,6 @@ if (isRailwayDeployment) {
   };
 }
 
-
 // Buat Pool Koneksi
 const pool = mysql.createPool({
   ...connectionConfig, 
@@ -39,17 +39,15 @@ const pool = mysql.createPool({
   queueLimit: 0
 }).promise();
 
-
-// 2. Logging
+// Test Connection (opsional, bisa dihapus di production)
 pool.getConnection()
   .then(connection => {
     console.log("✅ KONEKSI DATABASE BERHASIL!");
     connection.release(); 
   })
   .catch(err => {
-    // ❌ Sekarang kita menangkap seluruh objek error
-    console.error("❌ ERROR KONEKSI DATABASE GAGAL. Detail:", err);
+    console.error("❌ ERROR KONEKSI DATABASE:", err.message);
+    // Jangan log full error di production (bisa expose credentials)
   });
-
 
 module.exports = pool;
