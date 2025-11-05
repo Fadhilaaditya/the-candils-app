@@ -1,8 +1,8 @@
 // config/db.js
 const mysql = require('mysql2');
-const url = require('url'); // Pastikan ini ada jika Anda menggunakan URL parsing
+const url = require('url'); 
 
-// ⚠️ HAPUS BARIS INI: require('dotenv').config(); 
+// Pastikan Anda sudah menghapus require('dotenv').config() di file ini
 
 const isRailwayDeployment = process.env.DATABASE_URL;
 let connectionConfig = {};
@@ -17,13 +17,10 @@ if (isRailwayDeployment) {
     password: dbUrl.password,
     database: dbUrl.pathname.substring(1),
     port: dbUrl.port,
-    // Kita aktifkan SSL lagi karena sudah menghapus dotenv
-    ssl: {
-      rejectUnauthorized: false
-    }
+    // ⚠️ PENTING: SSL DIHAPUS. Ini adalah sumber masalah koneksi yang paling umum di container.
   };
 } else {
-  // --- KONFIGURASI UNTUK LOKAL (Pastikan Anda menggunakan dotenv di luar file ini) ---
+  // --- KONFIGURASI UNTUK LOKAL ---
   connectionConfig = {
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
@@ -33,6 +30,7 @@ if (isRailwayDeployment) {
   };
 }
 
+
 // Buat Pool Koneksi
 const pool = mysql.createPool({
   ...connectionConfig, 
@@ -41,15 +39,16 @@ const pool = mysql.createPool({
   queueLimit: 0
 }).promise();
 
-// Test Connection (Gunakan logic ini, tetapi pastikan sudah dihapus dari index.js)
+
+// Test Connection (Logging yang lebih kuat)
 pool.getConnection()
   .then(connection => {
     console.log("✅ KONEKSI DATABASE BERHASIL!");
     connection.release(); 
   })
   .catch(err => {
-    // ⚠️ Jika Anda masih dapat error ini, coba matikan konfigurasi SSL
-    console.error("❌ ERROR KONEKSI DATABASE:", err.message);
+    // ❌ Menampilkan seluruh objek error (termasuk kode error asli)
+    console.error("❌ ERROR KONEKSI DATABASE GAGAL. Detail:", err.code || err.message || JSON.stringify(err));
   });
 
 module.exports = pool;
