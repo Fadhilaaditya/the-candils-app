@@ -1,11 +1,30 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-// 💡 SOLUSI: Mengarahkan dotenv ke file .env.development
-// Ini memastikan variabel dimuat sebelum modul lain dieksekusi.
+
+// 💡 Load environment variables PERTAMA KALI
 require('dotenv').config({ 
     path: path.resolve(__dirname, '.env.development') 
 });
+
+// ⭐️ TAMBAHKAN: Konfigurasi Cloudinary setelah dotenv
+const cloudinary = require('cloudinary').v2;
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+// 🔍 DEBUGGING: Cek apakah Cloudinary config terbaca
+console.log('🔍 Cloudinary Configuration Check:');
+console.log('CLOUD_NAME:', process.env.CLOUDINARY_CLOUD_NAME ? '✅ Loaded' : '❌ NOT FOUND');
+console.log('API_KEY:', process.env.CLOUDINARY_API_KEY ? '✅ Loaded' : '❌ NOT FOUND');
+console.log('API_SECRET:', process.env.CLOUDINARY_API_SECRET ? '✅ Loaded' : '❌ NOT FOUND');
+
+// Test koneksi Cloudinary (opsional, untuk memastikan)
+cloudinary.api.ping()
+  .then(result => console.log('✅ Cloudinary connected:', result.status))
+  .catch(err => console.error('❌ Cloudinary connection failed:', err.message));
 
 // Impor Rute
 const authRoutes = require('./routes/auth');
@@ -13,9 +32,6 @@ const productRoutes = require('./routes/productRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
 const pesananRoutes = require('./routes/pesananRoutes'); 
 const cartRoutes = require('./routes/cart'); 
-
-// ⚠️ Catatan: Module database harus di-require oleh controller/route, 
-// bukan di sini (untuk menghindari pemuatan ganda).
 
 const app = express();
 
@@ -60,13 +76,11 @@ app.use((err, req, res, next) => {
   console.error('Error:', err);
   res.status(500).json({ 
     message: 'Server error',
-    // Tampilkan detail error hanya saat development
     error: process.env.NODE_ENV === 'development' ? err.message : 'Internal error'
   });
 });
 
-// ✅ PENTING: Server Listening HANYA untuk local development
-// Vercel akan mengabaikan bagian ini karena NODE_ENV='production'
+// ✅ Server Listening untuk local development
 const PORT = process.env.PORT || 3000;
 if (process.env.NODE_ENV !== 'production') {
   app.listen(PORT, () => {
@@ -74,6 +88,5 @@ if (process.env.NODE_ENV !== 'production') {
   });
 }
 
-// ✅ CRITICAL: Export objek 'app' untuk Vercel
-// Ini adalah format yang dibutuhkan Vercel sebagai Serverless Function.
+// ✅ Export untuk Vercel
 module.exports = app;

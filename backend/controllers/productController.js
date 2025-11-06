@@ -1,4 +1,14 @@
 const db = require('../config/db')
+const cloudinary = require('cloudinary').v2 // 1. Impor Cloudinary
+
+// Pastikan Anda telah mengkonfigurasi Cloudinary di file konfigurasi utama
+// Contoh konfigurasi (biasanya di server.js atau config file):
+// cloudinary.config({
+//   cloud_name: 'YOUR_CLOUD_NAME',
+//   api_key: 'YOUR_API_KEY',
+//   api_secret: 'YOUR_API_SECRET'
+// });
+
 
 // --- FUNGSI BARU (getProductIdList - tetap sama) ---
 exports.getProductIdList = async (req, res) => {
@@ -74,15 +84,16 @@ exports.getProductById = async (req, res) => {
   }
 }
 
+
 // @route   POST /api/products
 // @desc    Membuat produk baru dengan upload gambar
 exports.createProduct = async (req, res) => {
   const { namaProduk, deskripsi, stok, hargaUnit, ukuran: ukuranJSON } = req.body
-  const foto = req.file
+  const foto = req.file // Berisi .buffer dari Multer memoryStorage
 
   console.log('Create Product Request:')
   console.log('Body:', req.body)
-  console.log('File:', foto)
+  // console.log('File:', foto) // Akan menampilkan buffer data, bukan path
 
   if (!foto) {
     return res.status(400).json({ message: 'File gambar (foto) wajib diisi' })
@@ -94,7 +105,7 @@ exports.createProduct = async (req, res) => {
   let ukurans
   try {
     ukurans = JSON.parse(ukuranJSON)
-    console.log('Parsed ukurans:', ukurans)
+    // console.log('Parsed ukurans:', ukurans)
   } catch (e) {
     console.error('JSON Parse Error:', e.message)
     return res.status(400).json({ message: 'Format data ukuran tidak valid (bukan JSON string)' })
@@ -104,17 +115,32 @@ exports.createProduct = async (req, res) => {
     return res.status(400).json({ message: 'Minimal harus ada 1 ukuran' })
   }
 
-  // ✅ Cloudinary returns full URL in req.file.path
-  const fotoPath = req.file.path
+  let fotoPath // Variabel baru untuk menyimpan URL Cloudinary
   let connection
 
   try {
+    // ⭐️ LANGKAH BARU: Upload buffer file ke Cloudinary
+    // 1. Konversi buffer menjadi Data URI
+    const b64 = Buffer.from(foto.buffer).toString('base64');
+    const dataUri = 'data:' + foto.mimetype + ';base64,' + b64;
+    
+    // 2. Upload ke Cloudinary
+    const result = await cloudinary.uploader.upload(dataUri, {
+      folder: 'nama_folder_produk', // Ganti dengan nama folder Anda
+      // public_id: `product-${Date.now()}` // Opsional
+    });
+
+    // 3. Ambil URL
+    fotoPath = result.secure_url;
+    // console.log('Cloudinary URL:', fotoPath)
+
     connection = await db.getConnection()
     await connection.beginTransaction()
 
     const [productResult] = await connection.query(
       'INSERT INTO Produk (namaProduk, deskripsi, stok, foto, hargaUnit) VALUES (?, ?, ?, ?, ?)',
-      [namaProduk, deskripsi || null, stok || 0, fotoPath, hargaUnit]
+      // Gunakan fotoPath dari Cloudinary
+      [namaProduk, deskripsi || null, stok || 0, fotoPath, hargaUnit] 
     )
     const newProdukId = productResult.insertId
 
@@ -134,6 +160,7 @@ exports.createProduct = async (req, res) => {
   } catch (err) {
     if (connection) await connection.rollback()
     console.error('Create Product Error:', err)
+    // Optional: Tambahkan logic untuk menghapus gambar dari Cloudinary jika terjadi error DB
     res.status(500).json({
       message: 'Server Error',
       error: err.message,
@@ -148,7 +175,7 @@ exports.createProduct = async (req, res) => {
 exports.updateProduct = async (req, res) => {
   const { id } = req.params
   const { namaProduk, deskripsi, stok, hargaUnit, ukuran: ukuranJSON } = req.body
-  const newFoto = req.file
+  const newFoto = req.file // Berisi .buffer jika ada file baru di-upload
 
   if (!namaProduk || !hargaUnit || !ukuranJSON) {
     return res.status(400).json({ message: 'Nama, harga, dan minimal 1 ukuran wajib diisi' })
@@ -170,7 +197,7 @@ exports.updateProduct = async (req, res) => {
     connection = await db.getConnection()
     await connection.beginTransaction()
 
-    // Check product exists
+    // 1. Check product exists and get old photo path
     const [oldProducts] = await connection.query('SELECT foto FROM Produk WHERE produkId = ?', [id])
     if (oldProducts.length === 0) {
       await connection.rollback()
@@ -180,20 +207,30 @@ exports.updateProduct = async (req, res) => {
     const oldFotoPath = oldProducts[0].foto
     let fotoPathUpdate = oldFotoPath
 
-    // ✅ If new photo uploaded, use Cloudinary URL
+    // ⭐️ LANGKAH BARU: Jika foto baru di-upload, upload ke Cloudinary dan dapatkan URL
     if (newFoto) {
-      fotoPathUpdate = newFoto.path
-      // Note: Old Cloudinary image should be deleted via Cloudinary API
-      // For now, we just update the URL in database
+      // a. Upload file baru
+      const b64 = Buffer.from(newFoto.buffer).toString('base64');
+      const dataUri = 'data:' + newFoto.mimetype + ';base64,' + b64;
+      
+      const result = await cloudinary.uploader.upload(dataUri, {
+        folder: 'nama_folder_produk'
+      });
+
+      fotoPathUpdate = result.secure_url // Gunakan URL baru
+      
+      // b. (Opsional/TODO): Hapus gambar lama dari Cloudinary menggunakan `cloudinary.uploader.destroy()`
+      // Anda perlu mengekstrak Public ID dari oldFotoPath untuk ini
     }
 
     // Update Produk table
     await connection.query(
       'UPDATE Produk SET namaProduk = ?, deskripsi = ?, stok = ?, foto = ?, hargaUnit = ? WHERE produkId = ?',
+      // Gunakan fotoPathUpdate
       [namaProduk, deskripsi || null, stok || 0, fotoPathUpdate, hargaUnit, id]
     )
 
-    // Get existing ukurans
+    // Get existing ukurans... (Lanjutan kode update ukuran tetap sama)
     const [existingUkurans] = await connection.query(
       'SELECT ukuranId, namaUkuran, hargaTambahan FROM Ukuran WHERE produkId = ?',
       [id]
@@ -258,7 +295,7 @@ exports.updateProduct = async (req, res) => {
 }
 
 // @route   DELETE /api/products/:id
-// @desc    Hapus produk
+// @desc    Hapus produk (tetap sama)
 exports.deleteProduct = async (req, res) => {
   const { id } = req.params
   let connection
