@@ -85,7 +85,7 @@ const toast = useToast()
 const confirmModalRef = ref<InstanceType<typeof ConfirmModal> | null>(null)
 const cartItems = ref<CartItem[]>([])
 const loading = ref(true)
-const API_BASE_URL = 'https://backend-the-candils.vercel.app/api/cart'
+const API_BASE_URL = 'http://localhost:3000/api/cart'
 
 // SEMUA FUNGSI LOGIKA TETAP DI INDUK INI
 // (getCartSessionId, loadCart, increaseQuantity, decreaseQuantity, removeItem, checkout)

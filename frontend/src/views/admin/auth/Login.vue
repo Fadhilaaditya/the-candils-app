@@ -112,7 +112,7 @@ const handleLogin = async () => {
   errorMessage.value = ''
 
   try {
-    const response = await axios.post('https://backend-the-candils.vercel.app/api/auth/login', {
+    const response = await axios.post('http://localhost:3000/api/auth/login', {
       username: adminId.value,
       password: password.value,
     })
