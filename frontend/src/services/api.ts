@@ -4,7 +4,7 @@ import router from '@/router' // Impor router Vue Anda
 // Buat instansi Axios kustom
 const api = axios.create({
   // Atur URL dasar untuk semua request ke backend Anda
-  baseURL: 'https://backend-the-candils.vercel.app//api',
+  baseURL: 'https://backend-the-candils.vercel.app/api',
 })
 
 // Interceptor (Penjaga) Request

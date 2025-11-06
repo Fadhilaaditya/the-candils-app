@@ -20,7 +20,7 @@ exports.getAllProducts = async (req, res) => {
     const query = `
       SELECT
         P.produkId, P.namaProduk, P.deskripsi, P.stok,
-        CONCAT('https://backend-the-candils.vercel.app/', P.foto) as foto,
+        CONCAT('https://backend-the-candils.vercel.app', P.foto) as foto,
         P.hargaUnit,
         U.ukuranId,
         U.namaUkuran,
@@ -59,7 +59,7 @@ exports.getProductById = async (req, res) => {
   try {
     const { id } = req.params
     const [products] = await db.query(
-      "SELECT produkId, namaProduk, deskripsi, stok, CONCAT('https://backend-the-candils.vercel.app/', foto) as foto, hargaUnit FROM Produk WHERE produkId = ?",
+      "SELECT produkId, namaProduk, deskripsi, stok, CONCAT('https://backend-the-candils.vercel.app', foto) as foto, hargaUnit FROM Produk WHERE produkId = ?",
       [id]
     )
     if (products.length === 0) {

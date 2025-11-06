@@ -65,7 +65,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { RouterLink } from 'vue-router' // Tambahkan impor ini
 
-const API_BASE_URL = 'https://backend-the-candils.vercel.app//api/cart'
+const API_BASE_URL = 'https://backend-the-candils.vercel.app/api/cart'
 
 // Navigation links data
 const navLinks = [

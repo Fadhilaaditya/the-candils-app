@@ -129,7 +129,7 @@ const selectedUkuran = ref<Ukuran | null>(null)
 const quantity = ref<number>(1)
 
 // API Base URL
-const API_BASE_URL = 'https://backend-the-candils.vercel.app//api/cart'
+const API_BASE_URL = 'https://backend-the-candils.vercel.app/api/cart'
 
 // Computed: Harga final (Tidak Berubah)
 const currentFinalPrice = computed(() => {
