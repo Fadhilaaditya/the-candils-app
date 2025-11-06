@@ -1,5 +1,4 @@
 const db = require('../config/db')
-const fs = require('fs')
 
 // --- FUNGSI BARU (getProductIdList - tetap sama) ---
 exports.getProductIdList = async (req, res) => {
@@ -20,7 +19,7 @@ exports.getAllProducts = async (req, res) => {
     const query = `
       SELECT
         P.produkId, P.namaProduk, P.deskripsi, P.stok,
-        CONCAT('https://backend-the-candils.vercel.app', P.foto) as foto,
+        P.foto,
         P.hargaUnit,
         U.ukuranId,
         U.namaUkuran,
@@ -59,7 +58,7 @@ exports.getProductById = async (req, res) => {
   try {
     const { id } = req.params
     const [products] = await db.query(
-      "SELECT produkId, namaProduk, deskripsi, stok, CONCAT('https://backend-the-candils.vercel.app', foto) as foto, hargaUnit FROM Produk WHERE produkId = ?",
+      'SELECT produkId, namaProduk, deskripsi, stok, foto, hargaUnit FROM Produk WHERE produkId = ?',
       [id]
     )
     if (products.length === 0) {
@@ -89,7 +88,6 @@ exports.createProduct = async (req, res) => {
     return res.status(400).json({ message: 'File gambar (foto) wajib diisi' })
   }
   if (!namaProduk || !hargaUnit || !ukuranJSON) {
-    if (fs.existsSync(foto.path)) fs.unlinkSync(foto.path)
     return res.status(400).json({ message: 'Nama, harga, dan minimal 1 ukuran wajib diisi' })
   }
 
@@ -99,16 +97,15 @@ exports.createProduct = async (req, res) => {
     console.log('Parsed ukurans:', ukurans)
   } catch (e) {
     console.error('JSON Parse Error:', e.message)
-    if (fs.existsSync(foto.path)) fs.unlinkSync(foto.path)
     return res.status(400).json({ message: 'Format data ukuran tidak valid (bukan JSON string)' })
   }
 
   if (!Array.isArray(ukurans) || ukurans.length === 0) {
-    if (fs.existsSync(foto.path)) fs.unlinkSync(foto.path)
     return res.status(400).json({ message: 'Minimal harus ada 1 ukuran' })
   }
 
-  const fotoPath = '/' + req.file.path.replace(/\\/g, '/')
+  // ✅ Cloudinary returns full URL in req.file.path
+  const fotoPath = req.file.path
   let connection
 
   try {
@@ -132,13 +129,10 @@ exports.createProduct = async (req, res) => {
     res.status(201).json({
       message: 'Produk berhasil dibuat',
       produkId: newProdukId,
-      path: fotoPath,
+      fotoUrl: fotoPath,
     })
   } catch (err) {
     if (connection) await connection.rollback()
-    if (foto && fs.existsSync(foto.path)) {
-      fs.unlinkSync(foto.path)
-    }
     console.error('Create Product Error:', err)
     res.status(500).json({
       message: 'Server Error',
@@ -149,13 +143,14 @@ exports.createProduct = async (req, res) => {
   }
 }
 
+// @route   PUT /api/products/:id
+// @desc    Update produk
 exports.updateProduct = async (req, res) => {
   const { id } = req.params
   const { namaProduk, deskripsi, stok, hargaUnit, ukuran: ukuranJSON } = req.body
   const newFoto = req.file
 
   if (!namaProduk || !hargaUnit || !ukuranJSON) {
-    if (newFoto && fs.existsSync(newFoto.path)) fs.unlinkSync(newFoto.path)
     return res.status(400).json({ message: 'Nama, harga, dan minimal 1 ukuran wajib diisi' })
   }
 
@@ -163,12 +158,10 @@ exports.updateProduct = async (req, res) => {
   try {
     ukurans = JSON.parse(ukuranJSON)
   } catch (e) {
-    if (newFoto && fs.existsSync(newFoto.path)) fs.unlinkSync(newFoto.path)
     return res.status(400).json({ message: 'Format data ukuran tidak valid' })
   }
 
   if (!Array.isArray(ukurans) || ukurans.length === 0) {
-    if (newFoto && fs.existsSync(newFoto.path)) fs.unlinkSync(newFoto.path)
     return res.status(400).json({ message: 'Minimal harus ada 1 ukuran' })
   }
 
@@ -180,7 +173,6 @@ exports.updateProduct = async (req, res) => {
     // Check product exists
     const [oldProducts] = await connection.query('SELECT foto FROM Produk WHERE produkId = ?', [id])
     if (oldProducts.length === 0) {
-      if (newFoto && fs.existsSync(newFoto.path)) fs.unlinkSync(newFoto.path)
       await connection.rollback()
       return res.status(404).json({ message: 'Produk tidak ditemukan' })
     }
@@ -188,8 +180,11 @@ exports.updateProduct = async (req, res) => {
     const oldFotoPath = oldProducts[0].foto
     let fotoPathUpdate = oldFotoPath
 
+    // ✅ If new photo uploaded, use Cloudinary URL
     if (newFoto) {
-      fotoPathUpdate = '/' + newFoto.path.replace(/\\/g, '/')
+      fotoPathUpdate = newFoto.path
+      // Note: Old Cloudinary image should be deleted via Cloudinary API
+      // For now, we just update the URL in database
     }
 
     // Update Produk table
@@ -203,7 +198,6 @@ exports.updateProduct = async (req, res) => {
       'SELECT ukuranId, namaUkuran, hargaTambahan FROM Ukuran WHERE produkId = ?',
       [id]
     )
-    // Track which existing ukurans to keep
     const existingIds = existingUkurans.map((u) => u.ukuranId)
     const updatedIds = []
 
@@ -212,73 +206,48 @@ exports.updateProduct = async (req, res) => {
       const newUkuran = ukurans[i]
 
       if (i < existingUkurans.length) {
-        // UPDATE existing ukuran
         const existingUkuran = existingUkurans[i]
-
         await connection.query(
           'UPDATE Ukuran SET namaUkuran = ?, hargaTambahan = ? WHERE ukuranId = ?',
           [newUkuran.namaUkuran, newUkuran.hargaTambahan || 0, existingUkuran.ukuranId]
         )
-
         updatedIds.push(existingUkuran.ukuranId)
       } else {
-        // INSERT new ukuran
-        console.log(`  [${i + 1}] Inserting new ukuran...`)
-
         const [insertResult] = await connection.query(
           'INSERT INTO Ukuran (produkId, namaUkuran, hargaTambahan) VALUES (?, ?, ?)',
           [id, newUkuran.namaUkuran, newUkuran.hargaTambahan || 0]
         )
-
         updatedIds.push(insertResult.insertId)
       }
     }
 
-    // DELETE ukurans that are no longer needed (only if not referenced)
+    // DELETE ukurans that are no longer needed
     const idsToDelete = existingIds.filter((id) => !updatedIds.includes(id))
-
     if (idsToDelete.length > 0) {
       for (const ukuranId of idsToDelete) {
         try {
-          // Check if ukuran is referenced in detailpemesanan
           const [references] = await connection.query(
             'SELECT COUNT(*) as count FROM detailpemesanan WHERE ukuranId = ?',
             [ukuranId]
           )
-
-          if (references[0].count > 0) {
-            // Mark as inactive instead of deleting (optional solution)
-            // await connection.query('UPDATE Ukuran SET active = 0 WHERE ukuranId = ?', [ukuranId]);
-          } else {
+          if (references[0].count === 0) {
             await connection.query('DELETE FROM Ukuran WHERE ukuranId = ?', [ukuranId])
           }
         } catch (deleteErr) {
-          // Continue without failing the whole transaction
+          console.error('Error deleting ukuran:', deleteErr)
         }
       }
     }
 
     await connection.commit()
 
-    // Delete old photo if new one uploaded
-    if (newFoto && oldFotoPath) {
-      const localOldPath = '.' + oldFotoPath
-      if (fs.existsSync(localOldPath)) {
-        fs.unlink(localOldPath, (err) => {
-          if (err) console.error(`Failed to delete old photo: ${err.message}`)
-          else console.log(`Old photo deleted`)
-        })
-      }
-    }
-
     res.json({
       message: 'Produk berhasil diperbarui',
-      path: fotoPathUpdate,
+      fotoUrl: fotoPathUpdate,
     })
   } catch (err) {
     if (connection) await connection.rollback()
-    if (newFoto && fs.existsSync(newFoto.path)) fs.unlinkSync(newFoto.path)
-
+    console.error('Update Product Error:', err)
     res.status(500).json({
       message: 'Server Error',
       error: err.message,
@@ -289,7 +258,7 @@ exports.updateProduct = async (req, res) => {
 }
 
 // @route   DELETE /api/products/:id
-// @desc    Hapus produk beserta gambarnya
+// @desc    Hapus produk
 exports.deleteProduct = async (req, res) => {
   const { id } = req.params
   let connection
@@ -302,26 +271,16 @@ exports.deleteProduct = async (req, res) => {
       return res.status(404).json({ message: 'Produk tidak ditemukan' })
     }
 
-    const fotoPath = products[0].foto
+    const fotoUrl = products[0].foto
     const [result] = await db.query('DELETE FROM Produk WHERE produkId = ?', [id])
 
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: 'Produk tidak ditemukan' })
     }
 
-    // Hapus file gambar
-    if (fotoPath) {
-      const localPath = '.' + fotoPath
-      if (fs.existsSync(localPath)) {
-        fs.unlink(localPath, (err) => {
-          if (err) {
-            console.error(`Gagal menghapus file: ${localPath}`, err)
-          } else {
-            console.log(`File berhasil dihapus: ${localPath}`)
-          }
-        })
-      }
-    }
+    // Note: To delete from Cloudinary, use cloudinary.uploader.destroy()
+    // For now, we just remove from database
+    console.log('Product deleted, Cloudinary URL was:', fotoUrl)
 
     res.json({ message: 'Produk berhasil dihapus' })
   } catch (err) {
