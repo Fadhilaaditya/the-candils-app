@@ -27,7 +27,7 @@
         @click="$emit('checkout')"
         class="w-full bg-[#BAB772] text-white py-3 rounded-lg font-medium hover:bg-[#a8a668] transition-colors duration-300 mb-3"
       >
-        Checkout
+        Lanjut ke Pembayaran
       </button>
 
       <router-link 
@@ -36,6 +36,15 @@
       >
         Lanjut Belanja
       </router-link>
+
+      <div class="mt-4 pt-4 border-t border-gray-200">
+        <div class="flex items-start gap-2 text-sm text-gray-500">
+          <span>ℹ️</span>
+          <p class="leading-relaxed">
+            Klik "Lanjut ke Pembayaran" untuk mengisi form pemesanan dan upload bukti transfer
+          </p>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -43,18 +52,18 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
 
-// 1. Definisikan Props yang diterima dari Induk
+// Definisikan Props yang diterima dari Induk
 defineProps<{
   totalItems: number
   totalPrice: number
 }>()
 
-// 2. Definisikan Emits yang dikirim ke Induk
+// Definisikan Emits yang dikirim ke Induk
 defineEmits<{
   (e: 'checkout'): void
 }>()
 
-// 3. Salin Helper Functions yang dibutuhkan oleh template
+// Helper Functions
 const toNumber = (value: number | string): number => {
   const num = typeof value === 'string' ? parseFloat(value) : value
   return isNaN(num) ? 0 : num
@@ -65,3 +74,9 @@ const formatPrice = (price: number | string): string => {
   return new Intl.NumberFormat('id-ID').format(numericPrice)
 }
 </script>
+
+<style scoped>
+.no-underline {
+  text-decoration: none;
+}
+</style>
