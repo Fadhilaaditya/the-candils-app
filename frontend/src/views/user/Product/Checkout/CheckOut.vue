@@ -83,8 +83,8 @@ const error = ref<string | null>(null)
 const selectedFile = ref<File | null>(null)
 const filePreviewUrl = ref<string | null>(null)
 
-const API_CART_URL = 'http://localhost:3000/api/cart'
-const API_ORDER_URL = 'http://localhost:3000/api/pesanan'
+const API_CART_URL = 'https://backend-the-candils.vercel.app//api/cart'
+const API_ORDER_URL = 'https://backend-the-candils.vercel.app//api/pesanan'
 
 const form = reactive({
   fullName: '',
@@ -104,7 +104,7 @@ const displayImageUrl = computed(() => {
     if (fotoUrl && fotoUrl.startsWith('http')) {
       return fotoUrl
     }
-    return `http://localhost:3000${fotoUrl || '/placeholder.svg'}`
+    return `https://backend-the-candils.vercel.app/${fotoUrl || '/placeholder.svg'}`
   }
   return '/placeholder.svg'
 })

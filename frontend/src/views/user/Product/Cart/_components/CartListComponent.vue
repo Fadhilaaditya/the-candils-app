@@ -8,7 +8,7 @@
       <div class="w-24 h-24 bg-gray-200 rounded-lg flex-shrink-0 overflow-hidden">
         <img
           v-if="item.foto"
-          :src="`http://localhost:3000${item.foto}`"
+          :src="`https://backend-the-candils.vercel.app/${item.foto}`"
           :alt="item.namaProduk"
           class="w-full h-full object-cover"
           @error="handleImageError"
