@@ -27,7 +27,7 @@
         @click="$emit('checkout')"
         class="w-full bg-[#BAB772] text-white py-3 rounded-lg font-medium hover:bg-[#a8a668] transition-colors duration-300 mb-3"
       >
-        Lanjut ke Pembayaran
+        Checkout
       </button>
 
       <router-link 
@@ -36,15 +36,6 @@
       >
         Lanjut Belanja
       </router-link>
-
-      <div class="mt-4 pt-4 border-t border-gray-200">
-        <div class="flex items-start gap-2 text-sm text-gray-500">
-          <span>ℹ️</span>
-          <p class="leading-relaxed">
-            Klik "Lanjut ke Pembayaran" untuk mengisi form pemesanan dan upload bukti transfer
-          </p>
-        </div>
-      </div>
     </div>
   </div>
 </template>
