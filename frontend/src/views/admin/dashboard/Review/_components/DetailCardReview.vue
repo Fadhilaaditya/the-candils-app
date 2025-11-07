@@ -1,6 +1,11 @@
 <template>
+  <!-- Kotak Putih Card (Container) -->
   <div class="bg-white rounded-xl shadow-lg p-6">
     
+    <!-- 1. Slot untuk Header (Diisi oleh View Induk) -->
+    <slot name="header"></slot>
+
+    <!-- 2. Area Tabel -->
     <div class="overflow-x-auto">
       <table class="min-w-full divide-y divide-gray-200">
         <thead class="bg-gray-50">
@@ -26,20 +31,17 @@
           </tr>
         </thead>
         
+        <!-- Tabel Data Nyata -->
         <tbody 
           v-for="(product, index) in groupedProducts" 
           :key="product.produkId"
           class="bg-white divide-y divide-gray-200"
         >
-          <!-- 
-            [PERUBAHAN]: Baris ini sekarang bisa diklik untuk memicu 'emit'
-            dan akan di-highlight berdasarkan 'activeProductId'
-          -->
           <tr 
             @click="handleRowClick(product)"
             class="transition-colors cursor-pointer"
             :class="[
-              'hover:bg-gray-100', // Hover default
+              'hover:bg-gray-100',
               { 
                 '!bg-gray-100 !hover:bg-gray-200': 
                   props.activeProductId === product.produkId 
@@ -70,10 +72,9 @@
               {{ product.stok }}
             </td>
           </tr>
-          <!-- Sub-tabel telah dihapus sesuai permintaan -->
-          
         </tbody>
         
+        <!-- Empty State Tabel -->
         <tbody v-if="!groupedProducts || groupedProducts.length === 0">
           <tr>
             <td colspan="6" class="px-4 py-10 text-center text-sm text-gray-500">
@@ -84,6 +85,7 @@
       </table>
     </div>
 
+    <!-- Footer Tabel -->
     <div class="pt-4 text-right text-sm text-gray-600">
       Total: {{ groupedProducts ? groupedProducts.length : 0 }} produk
     </div>
@@ -95,7 +97,6 @@
 import { computed } from 'vue' 
 import type { ProductVariantRow } from '@/services/productService'
 
-// Tipe data untuk produk yang dikelompokkan (untuk emit)
 interface GroupedProduct {
   produkId: number,
   namaProduk: string,
@@ -110,16 +111,13 @@ interface GroupedProduct {
 interface Props {
   variants: ProductVariantRow[]
   activeProductId: number | null
-  // activeUkuranId tidak lagi diperlukan untuk highlight grup
 }
 const props = defineProps<Props>()
 
-// Emit 'product-clicked' yang akan ditangkap oleh halaman Review
 const emit = defineEmits<{
   (e: 'product-clicked', product: GroupedProduct): void
 }>()
 
-// Helper untuk menghitung harga final
 const calculateFinalPrice = (basePrice: any, additionalPrice: any): number | null => {
   const base = parseFloat(basePrice);
   const additional = parseFloat(additionalPrice);
@@ -133,7 +131,6 @@ const calculateFinalPrice = (basePrice: any, additionalPrice: any): number | nul
   return null;
 }
 
-// Computed property untuk mengelompokkan varian
 const groupedProducts = computed<GroupedProduct[]>(() => {
   if (!props.variants) return [];
   
@@ -171,12 +168,10 @@ const groupedProducts = computed<GroupedProduct[]>(() => {
   return Array.from(productMap.values());
 });
 
-// Fungsi untuk mengirim 'emit' saat baris diklik
 const handleRowClick = (product: GroupedProduct) => {
   emit('product-clicked', product)
 }
 
-// Helper Functions
 const handleImageError = (event: Event) => {
   const img = event.target as HTMLImageElement
   img.src = `https://placehold.co/40x40/eee/ccc?text=Img`

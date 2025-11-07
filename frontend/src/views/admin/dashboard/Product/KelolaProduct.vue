@@ -1,13 +1,48 @@
 <template>
   <div class="p-8">
-    <!-- Product Table Section -->
+    
+    <!-- Skeleton/Product Table Conditional Rendering -->
+    <!-- Jika Loading, tampilkan skeleton -->
+    <div v-if="isLoading" class="bg-white rounded-xl shadow-lg p-6 overflow-x-auto">
+        <!-- Header Section (Dikecualikan dari Skeleton) -->
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6">
+          <div>
+            <h2 class="text-2xl font-bold text-gray-800">Kelola Produk & Varian</h2>
+            <p class="text-gray-600 mt-1">Setiap baris mewakili satu varian produk</p>
+          </div>
+          <div class="mt-4 lg:mt-0 bg-gray-300 h-10 w-40 rounded-lg animate-pulse"></div>
+        </div>
+        
+        <!-- Panggil Skeleton Komponen -->
+        <table class="w-full">
+          <thead>
+            <tr class="bg-gray-50 border-b border-gray-200">
+              <!-- Header Kolom Skeleton -->
+              <th v-for="i in 9" :key="i" class="px-4 py-3 text-left text-sm font-medium text-gray-700">
+                <div class="h-4 bg-gray-200 rounded w-2/3"></div>
+              </th>
+            </tr>
+          </thead>
+          <!-- Komponen Skeleton dipanggil di sini -->
+          <ProductTableSkeleton />
+        </table>
+    </div>
+
+    <!-- Jika Tidak Loading, tampilkan tabel data -->
     <ProductTable
+      v-else
       ref="productTableRef"
+      :product-variants="productVariants"
+      :is-loading="isLoading"
+      :error-message="errorMessage"
       @add-product="handleAddProduct"
       @edit-product="handleEditProduct"  
       @delete-product="handleDeleteProduct" 
+      @refresh-data-from-api="refreshDataFromApi"
     />
 
+    <!-- Modal dan Overlay Lainnya -->
+    
     <!-- Add Product Modal -->
     <AddProductModal
       :is-visible="isAddModalVisible"
@@ -31,7 +66,7 @@
       @product-deleted="handleRefreshAndClose"
     />
 
-    <!-- Loading overlay -->
+    <!-- Loading overlay (tetap untuk fetch detail) -->
     <div
       v-if="isFetchingDetails"
       class="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50" 
@@ -53,33 +88,54 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import ProductTable from './_components/ProductTable.vue'
+import ProductTableSkeleton from './_components/ProductTableSkeleton.vue' // 👈 Import komponen skeleton
 import AddProductModal from './_components/AddProductModal.vue'
 import EditProductModal from './_components/EditProductModal.vue'
 import DeleteConfirmModal from './_components/DeleteConfirmModal.vue'
-// Pastikan impor sudah benar
-import { getProductById, type Produk as Product } from '@/services/productService' 
+import { getProductById, getProducts, type Produk as Product, type ProductVariantRow } from '@/services/productService' 
 
 defineOptions({ name: 'AdminKelolaProduct' })
 
 const productTableRef = ref<InstanceType<typeof ProductTable> | null>(null)
+
+// --- State Data dan Loading Utama ---
+const productVariants = ref<ProductVariantRow[]>([]) // State data tabel
+const isLoading = ref(true) // State loading utama
+const errorMessage = ref<string | null>(null); // State error utama
+
+// --- State Modal ---
 const isAddModalVisible = ref(false)
 const isEditModalVisible = ref(false)
 const isDeleteModalVisible = ref(false)
 const productToEdit = ref<Product | null>(null)
 const productToDelete = ref<Product | null>(null) 
 const isFetchingDetails = ref(false) 
-const errorMessage = ref<string | null>(null); 
 
-// --- Handler untuk membuka modal ---
+// --- Logic Data Fetching ---
+
+const refreshDataFromApi = async () => {
+  isLoading.value = true // Mulai loading
+  errorMessage.value = null
+  try {
+    const response = await getProducts()
+    productVariants.value = [...response.data]
+  } catch (error) {
+    console.error('Error loading product variants:', error)
+    errorMessage.value = 'Gagal memuat data varian produk. Coba lagi nanti.'
+  } finally {
+    isLoading.value = false // Selesai loading
+  }
+}
+
+
+// --- Handler Modal ---
 
 const handleAddProduct = () => {
   isAddModalVisible.value = true
 }
 
-// --- PERBAIKAN DI PARAMETER FUNGSI ---
-// Terima 'produkId' (number) dari event
 const handleEditProduct = async (produkId: number) => { 
   if (!produkId) {
      console.error("ID Produk tidak valid.");
@@ -91,7 +147,6 @@ const handleEditProduct = async (produkId: number) => {
   errorMessage.value = null; 
 
   try {
-    // Gunakan 'produkId' yang diterima
     const response = await getProductById(produkId); 
     productToEdit.value = response.data; 
     isEditModalVisible.value = true;
@@ -103,7 +158,6 @@ const handleEditProduct = async (produkId: number) => {
   }
 }
 
-// Terima 'produkId' (number) dari event
 const handleDeleteProduct = async (produkId: number) => {
   if (!produkId) {
     console.error("ID Produk tidak valid.");
@@ -111,7 +165,6 @@ const handleDeleteProduct = async (produkId: number) => {
     return;
   }
   
-  // Opsi 1: Tetap fetch detail untuk ditampilkan di modal konfirmasi
   isFetchingDetails.value = true; 
   errorMessage.value = null; 
   try {
@@ -124,12 +177,7 @@ const handleDeleteProduct = async (produkId: number) => {
   } finally {
       isFetchingDetails.value = false;
   }
-
-  // Opsi 2: (Lebih simpel jika modal konfirmasi tidak perlu detail)
-  // productToDelete.value = { produkId: produkId }; // Cukup simpan ID
-  // isDeleteModalVisible.value = true;
 }
-// --- AKHIR PERBAIKAN ---
 
 
 // --- Handler untuk menutup modal ---
@@ -151,12 +199,14 @@ const handleRefreshAndClose = () => {
   productToEdit.value = null
   productToDelete.value = null
 
-  if (productTableRef.value) {
-    productTableRef.value.refreshDataFromApi()
-  }
+  // Panggil refresh data dari sini
+  refreshDataFromApi()
 }
 
-// Expose refresh method
-defineExpose({ refreshAll: () => productTableRef.value?.refreshDataFromApi() })
-</script>
+onMounted(() => {
+    refreshDataFromApi();
+})
 
+// Expose refresh method
+defineExpose({ refreshAll: refreshDataFromApi })
+</script>
