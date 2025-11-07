@@ -12,39 +12,34 @@
 
         <!-- Navigation Links -->
         <div class="flex gap-8 items-center">
-          <router-link 
+          <router-link
             v-for="link in navLinks"
             :key="link.to"
-            :to="link.to" 
+            :to="link.to"
             class="text-gray-600 font-medium py-2 border-b-2 border-transparent hover:text-[#BAB772] transition-colors duration-300 no-underline"
             active-class="text-[#BAB772] border-[#BAB772]"
           >
             {{ link.label }}
           </router-link>
-          
+
           <!-- Cart Button with Badge -->
-          <router-link 
-            to="/cart" 
+          <router-link
+            to="/cart"
             class="relative inline-flex text-gray-600 hover:text-[#BAB772] transition-colors duration-300 p-2 rounded-lg hover:bg-gray-50"
             aria-label="Shopping Cart"
           >
-            <svg 
-              class="w-6 h-6" 
-              fill="none" 
-              stroke="currentColor" 
-              viewBox="0 0 24 24"
-            >
-              <path 
-                stroke-linecap="round" 
-                stroke-linejoin="round" 
-                stroke-width="2" 
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
                 d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
               />
             </svg>
-            
+
             <!-- Badge dengan animasi -->
             <Transition name="badge">
-              <span 
+              <span
                 v-if="cartItemCount > 0"
                 class="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1.5 shadow-lg"
               >
@@ -52,10 +47,10 @@
               </span>
             </Transition>
           </router-link>
-          
+
           <!-- Admin Button -->
-          <router-link 
-            to="/admin/login" 
+          <router-link
+            to="/admin/login"
             class="bg-[#BAB772] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#a8a668] transition-colors duration-300 no-underline shadow-sm hover:shadow-md"
           >
             Admin
@@ -70,14 +65,14 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { RouterLink } from 'vue-router' // Tambahkan impor ini
 
-const API_BASE_URL = 'http://localhost:3000/api/cart'
+const API_BASE_URL = 'https://backend-the-candils.vercel.app/api/cart'
 
 // Navigation links data
 const navLinks = [
   { to: '/', label: 'Home' },
   { to: '/products', label: 'Products' },
   { to: '/about', label: 'About' },
-  { to: '/locations', label: 'Locations' }
+  { to: '/locations', label: 'Locations' },
 ]
 
 // Cart state
@@ -100,16 +95,16 @@ const getCartSessionId = (): string => {
 const loadCartCount = async () => {
   try {
     const cartSessionId = getCartSessionId()
-    
+
     // Panggil endpoint 'summary' dengan 'cartSessionId' sebagai route parameter
-    const response = await fetch(`${API_BASE_URL}/summary/${cartSessionId}`) 
-    
+    const response = await fetch(`${API_BASE_URL}/summary/${cartSessionId}`)
+
     if (!response.ok) {
       throw new Error('Gagal mengambil ringkasan keranjang')
     }
-    
+
     const result = await response.json()
-    
+
     if (result.success && result.data) {
       // Gunakan 'total_items' yang sudah dihitung oleh backend
       cartItemCount.value = result.data.total_items || 0
@@ -125,7 +120,7 @@ const loadCartCount = async () => {
 // Lifecycle hooks (Kode Anda di sini sudah benar)
 onMounted(() => {
   loadCartCount() // Muat saat Navbar pertama kali muncul
-  
+
   // Dengarkan sinyal 'cartUpdated' dari komponen lain
   window.addEventListener('cartUpdated', loadCartCount)
 })
@@ -159,6 +154,6 @@ onUnmounted(() => {
 
 /* Hover effect untuk cart icon */
 .router-link-active svg {
-  color: #BAB772;
+  color: #bab772;
 }
 </style>

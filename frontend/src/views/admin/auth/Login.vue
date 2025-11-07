@@ -5,13 +5,18 @@
       to="/"
       class="absolute top-6 left-6 flex items-center gap-2 text-gray-600 hover:text-[#BAB772] transition-colors duration-300 group"
     >
-      <svg 
-        class="w-6 h-6 transform group-hover:-translate-x-1 transition-transform duration-300" 
-        fill="none" 
-        stroke="currentColor" 
+      <svg
+        class="w-6 h-6 transform group-hover:-translate-x-1 transition-transform duration-300"
+        fill="none"
+        stroke="currentColor"
         viewBox="0 0 24 24"
       >
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M10 19l-7-7m0 0l7-7m-7 7h18"
+        />
       </svg>
       <span class="font-medium text-sm">Kembali ke Beranda</span>
     </router-link>
@@ -62,7 +67,10 @@
           </div>
 
           <!-- Pesan Error -->
-          <div v-if="errorMessage" class="text-red-500 text-sm text-center bg-red-50 py-3 rounded-lg">
+          <div
+            v-if="errorMessage"
+            class="text-red-500 text-sm text-center bg-red-50 py-3 rounded-lg"
+          >
             {{ errorMessage }}
           </div>
 
@@ -104,7 +112,7 @@ const handleLogin = async () => {
   errorMessage.value = ''
 
   try {
-    const response = await axios.post('http://localhost:3000/api/auth/login', {
+    const response = await axios.post('https://backend-the-candils.vercel.app/api/auth/login', {
       username: adminId.value,
       password: password.value,
     })
@@ -113,7 +121,6 @@ const handleLogin = async () => {
     localStorage.setItem('authToken', token)
 
     router.push('/admin/dashboard')
-
   } catch (error: any) {
     if (error.response && error.response.data && error.response.data.message) {
       errorMessage.value = error.response.data.message

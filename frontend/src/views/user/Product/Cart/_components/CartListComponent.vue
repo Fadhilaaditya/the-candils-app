@@ -1,14 +1,15 @@
 <template>
   <div class="space-y-4">
-    <div 
-      v-for="item in items" 
+    <div
+      v-for="item in items"
       :key="item.keranjangItemId"
       class="bg-white rounded-lg shadow-sm p-6 flex gap-6"
     >
+      <!-- ✅ Image dengan Cloudinary Logic -->
       <div class="w-24 h-24 bg-gray-200 rounded-lg flex-shrink-0 overflow-hidden">
-        <img 
-          v-if="item.foto" 
-          :src="`http://localhost:3000${item.foto}`" 
+        <img
+          v-if="item.foto"
+          :src="getImageUrl(item.foto)"
           :alt="item.namaProduk"
           class="w-full h-full object-cover"
           @error="handleImageError"
@@ -20,7 +21,9 @@
 
       <div class="flex-grow">
         <h3 class="text-lg font-semibold text-gray-800">{{ item.namaProduk }}</h3>
-        <p class="text-gray-600 text-sm mt-1">{{ item.deskripsi || 'Produk tradisional Indonesia' }}</p>
+        <p class="text-gray-600 text-sm mt-1">
+          {{ item.deskripsi || 'Produk tradisional Indonesia' }}
+        </p>
         <div class="flex items-center gap-4 mt-4">
           <div class="text-lg font-bold text-[#BAB772]">
             Rp {{ formatPrice(item.harga_satuan) }}
@@ -32,16 +35,23 @@
       </div>
 
       <div class="flex flex-col items-end justify-between">
-        <button 
+        <button
           @click="$emit('removeItem', item.keranjangItemId)"
           class="text-red-500 hover:text-red-700 mb-5 transition-colors"
           title="Hapus dari keranjang"
         >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+            />
+          </svg>
         </button>
 
         <div class="flex items-center gap-2 border border-gray-300 rounded-lg">
-          <button 
+          <button
             @click="$emit('decreaseQty', item)"
             class="px-3 py-1 hover:bg-gray-100 transition-colors"
             :disabled="item.jumlah <= 1"
@@ -49,7 +59,7 @@
             -
           </button>
           <span class="px-3 py-1 font-medium">{{ item.jumlah }}</span>
-          <button 
+          <button
             @click="$emit('increaseQty', item)"
             class="px-3 py-1 hover:bg-gray-100 transition-colors"
           >
@@ -69,10 +79,6 @@
 </template>
 
 <script setup lang="ts">
-// Komponen ini hanya menerima 'props' dan mengirim 'emits'
-// Tidak ada state atau logika API di sini
-
-// Tipe data harus diimpor atau didefinisikan ulang
 interface CartItem {
   keranjangItemId: number
   cartSessionId: string
@@ -87,19 +93,46 @@ interface CartItem {
   subtotal: number | string
 }
 
-// 1. Definisikan Props yang diterima dari Induk
+// Props
 defineProps<{
   items: CartItem[]
 }>()
 
-// 2. Definisikan Emits yang dikirim ke Induk
+// Emits
 defineEmits<{
   (e: 'removeItem', id: number): void
   (e: 'decreaseQty', item: CartItem): void
   (e: 'increaseQty', item: CartItem): void
 }>()
 
-// 3. Salin Helper Functions yang dibutuhkan oleh template
+// ✅ Image URL Handler - Support Cloudinary & Legacy
+const getImageUrl = (fotoUrl: string | null | undefined): string => {
+  if (!fotoUrl) {
+    return 'https://placehold.co/100x100/eee/ccc?text=No+Image'
+  }
+  
+  // Cloudinary URL (starts with http/https) - return as is
+  if (fotoUrl.startsWith('http://') || fotoUrl.startsWith('https://')) {
+    return fotoUrl
+  }
+  
+  // Legacy local path - construct full URL
+  if (fotoUrl.startsWith('/')) {
+    return `https://backend-the-candils.vercel.app${fotoUrl}`
+  }
+  
+  // Fallback
+  return 'https://placehold.co/100x100/eee/ccc?text=No+Image'
+}
+
+// ✅ Image Error Handler
+const handleImageError = (e: Event) => {
+  const target = e.target as HTMLImageElement
+  target.src = 'https://placehold.co/100x100/eee/ccc?text=Error'
+  console.warn('Failed to load image:', target.dataset.originalSrc || 'unknown')
+}
+
+// Helper Functions
 const toNumber = (value: number | string): number => {
   const num = typeof value === 'string' ? parseFloat(value) : value
   return isNaN(num) ? 0 : num
@@ -112,10 +145,5 @@ const getItemSubtotal = (item: CartItem): number => {
 const formatPrice = (price: number | string): string => {
   const numericPrice = toNumber(price)
   return new Intl.NumberFormat('id-ID').format(numericPrice)
-}
-
-const handleImageError = (e: Event) => {
-  const target = e.target as HTMLImageElement
-  target.src = 'https://placehold.co/100x100/eee/ccc?text=No+Image'
 }
 </script>

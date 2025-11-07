@@ -1,8 +1,30 @@
-// backend/index.js
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-require('dotenv').config();
+
+// 💡 Load environment variables PERTAMA KALI
+require('dotenv').config({ 
+    path: path.resolve(__dirname, '.env.development') 
+});
+
+// ⭐️ TAMBAHKAN: Konfigurasi Cloudinary setelah dotenv
+const cloudinary = require('cloudinary').v2;
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+// 🔍 DEBUGGING: Cek apakah Cloudinary config terbaca
+console.log('🔍 Cloudinary Configuration Check:');
+console.log('CLOUD_NAME:', process.env.CLOUDINARY_CLOUD_NAME ? '✅ Loaded' : '❌ NOT FOUND');
+console.log('API_KEY:', process.env.CLOUDINARY_API_KEY ? '✅ Loaded' : '❌ NOT FOUND');
+console.log('API_SECRET:', process.env.CLOUDINARY_API_SECRET ? '✅ Loaded' : '❌ NOT FOUND');
+
+// Test koneksi Cloudinary (opsional, untuk memastikan)
+cloudinary.api.ping()
+  .then(result => console.log('✅ Cloudinary connected:', result.status))
+  .catch(err => console.error('❌ Cloudinary connection failed:', err.message));
 
 // Impor Rute
 const authRoutes = require('./routes/auth');
@@ -16,6 +38,7 @@ const app = express();
 // --- Middleware ---
 app.use(cors()); 
 app.use(express.json());
+// Pastikan folder 'uploads' dapat diakses secara statis
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // --- Rute ---
@@ -57,7 +80,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-// ✅ PENTING: Untuk local development SAJA
+// ✅ Server Listening untuk local development
 const PORT = process.env.PORT || 3000;
 if (process.env.NODE_ENV !== 'production') {
   app.listen(PORT, () => {
@@ -65,5 +88,5 @@ if (process.env.NODE_ENV !== 'production') {
   });
 }
 
-// ✅ CRITICAL: Export untuk Vercel
+// ✅ Export untuk Vercel
 module.exports = app;

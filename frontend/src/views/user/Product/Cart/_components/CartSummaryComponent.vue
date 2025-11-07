@@ -43,18 +43,18 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
 
-// 1. Definisikan Props yang diterima dari Induk
+// Definisikan Props yang diterima dari Induk
 defineProps<{
   totalItems: number
   totalPrice: number
 }>()
 
-// 2. Definisikan Emits yang dikirim ke Induk
+// Definisikan Emits yang dikirim ke Induk
 defineEmits<{
   (e: 'checkout'): void
 }>()
 
-// 3. Salin Helper Functions yang dibutuhkan oleh template
+// Helper Functions
 const toNumber = (value: number | string): number => {
   const num = typeof value === 'string' ? parseFloat(value) : value
   return isNaN(num) ? 0 : num
@@ -65,3 +65,9 @@ const formatPrice = (price: number | string): string => {
   return new Intl.NumberFormat('id-ID').format(numericPrice)
 }
 </script>
+
+<style scoped>
+.no-underline {
+  text-decoration: none;
+}
+</style>

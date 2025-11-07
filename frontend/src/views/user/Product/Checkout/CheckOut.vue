@@ -7,14 +7,15 @@
         <div class="grid grid-cols-1 lg:grid-cols-2">
           <!-- Kolom Kiri: Form dan Ringkasan -->
           <div class="p-6 md:p-8">
-            
             <div v-if="isLoading" class="text-center py-10">
               <p>Memuat keranjang...</p>
             </div>
-            
+
             <div v-else-if="error" class="text-center py-10">
               <p class="text-red-500">{{ error }}</p>
-              <router-link to="/cart" class="text-[#BAB772] hover:underline mt-4">Kembali ke Keranjang</router-link>
+              <router-link to="/cart" class="text-[#BAB772] hover:underline mt-4"
+                >Kembali ke Keranjang</router-link
+              >
             </div>
 
             <!-- 
@@ -28,28 +29,23 @@
               v-model:full-name="form.fullName"
               v-model:address="form.address"
               v-model:contact="form.contact"
-              :is-submitting="isSubmitting" 
+              :is-submitting="isSubmitting"
               :file-preview-url="filePreviewUrl"
               @file-selected="handleFileSelected"
               @submit-order-and-upload="submitOrderAndUpload"
             >
               <template #summary>
-                <OrderSummaryComponent
-                  :items="orderItems"
-                  :subtotal="subtotal"
-                  :total="total"
-                />
+                <OrderSummaryComponent :items="orderItems" :subtotal="subtotal" :total="total" />
               </template>
             </CheckoutFormComponent>
-            
           </div>
 
           <!-- Kolom Kanan: Gambar Produk (tidak berubah) -->
           <div class="hidden lg:block p-8">
-            <img 
-              :src="displayImageUrl" 
-              alt="Ringkasan Pesanan" 
-              class="w-full h-[560px] object-cover rounded-2xl shadow-lg" 
+            <img
+              :src="displayImageUrl"
+              alt="Ringkasan Pesanan"
+              class="w-full h-[560px] object-cover rounded-2xl shadow-lg"
             />
           </div>
         </div>
@@ -63,8 +59,8 @@ import { computed, ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 
-import CheckoutFormComponent from './_components/CheckoutForm.vue' 
-import OrderSummaryComponent from './_components/OrderSummary.vue' 
+import CheckoutFormComponent from './_components/CheckoutForm.vue'
+import OrderSummaryComponent from './_components/OrderSummary.vue'
 
 interface CartItem {
   keranjangItemId: number
@@ -75,7 +71,7 @@ interface CartItem {
   subtotal: number | string
   namaProduk: string
   namaUkuran: string | null
-  foto: string 
+  foto: string
 }
 
 // State
@@ -87,8 +83,8 @@ const error = ref<string | null>(null)
 const selectedFile = ref<File | null>(null)
 const filePreviewUrl = ref<string | null>(null)
 
-const API_CART_URL = 'http://localhost:3000/api/cart'
-const API_ORDER_URL = 'http://localhost:3000/api/pesanan' 
+const API_CART_URL = 'https://backend-the-candils.vercel.app/api/cart'
+const API_ORDER_URL = 'https://backend-the-candils.vercel.app/api/pesanan'
 
 const form = reactive({
   fullName: '',
@@ -106,11 +102,11 @@ const displayImageUrl = computed(() => {
   if (orderItems.value.length > 0) {
     const fotoUrl = orderItems.value[0].foto
     if (fotoUrl && fotoUrl.startsWith('http')) {
-      return fotoUrl;
+      return fotoUrl
     }
-    return `http://localhost:3000${fotoUrl || '/placeholder.svg'}`
+    return `https://backend-the-candils.vercel.app${fotoUrl || '/placeholder.svg'}`
   }
-  return '/placeholder.svg' 
+  return '/placeholder.svg'
 })
 
 // 'loadCheckoutData' (tidak berubah)
@@ -123,20 +119,22 @@ const getCartSessionId = (): string | null => {
 const loadCheckoutData = async () => {
   isLoading.value = true
   error.value = null
-  const directDataRaw = sessionStorage.getItem('directCheckoutData');
-  
+  const directDataRaw = sessionStorage.getItem('directCheckoutData')
+
   if (directDataRaw) {
     console.log('Memuat data dari Direct Checkout (sessionStorage)...')
     try {
-      const directData = JSON.parse(directDataRaw);
+      const directData = JSON.parse(directDataRaw)
       if (directData && directData.items && directData.items.length > 0) {
-        orderItems.value = directData.items;
-        isDirectCheckout.value = true;
-        sessionStorage.removeItem('directCheckoutData');
-      } else { throw new Error("Data direct checkout tidak valid."); }
+        orderItems.value = directData.items
+        isDirectCheckout.value = true
+        sessionStorage.removeItem('directCheckoutData')
+      } else {
+        throw new Error('Data direct checkout tidak valid.')
+      }
     } catch (err: any) {
-      error.value = err.message;
-      toast.error(err.message);
+      error.value = err.message
+      toast.error(err.message)
     } finally {
       isLoading.value = false
     }
@@ -144,7 +142,7 @@ const loadCheckoutData = async () => {
     console.log('Memuat data dari Keranjang Utama (API)...')
     const cartSessionId = getCartSessionId()
     if (!cartSessionId) {
-      error.value = "Keranjang Anda kosong atau sesi tidak ditemukan."
+      error.value = 'Keranjang Anda kosong atau sesi tidak ditemukan.'
       isLoading.value = false
       router.push('/cart')
       return
@@ -155,14 +153,14 @@ const loadCheckoutData = async () => {
       if (result.success && result.data && result.data.length > 0) {
         orderItems.value = result.data
       } else {
-        error.value = "Keranjang Anda kosong."
-        toast.error("Tidak ada item di keranjang untuk di-checkout.")
+        error.value = 'Keranjang Anda kosong.'
+        toast.error('Tidak ada item di keranjang untuk di-checkout.')
         router.push('/cart')
       }
     } catch (err) {
-      console.error("Gagal memuat data checkout:", err)
-      error.value = "Gagal memuat data keranjang."
-      toast.error("Gagal memuat data keranjang.")
+      console.error('Gagal memuat data checkout:', err)
+      error.value = 'Gagal memuat data keranjang.'
+      toast.error('Gagal memuat data keranjang.')
     } finally {
       isLoading.value = false
     }
@@ -171,19 +169,19 @@ const loadCheckoutData = async () => {
 
 // Computed properties 'subtotal' dan 'total' (Tidak Berubah)
 const subtotal = computed(() => orderItems.value.reduce((acc, it) => acc + Number(it.subtotal), 0))
-const total = computed(() => subtotal.value) 
+const total = computed(() => subtotal.value)
 
 // --- [BARU] Fungsi untuk menangani file dan membuat preview ---
 const handleFileSelected = (event: Event) => {
-  const target = event.target as HTMLInputElement;
+  const target = event.target as HTMLInputElement
   if (target.files && target.files.length > 0) {
-    const file = target.files[0];
-    selectedFile.value = file;
+    const file = target.files[0]
+    selectedFile.value = file
     // Buat URL sementara untuk preview gambar
-    filePreviewUrl.value = URL.createObjectURL(file);
+    filePreviewUrl.value = URL.createObjectURL(file)
   } else {
-    selectedFile.value = null;
-    filePreviewUrl.value = null;
+    selectedFile.value = null
+    filePreviewUrl.value = null
   }
 }
 
@@ -203,69 +201,67 @@ const submitOrderAndUpload = async () => {
     return
   }
 
-  isSubmitting.value = true;
+  isSubmitting.value = true
 
   // 2. Siapkan FormData
-  const formData = new FormData();
-  
+  const formData = new FormData()
+
   // Tambahkan data teks
-  formData.append('lokasiId', '1'); // Asumsi '1' untuk "Online/Pengiriman"
-  formData.append('namaPelanggan', form.fullName);
-  formData.append('alamatPengiriman', form.address);
-  formData.append('kontakPelanggan', form.contact);
-  
+  formData.append('lokasiId', '1') // Asumsi '1' untuk "Online/Pengiriman"
+  formData.append('namaPelanggan', form.fullName)
+  formData.append('alamatPengiriman', form.address)
+  formData.append('kontakPelanggan', form.contact)
+
   // Tambahkan data 'items' sebagai JSON string
-  const itemsPayload = orderItems.value.map(item => ({
+  const itemsPayload = orderItems.value.map((item) => ({
     produkId: item.produkId,
     ukuranId: item.ukuranId || null,
     quantity: item.jumlah,
-    subtotal: Number(item.subtotal)
-  }));
-  formData.append('items', JSON.stringify(itemsPayload));
+    subtotal: Number(item.subtotal),
+  }))
+  formData.append('items', JSON.stringify(itemsPayload))
 
   // Tambahkan file
-  formData.append('buktiPembayaran', selectedFile.value);
+  formData.append('buktiPembayaran', selectedFile.value)
 
-  console.log('Mengirim Pesanan (FormData)...');
+  console.log('Mengirim Pesanan (FormData)...')
 
   // 3. Kirim FormData ke API 'createPesanan'
   try {
     const response = await fetch(API_ORDER_URL, {
       method: 'POST',
       body: formData,
-      // JANGAN set 'Content-Type: application/json', 
+      // JANGAN set 'Content-Type: application/json',
       // biarkan browser mengaturnya sebagai 'multipart/form-data'
-    });
+    })
 
-    const result = await response.json();
+    const result = await response.json()
 
     if (response.ok && result.pesananId) {
-      toast.success('Pesanan Anda berhasil dibuat!');
-      
+      toast.success('Pesanan Anda berhasil dibuat!')
+
       // Kosongkan keranjang (jika bukan direct checkout)
       if (!isDirectCheckout.value) {
-        const cartSessionId = getCartSessionId();
+        const cartSessionId = getCartSessionId()
         if (cartSessionId) {
-          await fetch(`${API_CART_URL}/clear/${cartSessionId}`, { method: 'DELETE' });
-          window.dispatchEvent(new Event('cartUpdated')); 
+          await fetch(`${API_CART_URL}/clear/${cartSessionId}`, { method: 'DELETE' })
+          window.dispatchEvent(new Event('cartUpdated'))
         }
       }
-      
-      router.push('/products'); 
 
+      router.push('/products')
     } else {
-      toast.error(`Gagal membuat pesanan: ${result.message || 'Error tidak diketahui'}`);
+      toast.error(`Gagal membuat pesanan: ${result.message || 'Error tidak diketahui'}`)
     }
   } catch (err) {
-    console.error('Error submitting order:', err);
-    toast.error('Gagal terhubung ke server.');
+    console.error('Error submitting order:', err)
+    toast.error('Gagal terhubung ke server.')
   } finally {
-    isSubmitting.value = false;
+    isSubmitting.value = false
     // Hapus preview URL
     if (filePreviewUrl.value) {
-      URL.revokeObjectURL(filePreviewUrl.value);
+      URL.revokeObjectURL(filePreviewUrl.value)
     }
   }
 }
 </script>
-

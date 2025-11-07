@@ -1,5 +1,5 @@
 <template>
-  <ConfirmModal 
+  <ConfirmModal
     ref="confirmModalRef"
     title="Hapus Produk?"
     message="Anda yakin ingin menghapus produk ini dari keranjang?"
@@ -27,8 +27,8 @@
         <div class="text-6xl mb-4">🛒</div>
         <h2 class="text-2xl font-semibold text-gray-800 mb-2">Keranjang Kosong</h2>
         <p class="text-gray-600 mb-6">Belum ada produk di keranjang Anda</p>
-        <router-link 
-          to="/products" 
+        <router-link
+          to="/products"
           class="inline-block bg-[#BAB772] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#a8a668] transition-colors duration-300 no-underline"
         >
           Mulai Belanja
@@ -36,7 +36,6 @@
       </div>
 
       <div v-else class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
         <CartListComponent
           class="lg:col-span-2"
           :items="cartItems"
@@ -49,23 +48,21 @@
           class="lg:col-span-1"
           :total-items="totalItems"
           :total-price="totalPrice"
-          @checkout="checkout"
+          @checkout="handleCheckout"
         />
-
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-// [PERUBAHAN] Impor Komponen Anak
-import CartListComponent from './_components/CartListComponent.vue' // Sesuaikan path jika perlu
-import CartSummaryComponent from './_components/CartSummaryComponent.vue' // Sesuaikan path jika perlu
+import CartListComponent from './_components/CartListComponent.vue'
+import CartSummaryComponent from './_components/CartSummaryComponent.vue'
 
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useToast } from "vue-toastification";
-import ConfirmModal from '@/components/ConfirmModal.vue' // Path modal Anda
+import { useToast } from 'vue-toastification'
+import ConfirmModal from '@/components/ConfirmModal.vue'
 
 interface CartItem {
   keranjangItemId: number
@@ -82,15 +79,13 @@ interface CartItem {
 }
 
 const router = useRouter()
-const toast = useToast();
+const toast = useToast()
 
 const confirmModalRef = ref<InstanceType<typeof ConfirmModal> | null>(null)
 const cartItems = ref<CartItem[]>([])
 const loading = ref(true)
-const API_BASE_URL = 'http://localhost:3000/api/cart'
 
-// SEMUA FUNGSI LOGIKA TETAP DI INDUK INI
-// (getCartSessionId, loadCart, increaseQuantity, decreaseQuantity, removeItem, checkout)
+const API_BASE_URL = 'https://backend-the-candils.vercel.app/api'
 
 // Get cart session ID
 const getCartSessionId = (): string => {
@@ -104,35 +99,39 @@ const getCartSessionId = (): string => {
   return cartSessionId
 }
 
-// Load cart (anti-glitch)
+// Load cart
 const loadCart = async (showLoading = true) => {
   try {
-    if (showLoading) { loading.value = true }
+    if (showLoading) {
+      loading.value = true
+    }
     const cartSessionId = getCartSessionId()
-    const response = await fetch(`${API_BASE_URL}/${cartSessionId}`)
+    const response = await fetch(`${API_BASE_URL}/cart/${cartSessionId}`)
     const result = await response.json()
     if (result.success) {
       cartItems.value = result.data || []
     }
   } catch (error) {
     console.error('Error loading cart:', error)
-    if (showLoading) toast.error('Gagal memuat keranjang') 
+    if (showLoading) toast.error('Gagal memuat keranjang')
   } finally {
-    if (showLoading) { loading.value = false }
+    if (showLoading) {
+      loading.value = false
+    }
   }
 }
 
 // Increase quantity
 const increaseQuantity = async (item: CartItem) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/update/${item.keranjangItemId}`, {
+    const response = await fetch(`${API_BASE_URL}/cart/update/${item.keranjangItemId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ jumlah: item.jumlah + 1 })
+      body: JSON.stringify({ jumlah: item.jumlah + 1 }),
     })
     const result = await response.json()
     if (result.success) {
-      await loadCart(false) 
+      await loadCart(false)
       window.dispatchEvent(new Event('cartUpdated'))
     } else {
       toast.error(result.message || 'Gagal mengupdate jumlah')
@@ -147,36 +146,36 @@ const increaseQuantity = async (item: CartItem) => {
 const decreaseQuantity = async (item: CartItem) => {
   if (item.jumlah <= 1) return
   try {
-    const response = await fetch(`${API_BASE_URL}/update/${item.keranjangItemId}`, {
+    const response = await fetch(`${API_BASE_URL}/cart/update/${item.keranjangItemId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ jumlah: item.jumlah - 1 })
+      body: JSON.stringify({ jumlah: item.jumlah - 1 }),
     })
     const result = await response.json()
     if (result.success) {
-      await loadCart(false) 
+      await loadCart(false)
       window.dispatchEvent(new Event('cartUpdated'))
     } else {
       toast.error(result.message || 'Gagal mengupdate jumlah')
     }
   } catch (error) {
     console.error('Error decreasing quantity:', error)
-    toast.error('GGagal mengupdate jumlah')
+    toast.error('Gagal mengupdate jumlah')
   }
 }
 
 // Remove item
 const removeItem = async (keranjangItemId: number) => {
-  const confirmed = await confirmModalRef.value?.open();
-  if (!confirmed) return 
-  
+  const confirmed = await confirmModalRef.value?.open()
+  if (!confirmed) return
+
   try {
-    const response = await fetch(`${API_BASE_URL}/remove/${keranjangItemId}`, {
-      method: 'DELETE'
+    const response = await fetch(`${API_BASE_URL}/cart/remove/${keranjangItemId}`, {
+      method: 'DELETE',
     })
     const result = await response.json()
     if (result.success) {
-      await loadCart(true) 
+      await loadCart(true)
       window.dispatchEvent(new Event('cartUpdated'))
       toast.success('Produk berhasil dihapus')
     } else {
@@ -188,43 +187,45 @@ const removeItem = async (keranjangItemId: number) => {
   }
 }
 
-// Helper functions (Tetap di sini untuk computed)
+// Helper functions
 const toNumber = (value: number | string): number => {
   const num = typeof value === 'string' ? parseFloat(value) : value
   return isNaN(num) ? 0 : num
 }
+
 const getItemSubtotal = (item: CartItem): number => {
   return toNumber(item.harga_satuan) * item.jumlah
 }
-const formatPrice = (price: number | string): string => {
-  const numericPrice = toNumber(price)
-  return new Intl.NumberFormat('id-ID').format(numericPrice)
-}
 
-// Computed properties (Tetap di sini untuk dikirim ke anak)
+// Computed properties
 const totalItems = computed(() => {
   return cartItems.value.length
 })
+
 const totalPrice = computed(() => {
   return cartItems.value.reduce((sum, item) => {
     return sum + getItemSubtotal(item)
   }, 0)
 })
 
-// Checkout
-const checkout = () => {
+// ⭐️ CHECKOUT - REDIRECT KE HALAMAN CHECKOUT FORM
+const handleCheckout = () => {
+  // Validasi keranjang tidak kosong
   if (cartItems.value.length === 0) {
     toast.warning('Keranjang masih kosong!')
     return
   }
-  toast.info('Fitur checkout akan segera hadir!')
+
+  // Redirect ke halaman checkout form
+  // Data keranjang akan diload otomatis dari API di halaman checkout
+  router.push('/checkout')
 }
 
 // Lifecycle hooks
 onMounted(() => {
   console.log('=== CART DEBUG START ===')
   console.log('Cart Session ID:', getCartSessionId())
-  loadCart() 
+  loadCart()
   window.addEventListener('cartUpdated', loadCartOnEvent)
 })
 
