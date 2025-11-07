@@ -5,15 +5,18 @@
       :key="item.keranjangItemId"
       class="bg-white rounded-lg shadow-sm p-6 flex gap-6"
     >
+      <!-- ✅ Image dengan Cloudinary Logic -->
       <div class="w-24 h-24 bg-gray-200 rounded-lg flex-shrink-0 overflow-hidden">
         <img
           v-if="item.foto"
-          :src="`https://backend-the-candils.vercel.app${item.foto}`"
+          :src="getImageUrl(item.foto)"
           :alt="item.namaProduk"
           class="w-full h-full object-cover"
           @error="handleImageError"
         />
-        <div v-else class="w-full h-full flex items-center justify-center text-gray-400">📦</div>
+        <div v-else class="w-full h-full flex items-center justify-center text-gray-400">
+          📦
+        </div>
       </div>
 
       <div class="flex-grow">
@@ -76,10 +79,6 @@
 </template>
 
 <script setup lang="ts">
-// Komponen ini hanya menerima 'props' dan mengirim 'emits'
-// Tidak ada state atau logika API di sini
-
-// Tipe data harus diimpor atau didefinisikan ulang
 interface CartItem {
   keranjangItemId: number
   cartSessionId: string
@@ -94,19 +93,46 @@ interface CartItem {
   subtotal: number | string
 }
 
-// 1. Definisikan Props yang diterima dari Induk
+// Props
 defineProps<{
   items: CartItem[]
 }>()
 
-// 2. Definisikan Emits yang dikirim ke Induk
+// Emits
 defineEmits<{
   (e: 'removeItem', id: number): void
   (e: 'decreaseQty', item: CartItem): void
   (e: 'increaseQty', item: CartItem): void
 }>()
 
-// 3. Salin Helper Functions yang dibutuhkan oleh template
+// ✅ Image URL Handler - Support Cloudinary & Legacy
+const getImageUrl = (fotoUrl: string | null | undefined): string => {
+  if (!fotoUrl) {
+    return 'https://placehold.co/100x100/eee/ccc?text=No+Image'
+  }
+  
+  // Cloudinary URL (starts with http/https) - return as is
+  if (fotoUrl.startsWith('http://') || fotoUrl.startsWith('https://')) {
+    return fotoUrl
+  }
+  
+  // Legacy local path - construct full URL
+  if (fotoUrl.startsWith('/')) {
+    return `https://backend-the-candils.vercel.app${fotoUrl}`
+  }
+  
+  // Fallback
+  return 'https://placehold.co/100x100/eee/ccc?text=No+Image'
+}
+
+// ✅ Image Error Handler
+const handleImageError = (e: Event) => {
+  const target = e.target as HTMLImageElement
+  target.src = 'https://placehold.co/100x100/eee/ccc?text=Error'
+  console.warn('Failed to load image:', target.dataset.originalSrc || 'unknown')
+}
+
+// Helper Functions
 const toNumber = (value: number | string): number => {
   const num = typeof value === 'string' ? parseFloat(value) : value
   return isNaN(num) ? 0 : num
@@ -119,10 +145,5 @@ const getItemSubtotal = (item: CartItem): number => {
 const formatPrice = (price: number | string): string => {
   const numericPrice = toNumber(price)
   return new Intl.NumberFormat('id-ID').format(numericPrice)
-}
-
-const handleImageError = (e: Event) => {
-  const target = e.target as HTMLImageElement
-  target.src = 'https://placehold.co/100x100/eee/ccc?text=No+Image'
 }
 </script>
