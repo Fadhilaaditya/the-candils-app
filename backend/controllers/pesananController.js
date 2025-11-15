@@ -166,7 +166,7 @@ const createPesanan = async (req, res) => {
       VALUES (?, ?, NOW(), ?, ?, ?, ?, NULL) -- Insert NULL untuk buktiPembayaranUrl
     `;
     
-    const statusAwal = 'Perlu Dikirim'; 
+    const statusAwal = 'Perlu Validasi'; 
 
     const [orderResult] = await connection.execute(queryPemesanan, [
       lokasiId,

@@ -45,7 +45,7 @@ const validateUpdateStatus = (req, res, next) => {
   }
 
   // Validasi nilai status (sesuaikan dengan ENUM di database)
-  const validStatus = ['Perlu Dikirim', 'Sedang Dikirim', 'Selesai', 'Dibatalkan'];
+  const validStatus = ['Perlu Validasi', 'Perlu Dikirim', 'Dikirim', 'Selesai', 'Dibatalkan'];
   if (!validStatus.includes(statusPesanan)) {
     return res.status(400).json({ 
       message: `Status tidak valid. Status harus salah satu dari: ${validStatus.join(', ')}` 
