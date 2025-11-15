@@ -116,7 +116,10 @@
                     getStatusClass(pesanan.statusPesanan)
                   ]"
                 >
+                  <!-- BARU: Tambahkan opsi status baru -->
+                  <option value="Perlu Validasi">Perlu Validasi</option>
                   <option value="Perlu Dikirim">Perlu Dikirim</option>
+                  <option value="Dikirim">Dikirim</option>
                   <option value="Selesai">Selesai</option>
                   <option value="Dibatalkan">Dibatalkan</option>
                 </select>
@@ -246,10 +249,14 @@ function getStatusClass(status: string): string {
       return 'bg-green-100 text-green-800 focus:ring-green-500'
     case 'Perlu Dikirim':
       return 'bg-blue-100 text-blue-800 focus:ring-blue-500'
+    case 'Dikirim': // BARU
+      return 'bg-purple-100 text-purple-800 focus:ring-purple-500'
+    case 'Perlu Validasi': // BARU
+      return 'bg-yellow-100 text-yellow-800 focus:ring-yellow-500'
     case 'Dibatalkan':
       return 'bg-red-100 text-red-800 focus:ring-red-500'
     default:
-      return 'bg-yellow-100 text-yellow-800 focus:ring-yellow-500'
+      return 'bg-gray-100 text-gray-800 focus:ring-gray-500'
   }
 }
 </script>
