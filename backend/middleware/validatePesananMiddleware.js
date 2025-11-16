@@ -1,23 +1,20 @@
 /**
  * Middleware untuk validasi data pesanan
- * Note: Tidak perlu validasi tipePesanan karena diatur di controller.
  */
 
 const validateCreatePesanan = (req, res, next) => {
   // Catatan: Ini adalah validasi untuk endpoint /pesanan (FormData + File Upload)
-  // Data utama datang dari req.body yang diparsing Multer (string)
 
   const { lokasiId, namaPelanggan, items: itemsJSON, alamatPengiriman, kontakPelanggan } = req.body;
 
   // 1. Validasi field utama (string)
-  // itemsJSON dicek di sini karena datang sebagai string dari FormData
   if (!lokasiId || !namaPelanggan || !itemsJSON || !alamatPengiriman || !kontakPelanggan) {
-    return res.status(400).json({ 
-      message: 'Data pesanan tidak lengkap. Pastikan semua field terisi.' 
+    return res.status(400).json({
+      message: 'Data pesanan tidak lengkap. Pastikan semua field terisi.'
     });
   }
-  
-  // 1b. ✅ BARU: Validasi dan konversi lokasiId (dari string FormData ke number)
+
+  // 1b. Validasi dan konversi lokasiId (dari string FormData ke number)
   const numericLokasiId = Number(lokasiId);
 
   if (isNaN(numericLokasiId) || numericLokasiId <= 0) {
@@ -41,10 +38,9 @@ const validateCreatePesanan = (req, res, next) => {
 
   // 3. Validasi setiap item
   for (let item of items) {
-    // Catatan: ukuranId mungkin null/opsional
-    if (item.produkId === undefined || item.quantity === undefined || item.subtotal === undefined) { 
-      return res.status(400).json({ 
-        message: 'Setiap item harus memiliki produkId, quantity, dan subtotal' 
+    if (item.produkId === undefined || item.quantity === undefined || item.subtotal === undefined) {
+      return res.status(400).json({
+        message: 'Setiap item harus memiliki produkId, quantity, dan subtotal'
       });
     }
 
@@ -72,11 +68,11 @@ const validateCreatePesananOffline = (req, res, next) => {
 
     // 1. Validasi field utama
     if (!namaPelanggan || !items || items.length === 0 || !alamatPengiriman || !kontakPelanggan) {
-        return res.status(400).json({ 
-            message: 'Data pesanan offline tidak lengkap. Pastikan semua field wajib terisi.' 
+        return res.status(400).json({
+            message: 'Data pesanan offline tidak lengkap. Pastikan semua field wajib terisi.'
         });
     }
-    
+
     // 1b. Validasi LokasiId (opsional/null diperbolehkan, tapi jika ada harus valid)
     if (lokasiId !== null && lokasiId !== undefined) {
         const numericLokasiId = Number(lokasiId);
@@ -89,9 +85,9 @@ const validateCreatePesananOffline = (req, res, next) => {
     // 2. Validasi setiap item
     for (let item of items) {
         // Karena ini JSON, kita hanya perlu memastikan field kunci ada
-        if (item.produkId === undefined || item.quantity === undefined || item.subtotal === undefined) { 
-            return res.status(400).json({ 
-                message: 'Setiap item harus memiliki produkId, quantity, dan subtotal' 
+        if (item.produkId === undefined || item.quantity === undefined || item.subtotal === undefined) {
+            return res.status(400).json({
+                message: 'Setiap item harus memiliki produkId, quantity, dan subtotal'
             });
         }
 
@@ -119,8 +115,8 @@ const validateUpdateStatus = (req, res, next) => {
   // Validasi nilai status (sesuaikan dengan ENUM di database)
   const validStatus = ['Perlu Validasi', 'Perlu Dikirim', 'Dikirim', 'Selesai', 'Dibatalkan'];
   if (!validStatus.includes(statusPesanan)) {
-    return res.status(400).json({ 
-      message: `Status tidak valid. Status harus salah satu dari: ${validStatus.join(', ')}` 
+    return res.status(400).json({
+      message: `Status tidak valid. Status harus salah satu dari: ${validStatus.join(', ')}`
     });
   }
 
@@ -134,18 +130,18 @@ const validateUpdateLokasi = (req, res, next) => {
     return res.status(400).json({ message: 'lokasiId diperlukan' });
   }
 
-  // Perlu diperhatikan: lokasiId dikirim sebagai string dari frontend, 
+  // Perlu diperhatikan: lokasiId dikirim sebagai string dari frontend,
   // tetapi harus divalidasi sebagai angka positif.
   if (typeof lokasiId !== 'number' && typeof lokasiId !== 'string') {
       return res.status(400).json({ message: 'lokasiId harus berupa angka' });
   }
-  
+
   const numericLokasiId = Number(lokasiId);
 
   if (isNaN(numericLokasiId) || numericLokasiId <= 0) {
     return res.status(400).json({ message: 'lokasiId harus berupa angka positif' });
   }
-  
+
   // Optional: Anda bisa memasukkan nilai numerik ke req.body untuk controller
   req.body.lokasiId = numericLokasiId;
 
@@ -154,7 +150,7 @@ const validateUpdateLokasi = (req, res, next) => {
 
 module.exports = {
   validateCreatePesanan,
-  validateCreatePesananOffline, 
+  validateCreatePesananOffline,
   validateUpdateStatus,
   validateUpdateLokasi
 };

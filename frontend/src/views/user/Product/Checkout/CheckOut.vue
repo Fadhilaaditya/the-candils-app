@@ -18,8 +18,8 @@
               >
             </div>
 
-            <!-- 
-              [PERUBAHAN]: 
+            <!--
+              [PERUBAHAN]:
               - Menghapus v-model:payment-method (tidak lagi dipakai)
               - Menambahkan prop file-preview-url
               - Mengubah emit @submit-order menjadi @submit-order-and-upload
@@ -32,6 +32,8 @@
               :is-submitting="isSubmitting"
               :file-preview-url="filePreviewUrl"
               @file-selected="handleFileSelected"
+              @file-removed="handleFileRemoved"
+              @file-error="handleFileError"
               @submit-order-and-upload="submitOrderAndUpload"
             >
               <template #summary>
@@ -132,9 +134,10 @@ const loadCheckoutData = async () => {
       } else {
         throw new Error('Data direct checkout tidak valid.')
       }
-    } catch (err: any) {
-      error.value = err.message
-      toast.error(err.message)
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Terjadi kesalahan saat memuat data checkout'
+      error.value = errorMessage
+      toast.error(errorMessage)
     } finally {
       isLoading.value = false
     }
@@ -179,10 +182,34 @@ const handleFileSelected = (event: Event) => {
     selectedFile.value = file
     // Buat URL sementara untuk preview gambar
     filePreviewUrl.value = URL.createObjectURL(file)
+    toast.success('File berhasil dipilih!')
   } else {
     selectedFile.value = null
     filePreviewUrl.value = null
   }
+}
+
+// Handler untuk menghapus file
+const handleFileRemoved = () => {
+  // Hapus URL object jika ada
+  if (filePreviewUrl.value) {
+    URL.revokeObjectURL(filePreviewUrl.value)
+  }
+  selectedFile.value = null
+  filePreviewUrl.value = null
+  toast.info('Gambar telah dihapus')
+}
+
+// Handler untuk error file
+const handleFileError = (message: string) => {
+  // Split pesan menjadi array dan tampilkan sebagai toast
+  const lines = message.split('\n').filter(line => line.trim() !== '')
+  const mainMessage = lines[0] || 'Terjadi kesalahan pada file'
+  const details = lines.slice(1).join(' | ')
+
+  toast.error(mainMessage + (details ? `\n${details}` : ''), {
+    timeout: 5000, // Tampilkan selama 5 detik
+  })
 }
 
 // --- [PERUBAHAN BESAR]: Fungsi 'submitOrderAndUpload' ---
