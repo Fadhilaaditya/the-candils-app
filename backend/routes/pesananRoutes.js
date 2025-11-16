@@ -4,14 +4,14 @@ const pesananController = require('../controllers/pesananController');
 const authMiddleware = require('../middleware/authMiddleware');
 const adminMiddleware = require('../middleware/adminMiddleware');
 const { 
-  validateCreatePesanan, // Ini mungkin tidak lagi digunakan di POST /
+  validateCreatePesanan, 
   validateUpdateStatus, 
-  validateUpdateLokasi 
-} = require('../middleware/validatePesananMiddleware');
+  validateUpdateLokasi,
+  validateCreatePesananOffline 
+} = require('../middleware/validatePesananMiddleware'); 
 
-// --- [BARU] Impor dan konfigurasikan Multer untuk upload ke memory ---
+// --- Impor dan konfigurasikan Multer untuk upload ke memory ---
 const multer = require('multer');
-// Simpan file di memory buffer, bukan di disk
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 // ----------------------------------------------------------------
@@ -40,19 +40,21 @@ router.get('/', pesananController.getAllPesanan);
 // GET /api/pesanan/:id
 router.get('/:id', pesananController.getPesananById);
 
-// POST /api/pesanan
-// [PERUBAHAN]: Menggunakan 'upload.single' untuk menerima FormData (teks + file)
-// 'validateCreatePesanan' (validator JSON) dihapus karena tidak kompatibel
+// POST /api/pesanan (Untuk pesanan online/upload bukti pembayaran)
+// ✅ PERBAIKAN: validateCreatePesanan harus dipanggil setelah Multer memproses body.
 router.post(
   '/',
-  upload.single('buktiPembayaran'), // Menerima file & data teks
+  upload.single('buktiPembayaran'), 
+  validateCreatePesanan,            // <--- Tambahkan validasi di sini
   pesananController.createPesanan
 );
 
-// --- [DIHAPUS] ---
-// Rute PATCH /:id/upload-bukti dihapus
-// karena logikanya sudah digabung ke 'createPesanan'
-// -----------------
+// POST /api/pesanan/offline (Rute baru untuk input manual/JSON body)
+router.post(
+    '/offline',
+    validateCreatePesananOffline, 
+    pesananController.createPesananOffline
+);
 
 // ===============================================
 // RUTE ADMIN (Perlu Token + Role Admin)
@@ -80,4 +82,3 @@ router.delete(
 );
 
 module.exports = router;
-

@@ -59,6 +59,22 @@ interface CreateReviewData {
 // TIPE DATA PESANAN
 // ========================================
 
+// Tipe data untuk form 'createPesananOffline'
+export interface CreatePesananOfflinePayload {
+  lokasiId: number | null; // ✅ PERBAIKAN: Mengizinkan null
+  namaPelanggan: string;
+  kontakPelanggan: string;
+  alamatPengiriman: string;
+  totalHarga: number;
+  items: {
+    produkId: number | null; // Izinkan null saat diisi
+    ukuranId: number | null; // Izinkan null saat diisi
+    quantity: number;
+    subtotal: number;
+  }[];
+  // Tidak ada file bukti pembayaran
+}
+
 export interface OrderItem {
   productId?: number;
   produkId?: number;
@@ -85,6 +101,7 @@ export interface Pemesanan {
   items?: OrderItem[];
   // [PERBAIKAN]: Menambahkan field ini untuk memperbaiki error TypeScript
   buktiPembayaranUrl?: string | null;
+  tipePesanan?: string; // ✅ BARU: Menambahkan tipePesanan
 }
 
 export interface Lokasi {
@@ -207,6 +224,15 @@ export const getAllUkuran = () => {
 };
 
 /**
+ * ✅ FIX: Mengambil semua data produk untuk pesanan (PUBLIC)
+ * Diberikan untuk kompatibilitas dengan import yang mencari 'getAllProduk'
+ */
+export const getAllProduk = () => {
+  return api.get<ProdukPesanan[]>('/pesanan/produk');
+};
+
+
+/**
  * Mengambil semua data produk untuk pesanan (PUBLIC)
  */
 export const getAllProdukPesanan = () => {
@@ -241,6 +267,17 @@ export const createPesanan = (formData: FormData) => {
 };
 
 /**
+ * [BARU]: Membuat pesanan baru untuk laporan offline/manual (TANPA FILE)
+ * Menggunakan body JSON, dikirim ke endpoint yang berbeda.
+ */
+export const createPesananOffline = (payload: CreatePesananOfflinePayload) => {
+  // Asumsi backend memiliki endpoint baru: /api/pesanan/offline
+  // Endpoint ini akan memproses JSON body tanpa memerlukan multer/file.
+  return api.post('/pesanan/offline', payload); 
+};
+
+
+/**
  * Update status pesanan (ADMIN ONLY)
  */
 export const updateStatusPesanan = (id: number, statusPesanan: string) => {
@@ -257,6 +294,7 @@ export const updateLokasiPesanan = (id: number, lokasiId: number) => {
 /**
  * Hapus pesanan (ADMIN ONLY)
  */
+// ✅ PERBAIKAN: Mengganti nama fungsi ini menjadi deletePesanan
 export const deletePesanan = (id: number) => {
   return api.delete(`/pesanan/${id}`);
 };

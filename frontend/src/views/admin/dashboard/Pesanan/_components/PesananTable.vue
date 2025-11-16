@@ -1,6 +1,5 @@
 <template>
   <div>
-    <!-- Tabs -->
     <div class="mb-4 bg-white rounded-t-lg border-b border-gray-200">
       <div class="flex space-x-1 overflow-x-auto">
         <button
@@ -20,7 +19,6 @@
       </div>
     </div>
 
-    <!-- Table Header Actions -->
     <div class="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
       <div class="flex items-center space-x-3">
         <button class="flex items-center text-sm text-gray-700 hover:text-gray-900 font-medium">
@@ -48,10 +46,18 @@
           </svg>
           Ekspor
         </button>
+        <button 
+          @click="$emit('open-add-modal')"
+          class="flex items-center px-3 py-2 text-sm font-medium text-white bg-blue-600 border border-blue-600 rounded hover:bg-blue-700 transition-colors"
+        >
+          <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          Tambah Pesanan
+        </button>
       </div>
     </div>
 
-    <!-- Table -->
     <div class="bg-white rounded-b-lg shadow-sm overflow-hidden">
       <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
@@ -79,6 +85,9 @@
               </th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Lokasi
+              </th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Tipe 
               </th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Total
@@ -116,7 +125,6 @@
                     getStatusClass(pesanan.statusPesanan)
                   ]"
                 >
-                  <!-- BARU: Tambahkan opsi status baru -->
                   <option value="Perlu Validasi">Perlu Validasi</option>
                   <option value="Perlu Dikirim">Perlu Dikirim</option>
                   <option value="Dikirim">Dikirim</option>
@@ -143,6 +151,13 @@
                   </option>
                 </select>
               </td>
+              
+              <td class="px-4 py-4">
+                <span :class="getTipeClass(pesanan.tipePesanan)" class="text-xs font-medium px-2 py-1 rounded">
+                  {{ pesanan.tipePesanan || 'Online' }}
+                </span>
+              </td>
+              
               <td class="px-4 py-4">
                 <div class="text-sm font-medium text-gray-900">
                   Rp {{ formatCurrency(pesanan.totalHarga) }}
@@ -161,7 +176,6 @@
         </table>
       </div>
 
-      <!-- Empty State -->
       <div v-if="pesananList.length === 0" class="text-center py-12">
         <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
@@ -175,7 +189,8 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { Pemesanan, Lokasi } from '@/services/productService'
+// Perlu mengimport tipe Pemesanan yang sudah diperbarui dengan tipePesanan
+import type { Pemesanan, Lokasi } from '@/services/productService' 
 
 interface Tab {
   label: string
@@ -201,6 +216,7 @@ const emit = defineEmits<{
   'update-status': [pesanan: Pemesanan]
   'update-lokasi': [pesanan: Pemesanan]
   'open-detail': [pesanan: Pemesanan]
+  'open-add-modal': [] // EMIT BARU
 }>()
 
 // Computed
@@ -249,14 +265,24 @@ function getStatusClass(status: string): string {
       return 'bg-green-100 text-green-800 focus:ring-green-500'
     case 'Perlu Dikirim':
       return 'bg-blue-100 text-blue-800 focus:ring-blue-500'
-    case 'Dikirim': // BARU
+    case 'Dikirim': 
       return 'bg-purple-100 text-purple-800 focus:ring-purple-500'
-    case 'Perlu Validasi': // BARU
+    case 'Perlu Validasi': 
       return 'bg-yellow-100 text-yellow-800 focus:ring-yellow-500'
     case 'Dibatalkan':
       return 'bg-red-100 text-red-800 focus:ring-red-500'
     default:
       return 'bg-gray-100 text-gray-800 focus:ring-gray-500'
   }
+}
+
+// ✅ BARU: Fungsi untuk menentukan warna badge berdasarkan tipe pesanan
+function getTipeClass(tipe: string | undefined): string {
+  const normalizedTipe = (tipe || 'Online').toLowerCase()
+  
+  if (normalizedTipe.includes('offline')) {
+    return 'bg-pink-100 text-pink-800 border border-pink-300' // Tipe Offline (Laporan Manual)
+  }
+  return 'bg-indigo-100 text-indigo-800 border border-indigo-300' // Tipe Online (Default)
 }
 </script>
