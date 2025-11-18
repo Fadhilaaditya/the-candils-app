@@ -17,9 +17,11 @@
       :report-data="paginatedReportData"
       :is-loading="isLoading"
       :filters="filters"
+      :lokasi-list="lokasiList" 
       :current-page="currentPage"
       :total-pages="totalPages"
       :total-reports="totalReports"
+      :items-per-page="itemsPerPage" 
       @update-filters="updateFilters"
       @next-page="nextPage"
       @previous-page="previousPage"
@@ -66,7 +68,6 @@ import DeleteConfirmModal from './_components/DeleteConfirmModal.vue';
 // 2. Import service API
 import { 
     getSalesReport, 
-    // ✅ PENTING: Menggunakan fungsi Summary yang terpisah
     getSalesSummaryRevenue,
     getSalesSummaryQuantity,
     updateSalesTransaction, 
@@ -75,7 +76,7 @@ import {
     getAllProduk 
 } from '@/services/productService'; 
 
-// 3. Define Interfaces (Harus konsisten dengan data API)
+// 3. Define Interfaces
 interface SaleReport {
     pesananId: number; 
     produkId: number; 
@@ -86,13 +87,9 @@ interface SaleReport {
     date: string; 
 }
 
-interface SaleSummary {
-    lokasi: string;
-    totalPendapatan: number;
-    totalProdukTerjual: number;
-}
 interface Lokasi {
     lokasiId: number;
+    id?: number; // Tambahkan id sebagai fallback untuk backward compatibility
     name: string;
     namaLokasi: string;
 }
@@ -104,8 +101,8 @@ const toast = useToast();
 const isLoading = ref(false);
 const loadError = ref<string | null>(null);
 const reportData = ref<SaleReport[]>([]);
-const revenueData = ref<any[]>([]); // Data untuk RevenueChart
-const productsSoldData = ref<any[]>([]); // Data untuk ProductsSoldChart
+const revenueData = ref<any[]>([]); 
+const productsSoldData = ref<any[]>([]); 
 const lokasiList = ref<Lokasi[]>([]); 
 const masterProductList = ref<{ name: string; price: number }[]>([]); 
 
@@ -114,11 +111,11 @@ const masterProductList = ref<{ name: string; price: number }[]>([]);
 const filters = reactive({
     startDate: '',
     endDate: '',
-    lokasiId: 'all' as string | number, 
+    lokasiName: 'all' as string, 
 });
 
 const currentPage = ref(1);
-const itemsPerPage = 5;
+const itemsPerPage = 10;
 
 
 // --- State Modal CRUD ---
@@ -165,21 +162,38 @@ const fetchSalesData = async () => {
     isLoading.value = true;
     loadError.value = null;
     try {
+        // 1. Logika Konversi Lokasi Name ke ID untuk API (FIX DI SINI)
+        let currentLokasiId: string | number = 'all';
+        if (filters.lokasiName && filters.lokasiName !== 'all') {
+            
+            const filterNameLower = filters.lokasiName.toLowerCase();
+
+            const selectedLokasi = lokasiList.value.find(l => {
+                const locationName = (l.name || l.namaLokasi || '').toLowerCase();
+                return locationName === filterNameLower;
+            });
+            
+            // ✅ FIX KRITIS: Tambah selectedLokasi?.id sebagai fallback
+            currentLokasiId = selectedLokasi?.lokasiId || selectedLokasi?.id || 'all'; 
+        }
+        
         const reportParams = new URLSearchParams({
             startDate: filters.startDate,
             endDate: filters.endDate,
-            lokasiId: String(filters.lokasiId)
+            lokasiId: String(currentLokasiId)
         }).toString();
 
         const [reportRes, revenueRes, quantityRes] = await Promise.all([
             getSalesReport(reportParams), 
-            getSalesSummaryRevenue(),       // ✅ Fetch Pendapatan (Lokasi)
-            getSalesSummaryQuantity()       // ✅ Fetch Kuantitas (Produk)
+            getSalesSummaryRevenue(),
+            getSalesSummaryQuantity()
         ]);
 
-        // Mengambil data dari response Axios
         const apiReportData = reportRes.data;
+        const apiSummaryRevenueData = revenueRes.data;
+        const apiSummaryQuantityData = quantityRes.data;
         
+        // Pemrosesan Data Report
         if (apiReportData.success && Array.isArray(apiReportData.data)) {
             reportData.value = apiReportData.data.map((item: any) => ({
                 pesananId: Number(item.pesananId),
@@ -195,11 +209,11 @@ const fetchSalesData = async () => {
              loadError.value = apiReportData.message || 'Data laporan tidak valid atau kosong.';
         }
 
-        // ✅ SET DATA CHART: Pendapatan dan Kuantitas (memastikan logika grafik terpisah)
-        if (revenueRes.data.success) {
-            revenueData.value = revenueRes.data.data; 
+        // SET DATA CHART
+        if (apiSummaryRevenueData.success) {
+            revenueData.value = apiSummaryRevenueData.data; 
         }
-        if (quantityRes.data.success) {
+        if (apiSummaryQuantityData.success) {
             productsSoldData.value = quantityRes.data.data;
         }
         
@@ -230,7 +244,7 @@ const updateFilters = (newFilters: Partial<typeof filters>) => {
 const nextPage = () => { if (currentPage.value < totalPages.value) currentPage.value++; };
 const previousPage = () => { if (currentPage.value > 1) currentPage.value--; };
 
-const handleAddReport = () => { /* isModalVisible.value = true; */ };
+const handleAddReport = () => { /* Placeholder for Add Report Modal */ };
 
 const handleEditSale = (sale: SaleReport) => {
     saleToEdit.value = { ...sale }; 
@@ -240,12 +254,20 @@ const handleEditModalClose = () => { isEditModalVisible.value = false; };
 
 const handleEditModalSubmit = async (updatedSale: SaleReport) => {
     try {
-        const lokasiDetail = lokasiList.value.find(l => (l.name || l.namaLokasi) === updatedSale.lokasi);
+        // Cari Lokasi ID (menggunakan fallback yang sama)
+        const selectedLokasi = lokasiList.value.find(l => 
+            (l.name?.toLowerCase() || l.namaLokasi?.toLowerCase()) === updatedSale.lokasi.toLowerCase()
+        );
+        const lokasiIdToSend = selectedLokasi?.lokasiId || selectedLokasi?.id;
+        
+        if (!lokasiIdToSend) {
+             throw new Error("ID Lokasi tidak ditemukan.");
+        }
         
         const payload = {
             quantity: updatedSale.QTY,
             hargaSatuan: updatedSale.totalHarga / updatedSale.QTY,
-            lokasiId: lokasiDetail?.lokasiId, 
+            lokasiId: lokasiIdToSend, 
         };
 
         await updateSalesTransaction(updatedSale.pesananId, updatedSale.produkId, payload);

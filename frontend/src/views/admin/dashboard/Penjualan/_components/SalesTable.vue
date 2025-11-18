@@ -29,14 +29,14 @@
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-2">Lokasi</label>
         <select 
-          :value="filters.lokasiId"
-          @change="updateFilter('lokasiId', ($event.target as HTMLSelectElement).value)" 
+          :value="filters.lokasiName" 
+          @change="updateFilter('lokasiName', ($event.target as HTMLSelectElement).value)" 
           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#BAB772] focus:border-transparent">
           <option value="all">Semua Lokasi</option>
-          <option value="Ciputat">Ciputat</option>
-          <option value="Pamulang">Pamulang</option>
-          <option value="Bukit Indah">Bukit Indah</option>
-          </select>
+          <option v-for="lok in lokasiList" :key="lok.lokasiId" :value="lok.name || lok.namaLokasi">
+            {{ lok.name || lok.namaLokasi }}
+          </option>
+        </select>
       </div>
     </div>
     
@@ -60,7 +60,7 @@
         </thead>
         <tbody>
           <tr v-for="(sale, index) in reportData" :key="index" class="border-b border-gray-100 hover:bg-gray-50">
-            <td class="px-4 py-3 text-sm text-gray-900">{{ index + 1 }}</td> 
+            <td class="px-4 py-3 text-sm text-gray-900">{{ (currentPage - 1) * itemsPerPage + index + 1 }}</td> 
             <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ sale.namaProduk }}</td>
             <td class="px-4 py-3 text-sm text-gray-700">{{ sale.QTY }}</td>
             <td class="px-4 py-3 text-sm text-gray-700">{{ formatCurrency(sale.totalHarga) }}</td>
@@ -79,45 +79,69 @@
         Tidak ada data penjualan yang ditemukan untuk filter ini.
     </div>
 
+    <div class="flex items-center justify-between mt-6">
+      <div class="text-sm text-gray-700">
+        Menampilkan {{ (currentPage - 1) * itemsPerPage + 1 }} - {{ Math.min(currentPage * itemsPerPage, totalReports) }} dari {{ totalReports }} data
+      </div>
+      <div class="flex gap-2">
+        <button @click="$emit('previous-page')" :disabled="currentPage === 1" class="px-3 py-2 text-sm border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50">
+          Previous
+        </button>
+        <button @click="$emit('next-page')" :disabled="currentPage * itemsPerPage >= totalReports" class="px-3 py-2 text-sm border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50">
+          Next
+        </button>
+      </div>
     </div>
+
+  </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
 
-// ✅ INTERFACE BARU: Mencocokkan output dari getSalesReport API
 interface SaleReport {
-  pesananId: number; // Dari API
-  namaProduk: string;
-  QTY: number; // Quantity total yang terjual
-  totalHarga: number; // Total harga per baris (QTY * hargaSatuan)
-  lokasi: string; // Nama Lokasi
-  date: string; // Tanggal Penjualan
+    pesananId: number; 
+    produkId: number; 
+    namaProduk: string;
+    QTY: number; 
+    totalHarga: number; 
+    lokasi: string; 
+    date: string; 
+}
+interface Lokasi {
+    lokasiId: number;
+    name: string;
+    namaLokasi: string;
 }
 
-// ✅ PROPS BARU: Menerima data laporan yang sudah difilter/dipaginasi dari parent
 const props = defineProps<{
-  reportData: SaleReport[] // Data yang sudah dimuat dari API
-  isLoading: boolean; // State loading dari parent
-  filters: { // Objek filter dari parent
+  reportData: SaleReport[] 
+  isLoading: boolean; 
+  filters: { 
     startDate: string; 
     endDate: string;
-    lokasiId: string | number;
+    lokasiName: string; 
   };
+  lokasiList: Lokasi[]; 
+  currentPage: number;
+  totalPages: number;
+  totalReports: number;
+  itemsPerPage: number; // ✅ Pertahankan prop ini di sini
 }>()
 
 const emit = defineEmits<{
-  // Emit event untuk memberitahu parent agar update filter dan fetch data
-  updateFilters: [filters: {startDate?: string, endDate?: string, lokasiId?: string | number}]
-  // Emit event untuk aksi CRUD (mengirimkan seluruh objek sale yang terpengaruh)
+  updateFilters: [filters: {startDate?: string, endDate?: string, lokasiName?: string}]
+  'next-page': []
+  'previous-page': []
+  addReport: []
   editSale: [sale: SaleReport] 
   deleteSale: [sale: SaleReport]
 }>()
 
+
 // Methods
-const updateFilter = (key: keyof typeof props.filters, value: string | number) => {
-    // Memberitahu parent agar mengubah nilai filter dan memuat ulang data
-    emit('updateFilters', { ...props.filters, [key]: value });
+const updateFilter = (key: 'startDate' | 'endDate' | 'lokasiName', value: string | number) => {
+    emit('updateFilters', { [key]: value });
 }
 
 const formatCurrency = (amount: number): string => {
@@ -129,9 +153,6 @@ const formatDate = (dateString: string): string => {
   return date.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
-// Handler untuk aksi CRUD
 const handleEdit = (sale: SaleReport) => emit('editSale', sale)
 const handleDelete = (sale: SaleReport) => emit('deleteSale', sale)
-
-// Logika pagination lama dihapus karena diasumsikan diurus parent/dihilangkan.
 </script>
