@@ -332,6 +332,8 @@ const createPesananOffline = async (req, res) => {
 };
 
 
+// pesananController.js
+
 /**
  * @desc    Update status pesanan
  */
@@ -340,11 +342,32 @@ const updateStatusPesanan = async (req, res) => {
   const { statusPesanan } = req.body;
 
   try {
+    // 1. Cek status saat ini
+    const [currentStatusResult] = await db.query(
+      'SELECT statusPesanan FROM Pemesanan WHERE pesananId = ?',
+      [id]
+    );
+
+    if (currentStatusResult.length === 0) {
+      return res.status(404).json({ message: 'Pesanan tidak ditemukan' });
+    }
+
+    const currentStatus = currentStatusResult[0].statusPesanan;
+
+    // ✅ CHECK: Jika sudah Selesai atau Dibatalkan, tolak update status
+    if (currentStatus === 'Selesai' || currentStatus === 'Dibatalkan') {
+      return res.status(400).json({ 
+        message: `Status pesanan #${id} tidak dapat diubah karena status saat ini adalah ${currentStatus}.` 
+      });
+    }
+    
+    // 2. Lakukan Update Status
     const [updateResult] = await db.query(
       'UPDATE Pemesanan SET statusPesanan = ? WHERE pesananId = ?',
       [statusPesanan, id]
     );
 
+    // ... (rest of the code)
     if (updateResult.affectedRows === 0) {
       return res.status(404).json({ message: 'Pesanan tidak ditemukan' });
     }
@@ -359,6 +382,8 @@ const updateStatusPesanan = async (req, res) => {
   }
 };
 
+// pesananController.js
+
 /**
  * @desc    Update lokasi pesanan
  */
@@ -367,11 +392,32 @@ const updateLokasiPesanan = async (req, res) => {
   const { lokasiId } = req.body;
 
   try {
+    // 1. Cek status saat ini
+    const [currentStatusResult] = await db.query(
+      'SELECT statusPesanan FROM Pemesanan WHERE pesananId = ?',
+      [id]
+    );
+
+    if (currentStatusResult.length === 0) {
+      return res.status(404).json({ message: 'Pesanan tidak ditemukan' });
+    }
+    
+    const currentStatus = currentStatusResult[0].statusPesanan;
+    
+    // ✅ CHECK: Jika sudah Selesai atau Dibatalkan, tolak update lokasi
+    if (currentStatus === 'Selesai' || currentStatus === 'Dibatalkan') {
+      return res.status(400).json({ 
+        message: `Lokasi pesanan #${id} tidak dapat diubah karena status saat ini adalah ${currentStatus}.` 
+      });
+    }
+
+    // 2. Lakukan Update Lokasi
     const [updateResult] = await db.query(
       'UPDATE Pemesanan SET lokasiId = ? WHERE pesananId = ?',
       [lokasiId, id]
     );
 
+    // ... (rest of the code)
     if (updateResult.affectedRows === 0) {
       return res.status(404).json({ message: 'Pesanan tidak ditemukan' });
     }

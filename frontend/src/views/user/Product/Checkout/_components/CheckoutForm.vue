@@ -1,47 +1,50 @@
 <template>
   <div class="space-y-6">
-    <!-- Fieldset tidak lagi 'disabled' oleh 'isOrderCreated' -->
     <fieldset>
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">Nama Lengkap</label>
+        <label for="fullName" class="block text-sm font-medium text-gray-700 mb-2">Nama Lengkap *</label>
         <input
+          id="fullName"
           :value="fullName"
           @input="$emit('update:fullName', ($event.target as HTMLInputElement).value)"
           type="text"
           class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-[#BAB772] focus:border-transparent disabled:opacity-50 disabled:bg-gray-100"
           placeholder="Nama Anda"
+          required
           :disabled="isSubmitting"
         />
       </div>
 
       <div class="mt-6">
-        <label class="block text-sm font-medium text-gray-700 mb-2">Alamat Lengkap</label>
+        <label for="address" class="block text-sm font-medium text-gray-700 mb-2">Alamat Lengkap *</label>
         <input
+          id="address"
           :value="address"
           @input="$emit('update:address', ($event.target as HTMLInputElement).value)"
           type="text"
           class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-[#BAB772] focus:border-transparent disabled:opacity-50 disabled:bg-gray-100"
           placeholder="Alamat pengiriman"
+          required
           :disabled="isSubmitting"
         />
       </div>
 
       <div class="mt-6">
-        <label class="block text-sm font-medium text-gray-700 mb-2">Kontak</label>
+        <label for="contact" class="block text-sm font-medium text-gray-700 mb-2">Kontak *</label>
         <input
+          id="contact"
           :value="contact"
           @input="handleContactInput"
-          type="text"
-          inputmode="numeric"
-          pattern="[0-9]*"
+          type="tel" 
+          inputmode="numeric" 
           class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-[#BAB772] focus:border-transparent disabled:opacity-50 disabled:bg-gray-100"
-          placeholder="Nomor telepon / WhatsApp"
+          placeholder="Nomor telepon / WhatsApp (hanya angka)"
+          required
           :disabled="isSubmitting"
         />
       </div>
     </fieldset>
 
-    <!-- Metode Pembayaran QRIS (Tidak Berubah) -->
     <div>
       <label class="block text-sm font-medium text-gray-700 mb-3">Metode Pembayaran</label>
       <div class="border rounded-lg p-4 text-center bg-gray-50">
@@ -49,23 +52,25 @@
         <p class="text-sm text-gray-600 mt-1 mb-4">
           Silakan scan kode di bawah ini menggunakan e-wallet atau m-banking Anda.
         </p>
-        <img
-          src="/QRIS.jpg"
+        
+        <img 
+          src="/QRIS.jpg" 
           alt="Kode QRIS Pembayaran"
           class="w-full max-w-[250px] mx-auto rounded-md border"
         />
+        
         <p class="text-xs text-gray-500 mt-3">Mendukung semua aplikasi pembayaran QRIS</p>
       </div>
     </div>
 
-    <!-- [PERUBAHAN]: Form Upload Bukti Pembayaran sekarang jadi satu -->
     <div class="space-y-4 pt-4 border-t">
-      <h3 class="text-lg font-semibold text-gray-800">Upload Bukti Pembayaran</h3>
-      <p class="text-sm text-gray-600">Silakan upload bukti transfer Anda (JPG/PNG).</p>
+      <h3 class="text-lg font-semibold text-gray-800">Upload Bukti Pembayaran *</h3>
 
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">File Bukti</label>
+      <div v-if="!filePreviewUrl">
+        <p class="text-sm text-gray-600">Silakan upload bukti transfer Anda (JPG/PNG).</p>
+        <label for="fileInput" class="block text-sm font-medium text-gray-700 mb-2 mt-2">File Bukti</label>
         <input
+          id="fileInput"
           ref="fileInputRef"
           type="file"
           @change="handleFileChange"
@@ -77,10 +82,9 @@
           Maksimal ukuran file: {{ formatFileSize(maxFileSize) }}
         </p>
       </div>
-
-      <!-- [BARU]: "Review" atau Preview Gambar yang di-upload -->
-      <div v-if="filePreviewUrl" class="text-center space-y-3">
-        <label class="block text-sm font-medium text-gray-700 mb-2">Preview Bukti:</label>
+      
+      <div v-if="filePreviewUrl" class="text-center space-y-3 p-4 border border-green-200 rounded-lg bg-green-50">
+        <label class="block text-sm font-medium text-gray-700 mb-2">Preview Bukti Berhasil Di-upload:</label>
         <div class="relative inline-block">
           <img
             :src="filePreviewUrl"
@@ -104,14 +108,12 @@
             </svg>
           </button>
         </div>
-        <p class="text-xs text-gray-500">Klik tombol X untuk menghapus gambar</p>
+        <p class="text-xs text-gray-500">Bukti siap dikirim. Klik tombol 'X' untuk mengganti.</p>
       </div>
     </div>
 
-    <!-- Slot Ringkasan (Tidak Berubah) -->
     <slot name="summary"></slot>
 
-    <!-- [PERUBAHAN]: Hanya ada SATU tombol submit -->
     <button
       @click="$emit('submitOrderAndUpload')"
       :disabled="isSubmitting"
@@ -125,14 +127,13 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 
-// [PERUBAHAN]: Props dan Emits disederhanakan
 const props = defineProps<{
   fullName: string
   address: string
   contact: string
   isSubmitting: boolean
-  filePreviewUrl: string | null // Prop baru untuk menampilkan preview
-  maxFileSize?: number // Ukuran maksimal file dalam bytes (default: 5MB)
+  filePreviewUrl: string | null
+  maxFileSize?: number // Ukuran maksimal file dalam bytes (default: 3MB)
 }>()
 
 const emit = defineEmits<{
@@ -140,13 +141,13 @@ const emit = defineEmits<{
   (e: 'update:address', value: string): void
   (e: 'update:contact', value: string): void
   (e: 'fileSelected', event: Event): void
-  (e: 'fileRemoved'): void // Emit baru untuk menghapus file
-  (e: 'fileError', message: string): void // Emit untuk error
-  (e: 'submitOrderAndUpload'): void // Emit baru untuk satu tombol
+  (e: 'fileRemoved'): void 
+  (e: 'fileError', message: string): void 
+  (e: 'submitOrderAndUpload'): void 
 }>()
 
-// Default max file size: 5MB (5 * 1024 * 1024 bytes)
-const DEFAULT_MAX_FILE_SIZE = 3 * 1024 * 1024
+// Default max file size: 10MB
+const DEFAULT_MAX_FILE_SIZE = 10 * 1024 * 1024
 const maxFileSize = computed(() => props.maxFileSize || DEFAULT_MAX_FILE_SIZE)
 
 // Ref untuk input file
@@ -158,6 +159,7 @@ const formatFileSize = (bytes: number): string => {
   const k = 1024
   const sizes = ['Bytes', 'KB', 'MB', 'GB']
   const i = Math.floor(Math.log(bytes) / Math.log(k))
+  // Menggunakan Math.round agar pembulatan rapi
   return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i]
 }
 
@@ -175,13 +177,11 @@ const handleFileChange = (event: Event) => {
   // Validasi tipe file
   const validTypes = ['image/png', 'image/jpeg', 'image/jpg']
   if (!validTypes.includes(file.type)) {
-    const errorMessage = `Format file tidak didukung! Hanya file JPG/PNG yang diizinkan.`
+    const errorMessage = `Format file tidak didukung! Hanya file JPG dan PNG yang diizinkan.`
     emit('fileError', errorMessage)
 
     // Reset input file
-    if (fileInputRef.value) {
-      fileInputRef.value.value = ''
-    }
+    target.value = ''
     return
   }
 
@@ -194,9 +194,7 @@ const handleFileChange = (event: Event) => {
     emit('fileError', errorMessage)
 
     // Reset input file
-    if (fileInputRef.value) {
-      fileInputRef.value.value = ''
-    }
+    target.value = ''
 
     return
   }
@@ -207,7 +205,7 @@ const handleFileChange = (event: Event) => {
 
 // Handler untuk menghapus file
 const handleRemoveFile = () => {
-  // Reset input file
+  // Reset input file agar user bisa upload ulang
   if (fileInputRef.value) {
     fileInputRef.value.value = ''
   }
@@ -221,10 +219,10 @@ const handleContactInput = (event: Event) => {
   const target = event.target as HTMLInputElement
   const value = target.value
 
-  // Hanya izinkan angka
+  // Hanya izinkan angka (menggunakan \D untuk non-digit)
   const numericValue = value.replace(/\D/g, '')
 
-  // Update nilai input
+  // Update nilai input (penting untuk UX agar input terlihat difilter)
   target.value = numericValue
 
   // Emit ke parent

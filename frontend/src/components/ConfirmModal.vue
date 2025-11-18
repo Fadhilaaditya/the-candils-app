@@ -6,14 +6,13 @@
     @before-open="onBeforeOpen"
   >
     <template #default>
-      <!-- Icon Container -->
       <div class="flex justify-center pt-8 pb-4">
         <div :class="[
           'w-16 h-16 rounded-full flex items-center justify-center',
-          variant === 'danger' ? 'bg-red-100' : 'bg-amber-100'
+          currentConfig.variant === 'danger' ? 'bg-red-100' : 'bg-amber-100' // Menggunakan currentConfig
         ]">
           <svg 
-            v-if="variant === 'danger'" 
+            v-if="currentConfig.variant === 'danger'" 
             class="w-8 h-8 text-red-600" 
             fill="none" 
             stroke="currentColor" 
@@ -44,42 +43,36 @@
         </div>
       </div>
 
-      <!-- Content -->
       <div class="px-8 pb-6 text-center">
         <h2 class="text-2xl font-bold text-gray-900 mb-3">
-          {{ title }}
-        </h2>
+          {{ currentConfig.title }} </h2>
         <p class="text-gray-600 leading-relaxed">
-          {{ message }}
-        </p>
+          {{ currentConfig.message }} </p>
       </div>
 
-      <!-- Actions -->
       <div class="flex gap-3 px-8 pb-8">
         <button 
           @click="cancel" 
           class="flex-1 px-6 py-3 border-2 border-gray-300 rounded-xl text-gray-700 font-semibold hover:bg-gray-50 hover:border-gray-400 transition-all duration-200"
         >
-          {{ cancelButtonText }}
-        </button>
+          {{ currentConfig.cancelButtonText }} </button>
         <button 
           @click="confirm" 
           :class="[
             'flex-1 px-6 py-3 rounded-xl font-semibold transition-all duration-200',
-            variant === 'danger' 
+            currentConfig.variant === 'danger' // ✅ Menggunakan currentConfig
               ? 'bg-red-600 text-white hover:bg-red-700' 
               : 'bg-amber-600 text-white hover:bg-amber-700'
           ]"
         >
-          {{ confirmButtonText }}
-        </button>
+          {{ currentConfig.confirmButtonText }} </button>
       </div>
     </template>
   </VueFinalModal>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { VueFinalModal } from 'vue-final-modal'
 
 interface Props {
@@ -88,6 +81,15 @@ interface Props {
   confirmButtonText?: string
   cancelButtonText?: string
   variant?: 'danger' | 'warning' // New prop for styling
+}
+
+// Definisikan tipe untuk Payload Runtime (argumen dari KelolaPesanan.vue)
+interface RuntimePayload {
+    title?: string
+    message?: string
+    confirmButtonText?: string
+    cancelButtonText?: string
+    variant?: 'danger' | 'warning'
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -102,9 +104,21 @@ const emit = defineEmits(['confirm', 'cancel'])
 
 const showModal = ref(false)
 let resolvePromise: ((value: boolean | PromiseLike<boolean>) => void) | undefined
+const runtimeConfig = ref<RuntimePayload>({}) // ✅ STATE BARU: Untuk menyimpan konfigurasi runtime
 
-// Fungsi untuk membuka modal dan mengembalikan Promise
-const open = (): Promise<boolean> => {
+// ✅ COMPUTED: Menggabungkan props default dan konfigurasi runtime
+const currentConfig = computed(() => ({
+    title: runtimeConfig.value.title || props.title,
+    message: runtimeConfig.value.message || props.message,
+    confirmButtonText: runtimeConfig.value.confirmButtonText || props.confirmButtonText,
+    cancelButtonText: runtimeConfig.value.cancelButtonText || props.cancelButtonText,
+    variant: runtimeConfig.value.variant || props.variant,
+}))
+
+
+// ✅ PERBAIKAN FUNGSI OPEN: Menerima payload konfigurasi
+const open = (payload: RuntimePayload = {}): Promise<boolean> => {
+  runtimeConfig.value = payload // ✅ Simpan konfigurasi baru
   showModal.value = true
   return new Promise((resolve) => {
     resolvePromise = resolve

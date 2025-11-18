@@ -5,7 +5,6 @@
       @click.self="$emit('close')"
     >
       <div class="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        <!-- Modal Header -->
         <div class="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
           <div>
             <h2 class="text-xl font-bold text-gray-900">Detail Pesanan #{{ pesanan.pesananId }}</h2>
@@ -21,9 +20,7 @@
           </button>
         </div>
 
-        <!-- Modal Body -->
         <div class="p-6 space-y-6">
-          <!-- Informasi Pelanggan -->
           <div class="bg-gray-50 rounded-lg p-4">
             <h3 class="font-semibold text-gray-900 mb-3">Informasi Pelanggan</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -42,7 +39,6 @@
             </div>
           </div>
 
-          <!-- Produk yang Dipesan -->
           <div>
             <h3 class="font-semibold text-gray-900 mb-3">Produk yang Dipesan</h3>
             <div class="border border-gray-200 rounded-lg overflow-hidden">
@@ -81,7 +77,6 @@
             </div>
           </div>
 
-          <!-- Informasi Status -->
           <div class="bg-blue-50 rounded-lg p-4">
             <h3 class="font-semibold text-gray-900 mb-3">Status Pesanan</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -100,10 +95,8 @@
             </div>
           </div>
 
-          <!-- Bukti Pembayaran -->
           <div>
             <h3 class="font-semibold text-gray-900 mb-3">Bukti Pembayaran</h3>
-            <!-- Tampilkan gambar jika URL ada -->
             <div v-if="pesanan.buktiPembayaranUrl" class="bg-gray-50 rounded-lg p-4">
               <a 
                 :href="pesanan.buktiPembayaranUrl" 
@@ -119,7 +112,6 @@
                 >
               </a>
             </div>
-            <!-- Tampilkan pesan jika URL tidak ada -->
             <div v-else class="bg-gray-50 rounded-lg p-4">
               <p class="text-sm text-gray-500 text-center">
                 Pelanggan belum meng-upload bukti pembayaran.
@@ -129,14 +121,27 @@
 
         </div>
 
-        <!-- Modal Footer -->
-        <div class="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4 flex justify-end gap-3">
-          <button
-            @click="$emit('close')"
-            class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
-          >
-            Tutup
-          </button>
+        <div class="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4 flex justify-between gap-3">
+            
+            <div class="flex items-center gap-3">
+                <button
+                    v-if="pesanan.statusPesanan !== 'Dibatalkan' && pesanan.statusPesanan !== 'Selesai'"
+                    @click="$emit('cancelOrder', pesanan.pesananId)"
+                    class="px-4 py-2 border border-red-300 rounded-lg text-red-600 hover:bg-red-50 transition-colors text-sm font-medium"
+                >
+                    Batalkan Pesanan
+                </button>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <button
+                    v-if="pesanan.statusPesanan === 'Perlu Validasi'"
+                    @click="$emit('validateOrder', pesanan.pesananId)"
+                    class="px-4 py-2 border border-green-500 rounded-lg text-white bg-green-600 hover:bg-green-700 transition-colors text-sm font-medium"
+                >
+                    Validasi & Proses
+                </button>
+            </div>
         </div>
       </div>
     </div>
@@ -144,11 +149,8 @@
 </template>
 
 <script setup lang="ts">
-// [PERBAIKAN]: Impor tipe data yang sudah benar dari service
 import type { Pemesanan, Lokasi } from '@/services/productService'
 
-// [PERBAIKAN]: Tipe 'pesanan' sekarang langsung menggunakan 'Pemesanan'
-// karena 'productService.ts' sudah di-update
 interface Props {
   pesanan: Pemesanan 
   lokasiList: Lokasi[]
@@ -158,6 +160,8 @@ const props = defineProps<Props>()
 
 defineEmits<{
   close: []
+  validateOrder: [pesananId: number] // Emit baru untuk validasi
+  cancelOrder: [pesananId: number]   // Emit baru untuk pembatalan
 }>()
 
 // Helper Functions
@@ -183,9 +187,11 @@ function getStatusClass(status: string): string {
       return 'bg-green-100 text-green-800'
     case 'Perlu Dikirim':
       return 'bg-blue-100 text-blue-800'
+    case 'Dikirim':
+        return 'bg-purple-100 text-purple-800'
     case 'Dibatalkan':
       return 'bg-red-100 text-red-800'
-    default:
+    default: // Perlu Validasi
       return 'bg-yellow-100 text-yellow-800'
   }
 }
@@ -196,4 +202,3 @@ function getLokasiName(lokasiId: number | null): string {
   return lokasi ? (lokasi.name || lokasi.namaLokasi || '-- Tidak ditemukan --') : '-- Tidak ditemukan --'
 }
 </script>
-

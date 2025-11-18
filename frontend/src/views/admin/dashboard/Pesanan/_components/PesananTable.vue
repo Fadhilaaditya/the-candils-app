@@ -19,20 +19,7 @@
       </div>
     </div>
 
-    <div class="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
-      <div class="flex items-center space-x-3">
-        <button class="flex items-center text-sm text-gray-700 hover:text-gray-900 font-medium">
-          <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-          </svg>
-          Filter ({{ activeFilters }})
-        </button>
-        <div v-if="selectedOrders.length > 0" class="flex items-center text-sm text-gray-600">
-          <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-medium">
-            {{ selectedOrders.length }} dipilih
-          </span>
-        </div>
-      </div>
+    <div class="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-end">
       <div class="flex items-center space-x-2">
         <button class="flex items-center px-3 py-2 text-sm text-gray-700 hover:text-gray-900 border border-gray-300 rounded hover:bg-gray-50">
           <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -63,14 +50,6 @@
         <table class="min-w-full divide-y divide-gray-200">
           <thead class="bg-gray-50">
             <tr>
-              <th class="w-12 px-4 py-3">
-                <input
-                  type="checkbox"
-                  @change="$emit('toggle-select-all', $event)"
-                  :checked="isAllSelected"
-                  class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-              </th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 ID Pesanan
               </th>
@@ -104,15 +83,6 @@
               class="hover:bg-gray-50 transition-colors"
             >
               <td class="px-4 py-4">
-                <input
-                  type="checkbox"
-                  :value="pesanan.pesananId"
-                  :checked="selectedOrders.includes(pesanan.pesananId)"
-                  @change="toggleSelect(pesanan.pesananId, ($event.target as HTMLInputElement).checked)"
-                  class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-              </td>
-              <td class="px-4 py-4">
                 <div class="text-sm font-medium text-gray-900">#{{ pesanan.pesananId }}</div>
                 <div class="text-xs text-gray-500">{{ formatDate(pesanan.tanggalPesanan) }}</div>
               </td>
@@ -122,9 +92,10 @@
                   @change="handleStatusChange(pesanan, ($event.target as HTMLSelectElement).value)"
                   :class="[
                     'text-xs font-medium px-3 py-1 rounded-full border-0 focus:ring-2 focus:ring-offset-2 cursor-pointer',
-                    getStatusClass(pesanan.statusPesanan)
+                    getStatusClass(pesanan.statusPesanan),
+                    {'disabled:opacity-60 disabled:cursor-not-allowed': isStatusDisabled(pesanan.statusPesanan)} // Styling disabled
                   ]"
-                >
+                  :disabled="isStatusDisabled(pesanan.statusPesanan)" >
                   <option value="Perlu Validasi">Perlu Validasi</option>
                   <option value="Perlu Dikirim">Perlu Dikirim</option>
                   <option value="Dikirim">Dikirim</option>
@@ -143,8 +114,11 @@
                   :value="pesanan.lokasiId"
                   @change="handleLokasiChange(pesanan, Number(($event.target as HTMLSelectElement).value))"
                   class="text-xs font-medium px-3 py-1 rounded border border-gray-300 focus:ring-2 focus:ring-blue-500 cursor-pointer"
-                  :class="{ 'text-gray-500': !pesanan.lokasiId }"
-                >
+                  :class="{ 
+                    'text-gray-500': !pesanan.lokasiId,
+                    'disabled:opacity-60 disabled:cursor-not-allowed': isStatusDisabled(pesanan.statusPesanan) // Styling disabled
+                  }"
+                  :disabled="isStatusDisabled(pesanan.statusPesanan)" >
                   <option :value="null" disabled>-- Pilih Lokasi --</option>
                   <option v-for="lokasi in lokasiList" :key="lokasi.id || lokasi.lokasiId" :value="lokasi.id || lokasi.lokasiId">
                     {{ lokasi.name || lokasi.namaLokasi }}
@@ -189,7 +163,6 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-// Perlu mengimport tipe Pemesanan yang sudah diperbarui dengan tipePesanan
 import type { Pemesanan, Lokasi } from '@/services/productService' 
 
 interface Tab {
@@ -216,7 +189,7 @@ const emit = defineEmits<{
   'update-status': [pesanan: Pemesanan]
   'update-lokasi': [pesanan: Pemesanan]
   'open-detail': [pesanan: Pemesanan]
-  'open-add-modal': [] // EMIT BARU
+  'open-add-modal': [] 
 }>()
 
 // Computed
@@ -233,13 +206,26 @@ function toggleSelect(pesananId: number, isChecked: boolean) {
 }
 
 function handleStatusChange(pesanan: Pemesanan, newStatus: string) {
+  // Pengecekan frontend sebelum emit (optional, backend tetap yang utama)
+  if (isStatusDisabled(pesanan.statusPesanan)) {
+    return;
+  }
   const updatedPesanan = { ...pesanan, statusPesanan: newStatus }
   emit('update-status', updatedPesanan)
 }
 
 function handleLokasiChange(pesanan: Pemesanan, newLokasiId: number) {
+  // Pengecekan frontend sebelum emit (optional, backend tetap yang utama)
+  if (isStatusDisabled(pesanan.statusPesanan)) {
+    return;
+  }
   const updatedPesanan = { ...pesanan, lokasiId: newLokasiId }
   emit('update-lokasi', updatedPesanan)
+}
+
+// ✅ FUNGSI BARU: Menentukan apakah field harus dinonaktifkan
+function isStatusDisabled(status: string): boolean {
+    return status === 'Selesai' || status === 'Dibatalkan';
 }
 
 // Helper Functions
@@ -276,7 +262,7 @@ function getStatusClass(status: string): string {
   }
 }
 
-// ✅ BARU: Fungsi untuk menentukan warna badge berdasarkan tipe pesanan
+// Fungsi untuk menentukan warna badge berdasarkan tipe pesanan
 function getTipeClass(tipe: string | undefined): string {
   const normalizedTipe = (tipe || 'Online').toLowerCase()
   

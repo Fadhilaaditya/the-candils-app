@@ -8,31 +8,28 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, onMounted, nextTick, watch, computed } from 'vue' // ✅ FIX 1: Tambah 'computed'
 import { Chart, CategoryScale, LinearScale, BarElement, BarController, Title, Tooltip, Legend } from 'chart.js'
 
 // Register Chart.js components
 Chart.register(CategoryScale, LinearScale, BarElement, BarController, Title, Tooltip, Legend)
 
+// Interface mencocokkan output dari getSalesSummary API
 interface ProductSoldData {
-  productCode: string
-  productName: string
-  quantity: number
+  lokasi: string;
+  totalPendapatan: number;
+  totalProdukTerjual: number; 
 }
+
+const props = defineProps<{
+  summaryData: ProductSoldData[]; 
+}>();
 
 const chartCanvas = ref<HTMLCanvasElement | null>(null)
 let chartInstance: Chart | null = null
 
-// Data sesuai gambar pertama
-const productsSoldData = ref<ProductSoldData[]>([
-  { productCode: 'BMK', productName: 'Bubur Manis Komplit', quantity: 25 },
-  { productCode: 'ST', productName: 'Singkong Thailand', quantity: 22 },
-  { productCode: 'UDT', productName: 'Ubi Duo Twin', quantity: 15 },
-  { productCode: 'HHL', productName: 'Hijau Hitam Legenda', quantity: 25 },
-  { productCode: 'SPL', productName: 'Singkong Premium Legenda', quantity: 22 },
-  { productCode: 'UDT2', productName: 'Ubi Duo Twin Special', quantity: 15 },
-  { productCode: 'MSM', productName: 'Mie Sapi Mantap', quantity: 15 },
-])
+// Data diubah menjadi computed agar bereaksi terhadap props
+const productsSoldData = computed(() => props.summaryData); // ✅ FIX 1: 'computed' sekarang dikenali
 
 const createChart = () => {
   if (!chartCanvas.value) {
@@ -51,15 +48,19 @@ const createChart = () => {
     chartInstance.destroy()
   }
 
-  console.log('Creating ProductsSoldChart with data:', productsSoldData.value)
+  const data = productsSoldData.value;
+
+  console.log('Creating ProductsSoldChart with dynamic data:', data);
 
   chartInstance = new Chart(ctx, {
     type: 'bar',
     data: {
-      labels: productsSoldData.value.map(item => item.productCode),
+      // ✅ FIX 2: Terapkan tipe ProductSoldData pada item
+      labels: data.map((item: ProductSoldData) => item.lokasi), 
       datasets: [{
         label: 'Jumlah Terjual',
-        data: productsSoldData.value.map(item => item.quantity),
+        // ✅ FIX 2: Terapkan tipe ProductSoldData pada item
+        data: data.map((item: ProductSoldData) => item.totalProdukTerjual),
         backgroundColor: '#BAB772',
         borderColor: '#a8a668',
         borderWidth: 2,
@@ -79,7 +80,7 @@ const createChart = () => {
           callbacks: {
             title: function(context) {
               const index = context[0].dataIndex
-              return productsSoldData.value[index].productName
+              return data[index].lokasi
             },
             label: function(context) {
               return `Jumlah: ${context.parsed.y} unit`
@@ -104,7 +105,7 @@ const createChart = () => {
           },
           ticks: {
             color: '#6B7280',
-            stepSize: 5
+            stepSize: 5 
           }
         }
       },
@@ -116,37 +117,35 @@ const createChart = () => {
   })
 }
 
+// Watcher untuk mengupdate chart ketika props.summaryData berubah
+watch(productsSoldData, (newData) => {
+    if (chartInstance) {
+        // ✅ FIX 2: Terapkan tipe ProductSoldData pada item
+        chartInstance.data.labels = newData.map((item: ProductSoldData) => item.lokasi);
+        // ✅ FIX 2: Terapkan tipe ProductSoldData pada item
+        chartInstance.data.datasets[0].data = newData.map((item: ProductSoldData) => item.totalProdukTerjual);
+        chartInstance.update();
+    } else {
+        createChart();
+    }
+}, { deep: true, immediate: false }); 
+
 onMounted(async () => {
   console.log('ProductsSoldChart mounted')
   await nextTick()
   
-  // Try multiple times to ensure canvas is ready
-  let attempts = 0
-  const maxAttempts = 5
-  
-  const tryCreateChart = () => {
-    attempts++
-    console.log(`Attempt ${attempts} to create ProductsSoldChart`)
-    
-    if (chartCanvas.value) {
-      createChart()
-    } else if (attempts < maxAttempts) {
-      setTimeout(tryCreateChart, 100)
-    } else {
-      console.error('Failed to create ProductsSoldChart after', maxAttempts, 'attempts')
-    }
+  if (productsSoldData.value.length > 0) {
+      createChart();
   }
-  
-  tryCreateChart()
 })
 
-// Expose methods
+// Expose methods 
 defineExpose({
   updateChartData: (data: ProductSoldData[]) => {
-    productsSoldData.value = data
+    // Digantikan oleh watcher, tapi dipertahankan untuk kompatibilitas
     if (chartInstance) {
-      chartInstance.data.labels = data.map(item => item.productCode)
-      chartInstance.data.datasets[0].data = data.map(item => item.quantity)
+      chartInstance.data.labels = data.map(item => item.lokasi)
+      chartInstance.data.datasets[0].data = data.map(item => item.totalProdukTerjual)
       chartInstance.update()
     }
   },

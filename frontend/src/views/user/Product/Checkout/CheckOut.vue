@@ -5,7 +5,6 @@
 
       <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
         <div class="grid grid-cols-1 lg:grid-cols-2">
-          <!-- Kolom Kiri: Form dan Ringkasan -->
           <div class="p-6 md:p-8">
             <div v-if="isLoading" class="text-center py-10">
               <p>Memuat keranjang...</p>
@@ -18,12 +17,6 @@
               >
             </div>
 
-            <!--
-              [PERUBAHAN]:
-              - Menghapus v-model:payment-method (tidak lagi dipakai)
-              - Menambahkan prop file-preview-url
-              - Mengubah emit @submit-order menjadi @submit-order-and-upload
-            -->
             <CheckoutFormComponent
               v-else
               v-model:full-name="form.fullName"
@@ -37,12 +30,11 @@
               @submit-order-and-upload="submitOrderAndUpload"
             >
               <template #summary>
-                <OrderSummaryComponent :items="orderItems" :subtotal="subtotal" :total="total" />
+                <OrderSummaryComponent :items="summaryItems" :subtotal="subtotal" :total="total" />
               </template>
             </CheckoutFormComponent>
           </div>
 
-          <!-- Kolom Kanan: Gambar Produk (tidak berubah) -->
           <div class="hidden lg:block p-8">
             <img
               :src="displayImageUrl"
@@ -69,8 +61,9 @@ interface CartItem {
   produkId: number
   ukuranId: number | null
   jumlah: number
-  harga_satuan: number | string
-  subtotal: number | string
+  // Kita asumsikan harga_satuan membawa harga yang benar
+  harga_satuan: number | string 
+  subtotal: number | string // Nilai ini mungkin 0 dari API, sehingga perlu dihitung ulang
   namaProduk: string
   namaUkuran: string | null
   foto: string
@@ -81,7 +74,7 @@ const isSubmitting = ref(false)
 const isLoading = ref(true)
 const error = ref<string | null>(null)
 
-// [BARU] State untuk file upload
+// State untuk file upload
 const selectedFile = ref<File | null>(null)
 const filePreviewUrl = ref<string | null>(null)
 
@@ -99,7 +92,19 @@ const isDirectCheckout = ref(false)
 const router = useRouter()
 const toast = useToast()
 
-// computed property 'displayImageUrl' (tidak berubah)
+// Helper function untuk konversi nilai string/number ke number
+const toNumber = (value: number | string): number => {
+  const num = typeof value === 'string' ? parseFloat(value) : value
+  return isNaN(num) ? 0 : num
+}
+
+// Helper function untuk menghitung subtotal item (fungsi yang benar)
+const getItemSubtotal = (item: CartItem): number => {
+  return toNumber(item.harga_satuan) * item.jumlah
+}
+
+
+// Computed property 'displayImageUrl' (tidak berubah)
 const displayImageUrl = computed(() => {
   if (orderItems.value.length > 0) {
     const fotoUrl = orderItems.value[0].foto
@@ -135,7 +140,8 @@ const loadCheckoutData = async () => {
         throw new Error('Data direct checkout tidak valid.')
       }
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Terjadi kesalahan saat memuat data checkout'
+      const errorMessage =
+        err instanceof Error ? err.message : 'Terjadi kesalahan saat memuat data checkout'
       error.value = errorMessage
       toast.error(errorMessage)
     } finally {
@@ -170,28 +176,49 @@ const loadCheckoutData = async () => {
   }
 }
 
-// Computed properties 'subtotal' dan 'total' (Tidak Berubah)
-const subtotal = computed(() => orderItems.value.reduce((acc, it) => acc + Number(it.subtotal), 0))
+// ✅ FIX KRITIS: Computed properties 'subtotal' dan 'total'
+// Menggunakan item.jumlah * item.harga_satuan untuk perhitungan yang akurat
+const subtotal = computed(() => orderItems.value.reduce((acc, item) => {
+    return acc + getItemSubtotal(item)
+}, 0))
+
 const total = computed(() => subtotal.value)
 
-// --- [BARU] Fungsi untuk menangani file dan membuat preview ---
+// ✅ FIX KRITIS: Computed property untuk summary component
+// Mengganti item.subtotal yang 0 dengan perhitungan yang benar
+const summaryItems = computed(() => {
+  return orderItems.value.map(item => ({
+    ...item,
+    // Timpa nilai item.subtotal yang 0 dengan perhitungan yang benar
+    subtotal: getItemSubtotal(item) 
+  }));
+});
+
+
+// --- Handler untuk file selected (diubah untuk menerima Event DOM) ---
 const handleFileSelected = (event: Event) => {
-  const target = event.target as HTMLInputElement
-  if (target.files && target.files.length > 0) {
-    const file = target.files[0]
-    selectedFile.value = file
-    // Buat URL sementara untuk preview gambar
-    filePreviewUrl.value = URL.createObjectURL(file)
-    toast.success('File berhasil dipilih!')
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0] || null;
+
+  if (file) {
+    selectedFile.value = file;
+    filePreviewUrl.value = URL.createObjectURL(file);
+    toast.success('File berhasil dipilih!');
   } else {
-    selectedFile.value = null
-    filePreviewUrl.value = null
+    selectedFile.value = null;
+    filePreviewUrl.value = null;
+    if (filePreviewUrl.value) {
+        URL.revokeObjectURL(filePreviewUrl.value);
+    }
+    toast.info('Pilihan file dibatalkan.');
   }
-}
+};
+
 
 // Handler untuk menghapus file
 const handleFileRemoved = () => {
-  // Hapus URL object jika ada
+  // Dihandle oleh komponen CheckoutForm.vue sekarang, 
+  // tetapi logika pembersihan state lokal tetap di sini.
   if (filePreviewUrl.value) {
     URL.revokeObjectURL(filePreviewUrl.value)
   }
@@ -202,17 +229,16 @@ const handleFileRemoved = () => {
 
 // Handler untuk error file
 const handleFileError = (message: string) => {
-  // Split pesan menjadi array dan tampilkan sebagai toast
-  const lines = message.split('\n').filter(line => line.trim() !== '')
+  const lines = message.split('\n').filter((line) => line.trim() !== '')
   const mainMessage = lines[0] || 'Terjadi kesalahan pada file'
   const details = lines.slice(1).join(' | ')
 
   toast.error(mainMessage + (details ? `\n${details}` : ''), {
-    timeout: 5000, // Tampilkan selama 5 detik
+    timeout: 5000, 
   })
 }
 
-// --- [PERUBAHAN BESAR]: Fungsi 'submitOrderAndUpload' ---
+// --- Fungsi 'submitOrderAndUpload' ---
 const submitOrderAndUpload = async () => {
   // 1. Validasi
   if (!form.fullName || !form.address || !form.contact) {
@@ -240,11 +266,12 @@ const submitOrderAndUpload = async () => {
   formData.append('kontakPelanggan', form.contact)
 
   // Tambahkan data 'items' sebagai JSON string
-  const itemsPayload = orderItems.value.map((item) => ({
+  // ✅ PENTING: Gunakan summaryItems untuk memastikan subtotal yang benar dikirim ke backend
+  const itemsPayload = summaryItems.value.map((item) => ({
     produkId: item.produkId,
     ukuranId: item.ukuranId || null,
-    quantity: item.jumlah,
-    subtotal: Number(item.subtotal),
+    quantity: item.jumlah, 
+    subtotal: item.subtotal, // Menggunakan subtotal yang sudah dihitung ulang
   }))
   formData.append('items', JSON.stringify(itemsPayload))
 
@@ -258,8 +285,7 @@ const submitOrderAndUpload = async () => {
     const response = await fetch(API_ORDER_URL, {
       method: 'POST',
       body: formData,
-      // JANGAN set 'Content-Type: application/json',
-      // biarkan browser mengaturnya sebagai 'multipart/form-data'
+      // JANGAN set 'Content-Type: application/json'
     })
 
     const result = await response.json()

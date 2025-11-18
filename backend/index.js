@@ -32,6 +32,7 @@ const productRoutes = require('./routes/productRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
 const pesananRoutes = require('./routes/pesananRoutes'); 
 const cartRoutes = require('./routes/cart'); 
+const salesRoutes = require('./routes/salesRoutes'); // ✅ IMPORT BARU
 
 const app = express();
 
@@ -62,6 +63,9 @@ app.use('/api/pesanan', pesananRoutes);
 
 // Rute untuk Cart
 app.use('/api/cart', cartRoutes);
+
+// Rute untuk Laporan Penjualan
+app.use('/api/sales', salesRoutes); // ✅ DAFTARKAN RUTE BARU
 
 // 404 Handler
 app.use((req, res) => {

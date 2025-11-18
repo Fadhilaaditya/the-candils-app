@@ -5,36 +5,47 @@
         <h2 class="text-2xl font-bold text-gray-800">Laporan Penjualan</h2>
         <p class="text-gray-600 mt-1">Data penjualan produk per lokasi</p>
       </div>
-      <button
-        @click="handleAddReport"
-        class="mt-4 lg:mt-0 bg-[#BAB772] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#a8a668] transition-colors duration-200 flex items-center gap-2"
-      >
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-        Tambah Laporan
-      </button>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-2">Dari Tanggal</label>
-        <input v-model="filters.dateFrom" type="date" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#BAB772] focus:border-transparent"/>
+        <input 
+          :value="filters.startDate" 
+          @change="updateFilter('startDate', ($event.target as HTMLInputElement).value)"
+          type="date" 
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#BAB772] focus:border-transparent"
+        />
       </div>
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-2">Sampai Tanggal</label>
-        <input v-model="filters.dateTo" type="date" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#BAB772] focus:border-transparent"/>
+        <input 
+          :value="filters.endDate" 
+          @change="updateFilter('endDate', ($event.target as HTMLInputElement).value)"
+          type="date" 
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#BAB772] focus:border-transparent"
+        />
       </div>
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-2">Lokasi</label>
-        <select v-model="filters.location" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#BAB772] focus:border-transparent">
-          <option value="">Semua Lokasi</option>
+        <select 
+          :value="filters.lokasiId"
+          @change="updateFilter('lokasiId', ($event.target as HTMLSelectElement).value)" 
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#BAB772] focus:border-transparent">
+          <option value="all">Semua Lokasi</option>
           <option value="Ciputat">Ciputat</option>
           <option value="Pamulang">Pamulang</option>
           <option value="Bukit Indah">Bukit Indah</option>
-        </select>
+          </select>
       </div>
     </div>
+    
+    <div v-if="isLoading" class="text-center py-10">
+        <svg class="h-8 w-8 text-blue-600 animate-spin mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+        <p class="text-gray-600 mt-2">Memuat laporan...</p>
+    </div>
 
-    <div class="overflow-x-auto">
+    <div v-else-if="reportData.length > 0" class="overflow-x-auto">
       <table class="w-full">
         <thead>
           <tr class="bg-gray-50 border-b border-gray-200">
@@ -48,99 +59,66 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="(sale, index) in paginatedSalesData" :key="sale.id" class="border-b border-gray-100 hover:bg-gray-50">
-            <td class="px-4 py-3 text-sm text-gray-900">{{ (currentPage - 1) * itemsPerPage + index + 1 }}</td>
-            <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ sale.productName }}</td>
-            <td class="px-4 py-3 text-sm text-gray-700">{{ sale.quantity }}</td>
-            <td class="px-4 py-3 text-sm text-gray-700">{{ formatCurrency(sale.price) }}</td>
-            <td class="px-4 py-3 text-sm text-gray-700"><span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">{{ sale.location }}</span></td>
+          <tr v-for="(sale, index) in reportData" :key="index" class="border-b border-gray-100 hover:bg-gray-50">
+            <td class="px-4 py-3 text-sm text-gray-900">{{ index + 1 }}</td> 
+            <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ sale.namaProduk }}</td>
+            <td class="px-4 py-3 text-sm text-gray-700">{{ sale.QTY }}</td>
+            <td class="px-4 py-3 text-sm text-gray-700">{{ formatCurrency(sale.totalHarga) }}</td>
+            <td class="px-4 py-3 text-sm text-gray-700"><span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">{{ sale.lokasi }}</span></td>
             <td class="px-4 py-3 text-sm text-gray-700">{{ formatDate(sale.date) }}</td>
             <td class="px-4 py-3 flex items-center gap-2">
-              <button @click="handleEdit(sale)" class="text-blue-600 hover:text-blue-800"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg></button>
-              <button @click="handleDelete(sale)" class="text-red-600 hover:text-red-800"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+              <button @click="handleEdit(sale)" class="text-blue-600 hover:text-blue-800" title="Edit Laporan"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg></button>
+              <button @click="handleDelete(sale)" class="text-red-600 hover:text-red-800" title="Hapus Laporan"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
             </td>
           </tr>
         </tbody>
       </table>
     </div>
-
-    <div class="flex items-center justify-between mt-6">
-      <div class="text-sm text-gray-700">
-        Menampilkan {{ paginationInfo.start }} - {{ paginationInfo.end }} dari {{ paginationInfo.total }} data
-      </div>
-      <div class="flex gap-2">
-        <button @click="previousPage" :disabled="currentPage === 1" class="px-3 py-2 text-sm border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50">
-          Previous
-        </button>
-        <button @click="nextPage" :disabled="currentPage >= totalPages" class="px-3 py-2 text-sm border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50">
-          Next
-        </button>
-      </div>
+    
+    <div v-else class="text-center py-10 text-gray-500">
+        Tidak ada data penjualan yang ditemukan untuk filter ini.
     </div>
-  </div>
+
+    </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 
-interface Sale {
-  id: number;
-  productName: string;
-  quantity: number;
-  price: number;
-  location: string;
-  date: string;
+// ✅ INTERFACE BARU: Mencocokkan output dari getSalesReport API
+interface SaleReport {
+  pesananId: number; // Dari API
+  namaProduk: string;
+  QTY: number; // Quantity total yang terjual
+  totalHarga: number; // Total harga per baris (QTY * hargaSatuan)
+  lokasi: string; // Nama Lokasi
+  date: string; // Tanggal Penjualan
 }
 
+// ✅ PROPS BARU: Menerima data laporan yang sudah difilter/dipaginasi dari parent
 const props = defineProps<{
-  sales: Sale[]
+  reportData: SaleReport[] // Data yang sudah dimuat dari API
+  isLoading: boolean; // State loading dari parent
+  filters: { // Objek filter dari parent
+    startDate: string; 
+    endDate: string;
+    lokasiId: string | number;
+  };
 }>()
 
 const emit = defineEmits<{
-  addReport: []
-  editSale: [sale: Sale]
-  deleteSale: [sale: Sale]
+  // Emit event untuk memberitahu parent agar update filter dan fetch data
+  updateFilters: [filters: {startDate?: string, endDate?: string, lokasiId?: string | number}]
+  // Emit event untuk aksi CRUD (mengirimkan seluruh objek sale yang terpengaruh)
+  editSale: [sale: SaleReport] 
+  deleteSale: [sale: SaleReport]
 }>()
 
-// 'filters' sekarang terhubung ke template dengan v-model
-const filters = ref({ dateFrom: '', dateTo: '', location: '' })
-const currentPage = ref(1)
-const itemsPerPage = 5
-
-// 'filteredSalesData' sekarang memiliki logika filter yang lengkap, dan 'let' sudah benar
-const filteredSalesData = computed(() => {
-  let filtered = props.sales
-
-  if (filters.value.location) {
-    filtered = filtered.filter(sale => sale.location === filters.value.location)
-  }
-  if (filters.value.dateFrom) {
-    filtered = filtered.filter(sale => new Date(sale.date) >= new Date(filters.value.dateFrom))
-  }
-  if (filters.value.dateTo) {
-    filtered = filtered.filter(sale => new Date(sale.date) <= new Date(filters.value.dateTo))
-  }
-
-  return filtered
-})
-
-const paginatedSalesData = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage
-  const end = start + itemsPerPage
-  return filteredSalesData.value.slice(start, end)
-})
-
-const totalPages = computed(() => Math.ceil(filteredSalesData.value.length / itemsPerPage))
-
-const paginationInfo = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage + 1
-  const end = Math.min(currentPage.value * itemsPerPage, filteredSalesData.value.length)
-  return {
-    start: filteredSalesData.value.length === 0 ? 0 : start,
-    end,
-    total: filteredSalesData.value.length,
-  }
-})
+// Methods
+const updateFilter = (key: keyof typeof props.filters, value: string | number) => {
+    // Memberitahu parent agar mengubah nilai filter dan memuat ulang data
+    emit('updateFilters', { ...props.filters, [key]: value });
+}
 
 const formatCurrency = (amount: number): string => {
   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount)
@@ -151,10 +129,9 @@ const formatDate = (dateString: string): string => {
   return date.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
-const handleAddReport = () => emit('addReport')
-const handleEdit = (sale: Sale) => emit('editSale', sale)
-const handleDelete = (sale: Sale) => emit('deleteSale', sale)
+// Handler untuk aksi CRUD
+const handleEdit = (sale: SaleReport) => emit('editSale', sale)
+const handleDelete = (sale: SaleReport) => emit('deleteSale', sale)
 
-const previousPage = () => { if (currentPage.value > 1) currentPage.value-- }
-const nextPage = () => { if (currentPage.value < totalPages.value) currentPage.value++ }
+// Logika pagination lama dihapus karena diasumsikan diurus parent/dihilangkan.
 </script>
