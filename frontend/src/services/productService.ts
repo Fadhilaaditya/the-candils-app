@@ -1,17 +1,26 @@
 import api from './api';
+import { type AxiosResponse } from 'axios';
+
+// ========================================
+// TIPE DATA STRUKTUR RESPONSE BACKEND
+// ========================================
+
+// Interface untuk objek response JSON yang dikirim backend (yang membungkus data)
+export interface BackendResponse<T> {
+    success: boolean;
+    message?: string;
+    data: T; // Tipe array data yang sebenarnya
+}
 
 // ========================================
 // TIPE DATA PRODUK & ULASAN
 // ========================================
 
-// Tipe data untuk Ukuran
 export interface Ukuran {
   ukuranId?: number;
   namaUkuran: string;
   hargaTambahan: number;
 }
-
-// Tipe data untuk Produk Detail (digunakan getProductById)
 export interface Produk {
   produkId?: number;
   namaProduk: string;
@@ -19,10 +28,9 @@ export interface Produk {
   stok: number;
   foto?: string; // URL
   hargaUnit: number;
-  ukurans: Ukuran[]; // Hanya ada di getProductById
+  ukurans: Ukuran[];
 }
 
-// Tipe data untuk Varian (baris tabel dari getProducts)
 export interface ProductVariantRow {
   produkId: number;
   namaProduk: string;
@@ -30,15 +38,13 @@ export interface ProductVariantRow {
   stok: number;
   foto?: string; // URL Gambar
   hargaUnit: number; // Harga dasar produk
-  ukuranId?: number; // Akan null jika produk tidak punya ukuran
-  namaUkuran?: string; // Akan null jika produk tidak punya ukuran
-  hargaTambahan?: number; // Akan null jika produk tidak punya ukuran
-  // Field rating baru dari API
+  ukuranId?: number;
+  namaUkuran?: string;
+  hargaTambahan?: number; 
   averageRating?: number;
   reviewCount?: number;
 }
 
-// Tipe data untuk Ulasan (sesuai skema sederhana)
 export interface Ulasan {
   ulasanId?: number;
   produkId: number;
@@ -48,7 +54,6 @@ export interface Ulasan {
   tanggalUlasan: string;
 }
 
-// Tipe data untuk form 'createReview'
 interface CreateReviewData {
   namaReviewer: string;
   rating: number;
@@ -59,7 +64,6 @@ interface CreateReviewData {
 // TIPE DATA PESANAN
 // ========================================
 
-// Tipe data untuk form 'createPesananOffline'
 export interface CreatePesananOfflinePayload {
   lokasiId: number | null; 
   namaPelanggan: string;
@@ -134,7 +138,7 @@ export interface CreatePesananData {
 }
 
 // ========================================
-// API PENJUALAN (SALES) - BARU
+// API PENJUALAN (SALES) - REVISI
 // ========================================
 
 export interface SaleReportItem {
@@ -147,32 +151,39 @@ export interface SaleReportItem {
     date: string; 
 }
 
-export interface SaleSummaryItem {
+export interface SaleRevenueSummary {
     lokasi: string;
     totalPendapatan: number;
+}
+
+export interface SaleQuantitySummary {
+    namaProduk: string;
     totalProdukTerjual: number;
 }
 
 /**
  * Mengambil data laporan penjualan (tabel detail).
- * Menerima query string untuk filter.
  */
-export const getSalesReport = (queryString: string) => {
-  return api.get<SaleReportItem[]>(`/sales/report?${queryString}`);
+export const getSalesReport = (queryString: string): Promise<AxiosResponse<BackendResponse<SaleReportItem[]>>> => {
+  return api.get<BackendResponse<SaleReportItem[]>>(`/sales/report?${queryString}`);
 };
 
 /**
- * Mengambil data ringkasan penjualan (untuk chart).
+ * Mengambil data ringkasan Pendapatan per Lokasi.
  */
-export const getSalesSummary = () => {
-  return api.get<SaleSummaryItem[]>('/sales/summary');
+export const getSalesSummaryRevenue = (): Promise<AxiosResponse<BackendResponse<SaleRevenueSummary[]>>> => {
+  return api.get<BackendResponse<SaleRevenueSummary[]>>('/sales/summary-revenue');
 };
 
 /**
- * Update transaksi penjualan (mengubah quantity/lokasi transaksi historis).
- * @param pesananId ID pesanan
- * @param produkId ID produk dalam pesanan (detail)
- * @param data Payload { quantity, hargaSatuan, lokasiId }
+ * Mengambil data ringkasan Kuantitas Terjual per Produk.
+ */
+export const getSalesSummaryQuantity = (): Promise<AxiosResponse<BackendResponse<SaleQuantitySummary[]>>> => {
+  return api.get<BackendResponse<SaleQuantitySummary[]>>('/sales/summary-quantity');
+};
+
+/**
+ * Update transaksi penjualan.
  */
 export const updateSalesTransaction = (pesananId: number, produkId: number, data: any) => {
   return api.put(`/sales/transaction/${pesananId}/${produkId}`, data);

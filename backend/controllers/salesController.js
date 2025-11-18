@@ -3,16 +3,14 @@ const db = require('../config/db');
 /**
  * @desc    Mengambil data penjualan per produk, difilter berdasarkan tanggal dan lokasi.
  * @route   GET /api/sales/report
- * @query   startDate, endDate, lokasiId
  */
 const getSalesReport = async (req, res) => {
-    // Ambil parameter filter dari query string
     const { startDate, endDate, lokasiId } = req.query;
 
     let query = `
         SELECT
             P.namaProduk AS namaProduk,
-            P.produkId AS produkId,           -- Tambah Produk ID
+            P.produkId AS produkId,
             SUM(DP.quantity) AS QTY,
             SUM(DP.subtotal) AS totalHarga,
             L.name AS lokasi,
@@ -46,7 +44,6 @@ const getSalesReport = async (req, res) => {
         params.push(lokasiId);
     }
 
-    // Kelompokkan hasil berdasarkan produk, lokasi, dan tanggal (PENTING untuk EDIT)
     query += `
         GROUP BY
             P.namaProduk, P.produkId, L.name, DATE(PM.tanggalPesanan), PM.pesananId
@@ -71,25 +68,24 @@ const getSalesReport = async (req, res) => {
 };
 
 /**
- * @desc    Mengambil data ringkasan (Pendapatan dan Produk Terjual per Lokasi)
- * @route   GET /api/sales/summary
+ * @desc    Mengambil data ringkasan Pendapatan per Lokasi (untuk RevenueChart).
+ * @route   GET /api/sales/summary-revenue
  */
-const getSalesSummary = async (req, res) => {
+const getSummaryRevenue = async (req, res) => {
     let query = `
         SELECT
             L.name AS lokasi,
-            SUM(PM.totalHarga) AS totalPendapatan,
-            SUM(DP.quantity) AS totalProdukTerjual
+            SUM(PM.totalHarga) AS totalPendapatan
         FROM
             Pemesanan PM
         JOIN
             Lokasi L ON PM.lokasiId = L.lokasiId
-        JOIN
-            DetailPemesanan DP ON PM.pesananId = DP.pesananId
         WHERE
             PM.statusPesanan = 'Selesai'
         GROUP BY
             L.name
+        ORDER BY
+            totalPendapatan DESC
     `;
 
     try {
@@ -99,10 +95,49 @@ const getSalesSummary = async (req, res) => {
             data: summaryData
         });
     } catch (err) {
-        console.error('Error fetching sales summary:', err);
+        console.error('Error fetching summary revenue:', err);
         res.status(500).json({
             success: false,
-            message: 'Gagal memuat ringkasan penjualan',
+            message: 'Gagal memuat ringkasan pendapatan',
+            error: err.message
+        });
+    }
+};
+
+/**
+ * @desc    Mengambil data total Kuantitas Produk Terjual per Produk (untuk ProductsSoldChart).
+ * @route   GET /api/sales/summary-quantity
+ */
+const getSummaryQuantity = async (req, res) => {
+    let query = `
+        SELECT
+            P.namaProduk,
+            SUM(DP.quantity) AS totalProdukTerjual
+        FROM
+            Pemesanan PM
+        JOIN
+            DetailPemesanan DP ON PM.pesananId = DP.pesananId
+        JOIN
+            Produk P ON DP.produkId = P.produkId
+        WHERE
+            PM.statusPesanan = 'Selesai'
+        GROUP BY
+            P.namaProduk
+        ORDER BY
+            totalProdukTerjual DESC
+    `;
+
+    try {
+        const [summaryData] = await db.query(query);
+        res.json({
+            success: true,
+            data: summaryData
+        });
+    } catch (err) {
+        console.error('Error fetching summary quantity:', err);
+        res.status(500).json({
+            success: false,
+            message: 'Gagal memuat ringkasan kuantitas produk',
             error: err.message
         });
     }
@@ -114,7 +149,7 @@ const getSalesSummary = async (req, res) => {
  */
 const updateSalesTransaction = async (req, res) => {
     const { pesananId, produkId } = req.params;
-    const { quantity, hargaSatuan, lokasiId } = req.body; 
+    const { quantity, hargaSatuan, lokasiId } = req.body;
 
     if (!quantity || !hargaSatuan || !lokasiId) {
         return res.status(400).json({ success: false, message: 'Data kuantitas, harga satuan, dan lokasi wajib diisi.' });
@@ -131,7 +166,7 @@ const updateSalesTransaction = async (req, res) => {
         connection = await db.getConnection();
         await connection.beginTransaction();
 
-        // 1. UPDATE DetailPemesanan (Kuantitas & Subtotal)
+        // 1. UPDATE DetailPemesanan
         await connection.query(
             `UPDATE DetailPemesanan SET 
                 quantity = ?, 
@@ -172,7 +207,7 @@ const updateSalesTransaction = async (req, res) => {
 };
 
 /**
- * @desc    Hapus item dari Transaksi Penjualan. Jika item terakhir, hapus Pemesanan.
+ * @desc    Hapus item dari Transaksi Penjualan.
  * @route   DELETE /api/sales/transaction/:pesananId/:produkId
  */
 const deleteSalesTransaction = async (req, res) => {
@@ -184,30 +219,23 @@ const deleteSalesTransaction = async (req, res) => {
         await connection.beginTransaction();
 
         // 1. Hapus DetailPemesanan
-        const [deleteDetailResult] = await connection.query(
+        await connection.query(
             'DELETE FROM DetailPemesanan WHERE pesananId = ? AND produkId = ?',
             [pesananId, produkId]
         );
 
-        if (deleteDetailResult.affectedRows === 0) {
-            await connection.rollback();
-            return res.status(404).json({ success: false, message: 'Detail transaksi tidak ditemukan.' });
-        }
-
-        // 2. Cek sisa item
+        // 2. Cek sisa item dan hitung ulang Total
         const [remainingItems] = await connection.query(
             'SELECT COUNT(*) as count FROM DetailPemesanan WHERE pesananId = ?',
             [pesananId]
         );
         
-        // 3. Logika Hapus/Update Total
         if (remainingItems[0].count === 0) {
             await connection.query('DELETE FROM Pemesanan WHERE pesananId = ?', [pesananId]);
             await connection.commit();
             return res.json({ success: true, message: 'Transaksi dan Pemesanan induk berhasil dihapus.' });
         }
 
-        // 4. Hitung Ulang dan Update Total Harga Pemesanan
         const [recalculateResult] = await connection.query(
             'SELECT SUM(subtotal) AS newTotal FROM DetailPemesanan WHERE pesananId = ?',
             [pesananId]
@@ -231,7 +259,8 @@ const deleteSalesTransaction = async (req, res) => {
 
 module.exports = {
     getSalesReport,
-    getSalesSummary,
+    getSummaryRevenue,     // ✅ Export Pendapatan
+    getSummaryQuantity,    // ✅ Export Kuantitas Terjual
     updateSalesTransaction,
     deleteSalesTransaction,
 };

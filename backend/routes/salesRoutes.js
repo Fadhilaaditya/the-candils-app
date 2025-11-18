@@ -1,37 +1,38 @@
 const express = require('express');
 const router = express.Router();
 const salesController = require('../controllers/salesController');
-// Anda harus memastikan middleware ini ada di proyek Anda
 const authMiddleware = require('../middleware/authMiddleware'); 
 const { validateSalesReportQuery } = require('../middleware/validateSalesMiddleware'); 
 
 
-// Rute untuk Laporan Penjualan Detail
+// Rute untuk Laporan Penjualan Detail (Tabel)
 router.get(
     '/report', 
-    // Menggunakan array untuk middleware agar berfungsi dengan baik: [authMiddleware, validateSalesReportQuery]
+    // Anda bisa menambahkan [authMiddleware, validateSalesReportQuery] di sini
     salesController.getSalesReport 
 );
 
-// Rute untuk Ringkasan Bar Chart
+// ✅ Rute untuk Ringkasan Pendapatan (Revenue Chart)
 router.get(
-    '/summary', 
-    // Menggunakan array untuk middleware: [authMiddleware, validateSalesReportQuery]
-    salesController.getSalesSummary
+    '/summary-revenue', 
+    salesController.getSummaryRevenue
 );
 
-// ✅ Rute CRUD TRANSAKSI PENJUALAN
-// Rute PUT (Edit Laporan)
+// ✅ Rute untuk Ringkasan Kuantitas Produk Terjual (Products Sold Chart)
+router.get(
+    '/summary-quantity', 
+    salesController.getSummaryQuantity
+);
+
+
+// Rute CRUD TRANSAKSI PENJUALAN HISTORIS
 router.put(
     '/transaction/:pesananId/:produkId',
-    // Middleware opsional, tambahkan jika Anda ingin membatasi akses: [authMiddleware]
     salesController.updateSalesTransaction
 );
 
-// Rute DELETE (Hapus Item Laporan)
 router.delete(
     '/transaction/:pesananId/:produkId',
-    // Middleware opsional, tambahkan jika Anda ingin membatasi akses: [authMiddleware]
     salesController.deleteSalesTransaction
 );
 

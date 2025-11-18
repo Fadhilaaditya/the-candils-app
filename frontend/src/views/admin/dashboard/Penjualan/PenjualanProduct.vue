@@ -34,7 +34,7 @@
       
       <ProductsSoldChart :summary-data="productsSoldData as any" /> 
     </div>
-    
+
     <EditReportModal
       :is-visible="isEditModalVisible"
       :sale-data="saleToEdit" 
@@ -66,7 +66,9 @@ import DeleteConfirmModal from './_components/DeleteConfirmModal.vue';
 // 2. Import service API
 import { 
     getSalesReport, 
-    getSalesSummary, 
+    // ✅ PENTING: Menggunakan fungsi Summary yang terpisah
+    getSalesSummaryRevenue,
+    getSalesSummaryQuantity,
     updateSalesTransaction, 
     deleteSalesTransaction,
     getAllLokasi,
@@ -76,7 +78,7 @@ import {
 // 3. Define Interfaces (Harus konsisten dengan data API)
 interface SaleReport {
     pesananId: number; 
-    produkId: number; // Wajib ada
+    produkId: number; 
     namaProduk: string;
     QTY: number; 
     totalHarga: number; 
@@ -102,7 +104,8 @@ const toast = useToast();
 const isLoading = ref(false);
 const loadError = ref<string | null>(null);
 const reportData = ref<SaleReport[]>([]);
-const summaryData = ref<SaleSummary[]>([]);
+const revenueData = ref<any[]>([]); // Data untuk RevenueChart
+const productsSoldData = ref<any[]>([]); // Data untuk ProductsSoldChart
 const lokasiList = ref<Lokasi[]>([]); 
 const masterProductList = ref<{ name: string; price: number }[]>([]); 
 
@@ -117,8 +120,8 @@ const filters = reactive({
 const currentPage = ref(1);
 const itemsPerPage = 5;
 
+
 // --- State Modal CRUD ---
-const isModalVisible = ref(false); 
 const isEditModalVisible = ref(false);
 const isDeleteModalVisible = ref(false);
 const saleToEdit = ref<SaleReport | null>(null); 
@@ -135,10 +138,6 @@ const paginatedReportData = computed(() => {
     const end = start + itemsPerPage;
     return reportData.value.slice(start, end);
 });
-
-// Data mapping untuk chart
-const productsSoldData = computed(() => summaryData.value);
-const revenueData = computed(() => summaryData.value);
 
 
 // --- Logic Fetching Data ---
@@ -172,11 +171,17 @@ const fetchSalesData = async () => {
             lokasiId: String(filters.lokasiId)
         }).toString();
 
-        const reportResponse = await getSalesReport(reportParams); 
-        const summaryResponse = await getSalesSummary();
+        const [reportRes, revenueRes, quantityRes] = await Promise.all([
+            getSalesReport(reportParams), 
+            getSalesSummaryRevenue(),       // ✅ Fetch Pendapatan (Lokasi)
+            getSalesSummaryQuantity()       // ✅ Fetch Kuantitas (Produk)
+        ]);
+
+        // Mengambil data dari response Axios
+        const apiReportData = reportRes.data;
         
-        if (reportResponse.data) {
-            reportData.value = reportResponse.data.map((item: any) => ({
+        if (apiReportData.success && Array.isArray(apiReportData.data)) {
+            reportData.value = apiReportData.data.map((item: any) => ({
                 pesananId: Number(item.pesananId),
                 produkId: Number(item.produkId || 0), 
                 namaProduk: item.namaProduk,
@@ -187,10 +192,15 @@ const fetchSalesData = async () => {
             })) as SaleReport[];
         } else {
              reportData.value = [];
+             loadError.value = apiReportData.message || 'Data laporan tidak valid atau kosong.';
         }
 
-        if (summaryResponse.data) {
-            summaryData.value = summaryResponse.data as SaleSummary[];
+        // ✅ SET DATA CHART: Pendapatan dan Kuantitas (memastikan logika grafik terpisah)
+        if (revenueRes.data.success) {
+            revenueData.value = revenueRes.data.data; 
+        }
+        if (quantityRes.data.success) {
+            productsSoldData.value = quantityRes.data.data;
         }
         
     } catch (error: any) {
@@ -220,9 +230,7 @@ const updateFilters = (newFilters: Partial<typeof filters>) => {
 const nextPage = () => { if (currentPage.value < totalPages.value) currentPage.value++; };
 const previousPage = () => { if (currentPage.value > 1) currentPage.value--; };
 
-const handleAddReport = () => { isModalVisible.value = true; };
-const handleModalClose = () => { isModalVisible.value = false; };
-const handleModalSubmit = () => { isModalVisible.value = false; loadData(); }; 
+const handleAddReport = () => { /* isModalVisible.value = true; */ };
 
 const handleEditSale = (sale: SaleReport) => {
     saleToEdit.value = { ...sale }; 
@@ -232,7 +240,6 @@ const handleEditModalClose = () => { isEditModalVisible.value = false; };
 
 const handleEditModalSubmit = async (updatedSale: SaleReport) => {
     try {
-        // Cari Lokasi ID untuk dikirim ke backend
         const lokasiDetail = lokasiList.value.find(l => (l.name || l.namaLokasi) === updatedSale.lokasi);
         
         const payload = {
