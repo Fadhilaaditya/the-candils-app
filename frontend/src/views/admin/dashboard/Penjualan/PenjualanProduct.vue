@@ -1,11 +1,11 @@
 <template>
   <div class="p-8 bg-gray-50 min-h-screen">
     
-    <div v-if="isLoading && reportData.length === 0" class="text-center py-20">
+    <!-- <div v-if="isLoading && reportData.length === 0" class="text-center py-20">
       <p class="text-gray-600">Memuat data laporan...</p>
-    </div>
+    </div> -->
 
-    <div v-else-if="loadError" class="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+    <div v-if="loadError" class="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
       <p class="text-red-500">{{ loadError }}</p>
       <button @click="loadData" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 mt-4">
         Coba Lagi

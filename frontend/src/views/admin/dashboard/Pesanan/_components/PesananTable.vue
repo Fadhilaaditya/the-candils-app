@@ -77,8 +77,39 @@
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
+            <!-- SKELETON LOADING -->
+            <tr v-if="loading" v-for="i in itemsPerPage" :key="'skeleton-' + i" class="animate-pulse border-b border-gray-200">
+              <td class="px-4 py-4">
+                <div class="h-4 bg-gray-200 rounded w-16 mb-2"></div>
+                <div class="h-3 bg-gray-200 rounded w-24"></div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="h-6 bg-gray-200 rounded-full w-24"></div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="h-4 bg-gray-200 rounded w-32"></div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="h-4 bg-gray-200 rounded w-28"></div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="h-8 bg-gray-200 rounded w-32"></div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="h-5 bg-gray-200 rounded w-16"></div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="h-4 bg-gray-200 rounded w-24"></div>
+              </td>
+              <td class="px-4 py-4">
+                 <div class="h-4 bg-gray-200 rounded w-20"></div>
+              </td>
+            </tr>
+
+            <!-- DATA ROWS -->
             <tr
-              v-for="pesanan in pesananList"
+              v-else
+              v-for="pesanan in paginatedPesananList"
               :key="pesanan.pesananId"
               class="hover:bg-gray-50 transition-colors"
             >
@@ -150,7 +181,54 @@
         </table>
       </div>
 
-      <div v-if="pesananList.length === 0" class="text-center py-12">
+      <!-- Pagination Controls -->
+      <div v-if="!loading && pesananList.length > 0" class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+          <div>
+            <p class="text-sm text-gray-700">
+              Menampilkan
+              <span class="font-medium">{{ startIndex }}</span>
+              sampai
+              <span class="font-medium">{{ endIndex }}</span>
+              dari
+              <span class="font-medium">{{ pesananList.length }}</span>
+              hasil
+            </p>
+          </div>
+          <div>
+            <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+              <button
+                @click="prevPage"
+                :disabled="currentPage === 1"
+                class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <span class="sr-only">Previous</span>
+                <!-- Heroicon name: solid/chevron-left -->
+                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                </svg>
+              </button>
+              <!-- Current Page Indicator -->
+               <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+                 {{ currentPage }} / {{ totalPages }}
+               </span>
+              <button
+                @click="nextPage"
+                :disabled="currentPage === totalPages"
+                class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <span class="sr-only">Next</span>
+                <!-- Heroicon name: solid/chevron-right -->
+                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                </svg>
+              </button>
+            </nav>
+          </div>
+        </div>
+      </div>
+
+      <div v-if="!loading && pesananList.length === 0" class="text-center py-12">
         <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
         </svg>
@@ -162,7 +240,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import type { Pemesanan, Lokasi } from '@/services/productService' 
 
 interface Tab {
@@ -178,9 +256,12 @@ interface Props {
   selectedOrders: number[]
   lokasiList: Lokasi[]
   activeFilters: number
+  loading?: boolean
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  loading: false
+})
 
 const emit = defineEmits<{
   'change-tab': [value: string]
@@ -191,6 +272,40 @@ const emit = defineEmits<{
   'open-detail': [pesanan: Pemesanan]
   'open-add-modal': [] 
 }>()
+
+// Pagination
+const currentPage = ref(1)
+const itemsPerPage = 5
+
+// Reset page when data changes
+watch(() => props.pesananList, () => {
+  currentPage.value = 1
+})
+
+const totalPages = computed(() => {
+  return Math.ceil(props.pesananList.length / itemsPerPage)
+})
+
+const paginatedPesananList = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage
+  const end = start + itemsPerPage
+  return props.pesananList.slice(start, end)
+})
+
+const startIndex = computed(() => ((currentPage.value - 1) * itemsPerPage) + 1)
+const endIndex = computed(() => Math.min(currentPage.value * itemsPerPage, props.pesananList.length))
+
+function nextPage() {
+  if (currentPage.value < totalPages.value) {
+    currentPage.value++
+  }
+}
+
+function prevPage() {
+  if (currentPage.value > 1) {
+    currentPage.value--
+  }
+}
 
 // Computed
 const isAllSelected = computed(() => {

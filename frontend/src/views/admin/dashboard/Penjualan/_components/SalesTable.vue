@@ -40,12 +40,7 @@
       </div>
     </div>
     
-    <div v-if="isLoading" class="text-center py-10">
-        <svg class="h-8 w-8 text-blue-600 animate-spin mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-        <p class="text-gray-600 mt-2">Memuat laporan...</p>
-    </div>
-
-    <div v-else-if="reportData.length > 0" class="overflow-x-auto">
+    <div class="overflow-x-auto">
       <table class="w-full">
         <thead>
           <tr class="bg-gray-50 border-b border-gray-200">
@@ -58,8 +53,25 @@
             <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">AKSI</th>
           </tr>
         </thead>
-        <tbody>
-          <tr v-for="(sale, index) in reportData" :key="index" class="border-b border-gray-100 hover:bg-gray-50">
+        <tbody class="bg-white divide-y divide-gray-200">
+          <!-- SKELETON LOADING -->
+          <tr v-if="isLoading" v-for="i in itemsPerPage" :key="'skeleton-' + i" class="animate-pulse">
+            <td class="px-4 py-4"><div class="h-4 bg-gray-200 rounded w-8"></div></td>
+            <td class="px-4 py-4"><div class="h-4 bg-gray-200 rounded w-32"></div></td>
+            <td class="px-4 py-4"><div class="h-4 bg-gray-200 rounded w-12"></div></td>
+            <td class="px-4 py-4"><div class="h-4 bg-gray-200 rounded w-24"></div></td>
+            <td class="px-4 py-4"><div class="h-6 bg-gray-200 rounded-full w-20"></div></td>
+            <td class="px-4 py-4"><div class="h-4 bg-gray-200 rounded w-24"></div></td>
+            <td class="px-4 py-4">
+              <div class="flex gap-2">
+                <div class="h-4 bg-gray-200 rounded w-4"></div>
+                <div class="h-4 bg-gray-200 rounded w-4"></div>
+              </div>
+            </td>
+          </tr>
+
+          <!-- DATA ROWS -->
+          <tr v-else v-for="(sale, index) in reportData" :key="index" class="hover:bg-gray-50 transition-colors">
             <td class="px-4 py-3 text-sm text-gray-900">{{ (currentPage - 1) * itemsPerPage + index + 1 }}</td> 
             <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ sale.namaProduk }}</td>
             <td class="px-4 py-3 text-sm text-gray-700">{{ sale.QTY }}</td>
@@ -75,11 +87,11 @@
       </table>
     </div>
     
-    <div v-else class="text-center py-10 text-gray-500">
+    <div v-if="!isLoading && reportData.length === 0" class="text-center py-10 text-gray-500">
         Tidak ada data penjualan yang ditemukan untuk filter ini.
     </div>
 
-    <div class="flex items-center justify-between mt-6">
+    <div v-if="!isLoading && reportData.length > 0" class="flex items-center justify-between mt-6">
       <div class="text-sm text-gray-700">
         Menampilkan {{ (currentPage - 1) * itemsPerPage + 1 }} - {{ Math.min(currentPage * itemsPerPage, totalReports) }} dari {{ totalReports }} data
       </div>
