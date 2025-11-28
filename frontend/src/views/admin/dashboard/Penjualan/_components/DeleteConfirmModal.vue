@@ -42,15 +42,15 @@
           <h4 class="font-medium text-gray-800 mb-2">Detail yang akan dihapus:</h4>
           <div class="flex justify-between">
             <span>Produk:</span>
-            <span class="font-medium">{{ saleData.productName }}</span>
+            <span class="font-medium">{{ saleData.namaProduk }}</span>
           </div>
           <div class="flex justify-between">
             <span>Total Harga:</span>
-            <span class="font-medium">{{ formatCurrency(saleData.price) }}</span>
+            <span class="font-medium">{{ formatCurrency(saleData.totalHarga) }}</span>
           </div>
           <div class="flex justify-between">
             <span>Lokasi:</span>
-            <span class="font-medium">{{ saleData.location }}</span>
+            <span class="font-medium">{{ saleData.lokasi }}</span>
           </div>
           <div class="flex justify-between">
             <span>Tanggal:</span>
@@ -83,25 +83,28 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-interface SalesData {
-  id: number
-  productName: string
-  quantity: number
-  price: number
-  location: string
-  date: string
+// ✅ FIX: Ganti interface lama (SalesData) dengan interface baru (SaleReport)
+interface SaleReport {
+    pesananId: number; 
+    produkId: number; 
+    namaProduk: string;
+    QTY: number; 
+    totalHarga: number; 
+    lokasi: string; 
+    date: string; 
 }
 
 interface Props {
   isVisible: boolean
-  saleData: SalesData | null
+  saleData: SaleReport | null // Menggunakan SaleReport
 }
 
 const props = defineProps<Props>()
 
 const emit = defineEmits<{
   close: []
-  confirm: [sale: SalesData]
+  // ✅ Emit sekarang mengirim SaleReport, yang dibutuhkan oleh parent
+  confirm: [sale: SaleReport] 
 }>()
 
 const isDeleting = ref(false)
@@ -119,18 +122,19 @@ const handleConfirmDelete = async () => {
 
   isDeleting.value = true
   try {
-    emit('confirm', props.saleData)
+    // ✅ Mengirim objek SaleReport yang lengkap ke parent
+    emit('confirm', props.saleData) 
   } catch (error) {
     console.error('Error in delete confirmation:', error)
   } finally {
     isDeleting.value = false
-    // Note: The modal is closed by the parent component after the delete logic is complete
+    // Modal ditutup oleh parent setelah aksi API selesai
   }
 }
 
 // Utility functions
 const formatCurrency = (amount: number): string => {
-  if (typeof amount !== 'number') return ''
+  if (typeof amount !== 'number' || isNaN(amount)) return 'Rp -'
   return new Intl.NumberFormat('id-ID', {
     style: 'currency',
     currency: 'IDR',

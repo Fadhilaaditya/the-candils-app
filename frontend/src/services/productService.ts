@@ -1,17 +1,26 @@
 import api from './api';
+import { type AxiosResponse } from 'axios';
+
+// ========================================
+// TIPE DATA STRUKTUR RESPONSE BACKEND
+// ========================================
+
+// Interface untuk objek response JSON yang dikirim backend (yang membungkus data)
+export interface BackendResponse<T> {
+    success: boolean;
+    message?: string;
+    data: T; // Tipe array data yang sebenarnya
+}
 
 // ========================================
 // TIPE DATA PRODUK & ULASAN
 // ========================================
 
-// Tipe data untuk Ukuran
 export interface Ukuran {
   ukuranId?: number;
   namaUkuran: string;
   hargaTambahan: number;
 }
-
-// Tipe data untuk Produk Detail (digunakan getProductById)
 export interface Produk {
   produkId?: number;
   namaProduk: string;
@@ -19,10 +28,9 @@ export interface Produk {
   stok: number;
   foto?: string; // URL
   hargaUnit: number;
-  ukurans: Ukuran[]; // Hanya ada di getProductById
+  ukurans: Ukuran[];
 }
 
-// Tipe data untuk Varian (baris tabel dari getProducts)
 export interface ProductVariantRow {
   produkId: number;
   namaProduk: string;
@@ -30,15 +38,13 @@ export interface ProductVariantRow {
   stok: number;
   foto?: string; // URL Gambar
   hargaUnit: number; // Harga dasar produk
-  ukuranId?: number; // Akan null jika produk tidak punya ukuran
-  namaUkuran?: string; // Akan null jika produk tidak punya ukuran
-  hargaTambahan?: number; // Akan null jika produk tidak punya ukuran
-  // Field rating baru dari API
+  ukuranId?: number;
+  namaUkuran?: string;
+  hargaTambahan?: number; 
   averageRating?: number;
   reviewCount?: number;
 }
 
-// Tipe data untuk Ulasan (sesuai skema sederhana)
 export interface Ulasan {
   ulasanId?: number;
   produkId: number;
@@ -48,7 +54,6 @@ export interface Ulasan {
   tanggalUlasan: string;
 }
 
-// Tipe data untuk form 'createReview'
 interface CreateReviewData {
   namaReviewer: string;
   rating: number;
@@ -59,20 +64,18 @@ interface CreateReviewData {
 // TIPE DATA PESANAN
 // ========================================
 
-// Tipe data untuk form 'createPesananOffline'
 export interface CreatePesananOfflinePayload {
-  lokasiId: number | null; // ✅ PERBAIKAN: Mengizinkan null
+  lokasiId: number | null; 
   namaPelanggan: string;
   kontakPelanggan: string;
   alamatPengiriman: string;
   totalHarga: number;
   items: {
-    produkId: number | null; // Izinkan null saat diisi
-    ukuranId: number | null; // Izinkan null saat diisi
+    produkId: number | null; 
+    ukuranId: number | null; 
     quantity: number;
     subtotal: number;
   }[];
-  // Tidak ada file bukti pembayaran
 }
 
 export interface OrderItem {
@@ -99,9 +102,8 @@ export interface Pemesanan {
   statusPesanan: string;
   totalHarga: number;
   items?: OrderItem[];
-  // [PERBAIKAN]: Menambahkan field ini untuk memperbaiki error TypeScript
   buktiPembayaranUrl?: string | null;
-  tipePesanan?: string; // ✅ BARU: Menambahkan tipePesanan
+  tipePesanan?: string; 
 }
 
 export interface Lokasi {
@@ -122,8 +124,6 @@ export interface ProdukPesanan {
   harga: number;
 }
 
-// Interface ini tidak lagi digunakan oleh 'createPesanan' 
-// tapi mungkin masih dipakai di tempat lain.
 export interface CreatePesananData {
   lokasiId: number;
   namaPelanggan: string;
@@ -138,51 +138,93 @@ export interface CreatePesananData {
 }
 
 // ========================================
+// API PENJUALAN (SALES) - REVISI
+// ========================================
+
+export interface SaleReportItem {
+    pesananId: number; 
+    produkId: number; 
+    namaProduk: string;
+    QTY: number; 
+    totalHarga: number; 
+    lokasi: string; 
+    date: string; 
+}
+
+export interface SaleRevenueSummary {
+    lokasi: string;
+    totalPendapatan: number;
+}
+
+export interface SaleQuantitySummary {
+    namaProduk: string;
+    totalProdukTerjual: number;
+}
+
+/**
+ * Mengambil data laporan penjualan (tabel detail).
+ */
+export const getSalesReport = (queryString: string): Promise<AxiosResponse<BackendResponse<SaleReportItem[]>>> => {
+  return api.get<BackendResponse<SaleReportItem[]>>(`/sales/report?${queryString}`);
+};
+
+/**
+ * Mengambil data ringkasan Pendapatan per Lokasi.
+ */
+export const getSalesSummaryRevenue = (): Promise<AxiosResponse<BackendResponse<SaleRevenueSummary[]>>> => {
+  return api.get<BackendResponse<SaleRevenueSummary[]>>('/sales/summary-revenue');
+};
+
+/**
+ * Mengambil data ringkasan Kuantitas Terjual per Produk.
+ */
+export const getSalesSummaryQuantity = (): Promise<AxiosResponse<BackendResponse<SaleQuantitySummary[]>>> => {
+  return api.get<BackendResponse<SaleQuantitySummary[]>>('/sales/summary-quantity');
+};
+
+/**
+ * Update transaksi penjualan.
+ */
+export const updateSalesTransaction = (pesananId: number, produkId: number, data: any) => {
+  return api.put(`/sales/transaction/${pesananId}/${produkId}`, data);
+};
+
+/**
+ * Hapus item transaksi penjualan.
+ */
+export const deleteSalesTransaction = (pesananId: number, produkId: number) => {
+  return api.delete(`/sales/transaction/${pesananId}/${produkId}`);
+};
+
+
+// ========================================
 // API PRODUK
 // ========================================
 
-/**
- * Mengambil semua VARIAN produk + RATING (FLAT LIST) (PUBLIC)
- */
 export const getProducts = () => {
   return api.get<ProductVariantRow[]>('/products');
 };
 
-/**
- * Mengambil detail satu produk LENGKAP (PUBLIC)
- */
 export const getProductById = (id: number) => {
   return api.get<Produk>(`/products/${id}`);
 };
 
-/**
- * Mengambil daftar ID produk [3, 4, 5] (PUBLIC)
- */
 export const getProductIdList = () => {
   return api.get<number[]>('/products/ids');
 };
 
-/**
- * Membuat produk baru (ADMIN) - Mengirim FormData
- */
 export const createProduct = (formData: FormData) => {
   return api.post('/products', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
 };
 
-/**
- * Update produk (ADMIN) - Mengirim FormData
- */
 export const updateProduct = (id: number, formData: FormData) => {
   return api.put(`/products/${id}`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
 };
 
-/**
- * Hapus produk (ADMIN)
- */
 export const deleteProduct = (id: number) => {
   return api.delete(`/products/${id}`);
 };
@@ -191,16 +233,10 @@ export const deleteProduct = (id: number) => {
 // API ULASAN
 // ========================================
 
-/**
- * Mengambil ulasan untuk satu produk (PUBLIC)
- */
 export const getReviewsByProductId = (produkId: number) => {
   return api.get<Ulasan[]>(`/products/${produkId}/reviews`);
 };
 
-/**
- * Membuat ulasan baru (PUBLIC)
- */
 export const createReview = (produkId: number, data: CreateReviewData) => {
   return api.post(`/products/${produkId}/reviews`, data);
 };
@@ -209,32 +245,18 @@ export const createReview = (produkId: number, data: CreateReviewData) => {
 // API PESANAN - DATA MASTER
 // ========================================
 
-/**
- * Mengambil semua data lokasi (PUBLIC)
- */
 export const getAllLokasi = () => {
   return api.get<Lokasi[]>('/pesanan/lokasi');
 };
 
-/**
- * Mengambil semua data ukuran (PUBLIC)
- */
 export const getAllUkuran = () => {
   return api.get<UkuranPesanan[]>('/pesanan/ukuran');
 };
 
-/**
- * ✅ FIX: Mengambil semua data produk untuk pesanan (PUBLIC)
- * Diberikan untuk kompatibilitas dengan import yang mencari 'getAllProduk'
- */
 export const getAllProduk = () => {
   return api.get<ProdukPesanan[]>('/pesanan/produk');
 };
 
-
-/**
- * Mengambil semua data produk untuk pesanan (PUBLIC)
- */
 export const getAllProdukPesanan = () => {
   return api.get<ProdukPesanan[]>('/pesanan/produk');
 };
@@ -243,58 +265,32 @@ export const getAllProdukPesanan = () => {
 // API PESANAN - CRUD
 // ========================================
 
-/**
- * Mengambil semua pesanan (PUBLIC atau ADMIN)
- */
 export const getAllPesanan = () => {
   return api.get<Pemesanan[]>('/pesanan');
 };
 
-/**
- * Mengambil detail satu pesanan (PUBLIC atau ADMIN)
- */
 export const getPesananById = (id: number) => {
   return api.get<Pemesanan>(`/pesanan/${id}`);
 };
 
-/**
- * [PERBAIKAN]: Membuat pesanan baru menggunakan FormData
- */
 export const createPesanan = (formData: FormData) => {
   return api.post('/pesanan', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
 };
 
-/**
- * [BARU]: Membuat pesanan baru untuk laporan offline/manual (TANPA FILE)
- * Menggunakan body JSON, dikirim ke endpoint yang berbeda.
- */
 export const createPesananOffline = (payload: CreatePesananOfflinePayload) => {
-  // Asumsi backend memiliki endpoint baru: /api/pesanan/offline
-  // Endpoint ini akan memproses JSON body tanpa memerlukan multer/file.
   return api.post('/pesanan/offline', payload); 
 };
 
-
-/**
- * Update status pesanan (ADMIN ONLY)
- */
 export const updateStatusPesanan = (id: number, statusPesanan: string) => {
   return api.patch(`/pesanan/${id}/status`, { statusPesanan });
 };
 
-/**
- * Update lokasi pesanan (ADMIN ONLY)
- */
 export const updateLokasiPesanan = (id: number, lokasiId: number) => {
   return api.patch(`/pesanan/${id}/lokasi`, { lokasiId });
 };
 
-/**
- * Hapus pesanan (ADMIN ONLY)
- */
-// ✅ PERBAIKAN: Mengganti nama fungsi ini menjadi deletePesanan
 export const deletePesanan = (id: number) => {
   return api.delete(`/pesanan/${id}`);
 };

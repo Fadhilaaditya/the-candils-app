@@ -19,20 +19,7 @@
       </div>
     </div>
 
-    <div class="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
-      <div class="flex items-center space-x-3">
-        <button class="flex items-center text-sm text-gray-700 hover:text-gray-900 font-medium">
-          <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-          </svg>
-          Filter ({{ activeFilters }})
-        </button>
-        <div v-if="selectedOrders.length > 0" class="flex items-center text-sm text-gray-600">
-          <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-medium">
-            {{ selectedOrders.length }} dipilih
-          </span>
-        </div>
-      </div>
+    <div class="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-end">
       <div class="flex items-center space-x-2">
         <button class="flex items-center px-3 py-2 text-sm text-gray-700 hover:text-gray-900 border border-gray-300 rounded hover:bg-gray-50">
           <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -63,14 +50,6 @@
         <table class="min-w-full divide-y divide-gray-200">
           <thead class="bg-gray-50">
             <tr>
-              <th class="w-12 px-4 py-3">
-                <input
-                  type="checkbox"
-                  @change="$emit('toggle-select-all', $event)"
-                  :checked="isAllSelected"
-                  class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-              </th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 ID Pesanan
               </th>
@@ -98,20 +77,42 @@
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
+            <!-- SKELETON LOADING -->
+            <tr v-if="loading" v-for="i in itemsPerPage" :key="'skeleton-' + i" class="animate-pulse border-b border-gray-200">
+              <td class="px-4 py-4">
+                <div class="h-4 bg-gray-200 rounded w-16 mb-2"></div>
+                <div class="h-3 bg-gray-200 rounded w-24"></div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="h-6 bg-gray-200 rounded-full w-24"></div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="h-4 bg-gray-200 rounded w-32"></div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="h-4 bg-gray-200 rounded w-28"></div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="h-8 bg-gray-200 rounded w-32"></div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="h-5 bg-gray-200 rounded w-16"></div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="h-4 bg-gray-200 rounded w-24"></div>
+              </td>
+              <td class="px-4 py-4">
+                 <div class="h-4 bg-gray-200 rounded w-20"></div>
+              </td>
+            </tr>
+
+            <!-- DATA ROWS -->
             <tr
-              v-for="pesanan in pesananList"
+              v-else
+              v-for="pesanan in paginatedPesananList"
               :key="pesanan.pesananId"
               class="hover:bg-gray-50 transition-colors"
             >
-              <td class="px-4 py-4">
-                <input
-                  type="checkbox"
-                  :value="pesanan.pesananId"
-                  :checked="selectedOrders.includes(pesanan.pesananId)"
-                  @change="toggleSelect(pesanan.pesananId, ($event.target as HTMLInputElement).checked)"
-                  class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-              </td>
               <td class="px-4 py-4">
                 <div class="text-sm font-medium text-gray-900">#{{ pesanan.pesananId }}</div>
                 <div class="text-xs text-gray-500">{{ formatDate(pesanan.tanggalPesanan) }}</div>
@@ -122,9 +123,10 @@
                   @change="handleStatusChange(pesanan, ($event.target as HTMLSelectElement).value)"
                   :class="[
                     'text-xs font-medium px-3 py-1 rounded-full border-0 focus:ring-2 focus:ring-offset-2 cursor-pointer',
-                    getStatusClass(pesanan.statusPesanan)
+                    getStatusClass(pesanan.statusPesanan),
+                    {'disabled:opacity-60 disabled:cursor-not-allowed': isStatusDisabled(pesanan.statusPesanan)} // Styling disabled
                   ]"
-                >
+                  :disabled="isStatusDisabled(pesanan.statusPesanan)" >
                   <option value="Perlu Validasi">Perlu Validasi</option>
                   <option value="Perlu Dikirim">Perlu Dikirim</option>
                   <option value="Dikirim">Dikirim</option>
@@ -143,8 +145,11 @@
                   :value="pesanan.lokasiId"
                   @change="handleLokasiChange(pesanan, Number(($event.target as HTMLSelectElement).value))"
                   class="text-xs font-medium px-3 py-1 rounded border border-gray-300 focus:ring-2 focus:ring-blue-500 cursor-pointer"
-                  :class="{ 'text-gray-500': !pesanan.lokasiId }"
-                >
+                  :class="{ 
+                    'text-gray-500': !pesanan.lokasiId,
+                    'disabled:opacity-60 disabled:cursor-not-allowed': isStatusDisabled(pesanan.statusPesanan) // Styling disabled
+                  }"
+                  :disabled="isStatusDisabled(pesanan.statusPesanan)" >
                   <option :value="null" disabled>-- Pilih Lokasi --</option>
                   <option v-for="lokasi in lokasiList" :key="lokasi.id || lokasi.lokasiId" :value="lokasi.id || lokasi.lokasiId">
                     {{ lokasi.name || lokasi.namaLokasi }}
@@ -176,7 +181,54 @@
         </table>
       </div>
 
-      <div v-if="pesananList.length === 0" class="text-center py-12">
+      <!-- Pagination Controls -->
+      <div v-if="!loading && pesananList.length > 0" class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+          <div>
+            <p class="text-sm text-gray-700">
+              Menampilkan
+              <span class="font-medium">{{ startIndex }}</span>
+              sampai
+              <span class="font-medium">{{ endIndex }}</span>
+              dari
+              <span class="font-medium">{{ pesananList.length }}</span>
+              hasil
+            </p>
+          </div>
+          <div>
+            <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+              <button
+                @click="prevPage"
+                :disabled="currentPage === 1"
+                class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <span class="sr-only">Previous</span>
+                <!-- Heroicon name: solid/chevron-left -->
+                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                </svg>
+              </button>
+              <!-- Current Page Indicator -->
+               <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+                 {{ currentPage }} / {{ totalPages }}
+               </span>
+              <button
+                @click="nextPage"
+                :disabled="currentPage === totalPages"
+                class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <span class="sr-only">Next</span>
+                <!-- Heroicon name: solid/chevron-right -->
+                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                </svg>
+              </button>
+            </nav>
+          </div>
+        </div>
+      </div>
+
+      <div v-if="!loading && pesananList.length === 0" class="text-center py-12">
         <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
         </svg>
@@ -188,8 +240,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-// Perlu mengimport tipe Pemesanan yang sudah diperbarui dengan tipePesanan
+import { computed, ref, watch } from 'vue'
 import type { Pemesanan, Lokasi } from '@/services/productService' 
 
 interface Tab {
@@ -205,9 +256,12 @@ interface Props {
   selectedOrders: number[]
   lokasiList: Lokasi[]
   activeFilters: number
+  loading?: boolean
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  loading: false
+})
 
 const emit = defineEmits<{
   'change-tab': [value: string]
@@ -216,8 +270,42 @@ const emit = defineEmits<{
   'update-status': [pesanan: Pemesanan]
   'update-lokasi': [pesanan: Pemesanan]
   'open-detail': [pesanan: Pemesanan]
-  'open-add-modal': [] // EMIT BARU
+  'open-add-modal': [] 
 }>()
+
+// Pagination
+const currentPage = ref(1)
+const itemsPerPage = 5
+
+// Reset page when data changes
+watch(() => props.pesananList, () => {
+  currentPage.value = 1
+})
+
+const totalPages = computed(() => {
+  return Math.ceil(props.pesananList.length / itemsPerPage)
+})
+
+const paginatedPesananList = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage
+  const end = start + itemsPerPage
+  return props.pesananList.slice(start, end)
+})
+
+const startIndex = computed(() => ((currentPage.value - 1) * itemsPerPage) + 1)
+const endIndex = computed(() => Math.min(currentPage.value * itemsPerPage, props.pesananList.length))
+
+function nextPage() {
+  if (currentPage.value < totalPages.value) {
+    currentPage.value++
+  }
+}
+
+function prevPage() {
+  if (currentPage.value > 1) {
+    currentPage.value--
+  }
+}
 
 // Computed
 const isAllSelected = computed(() => {
@@ -233,13 +321,26 @@ function toggleSelect(pesananId: number, isChecked: boolean) {
 }
 
 function handleStatusChange(pesanan: Pemesanan, newStatus: string) {
+  // Pengecekan frontend sebelum emit (optional, backend tetap yang utama)
+  if (isStatusDisabled(pesanan.statusPesanan)) {
+    return;
+  }
   const updatedPesanan = { ...pesanan, statusPesanan: newStatus }
   emit('update-status', updatedPesanan)
 }
 
 function handleLokasiChange(pesanan: Pemesanan, newLokasiId: number) {
+  // Pengecekan frontend sebelum emit (optional, backend tetap yang utama)
+  if (isStatusDisabled(pesanan.statusPesanan)) {
+    return;
+  }
   const updatedPesanan = { ...pesanan, lokasiId: newLokasiId }
   emit('update-lokasi', updatedPesanan)
+}
+
+// ✅ FUNGSI BARU: Menentukan apakah field harus dinonaktifkan
+function isStatusDisabled(status: string): boolean {
+    return status === 'Selesai' || status === 'Dibatalkan';
 }
 
 // Helper Functions
@@ -276,7 +377,7 @@ function getStatusClass(status: string): string {
   }
 }
 
-// ✅ BARU: Fungsi untuk menentukan warna badge berdasarkan tipe pesanan
+// Fungsi untuk menentukan warna badge berdasarkan tipe pesanan
 function getTipeClass(tipe: string | undefined): string {
   const normalizedTipe = (tipe || 'Online').toLowerCase()
   

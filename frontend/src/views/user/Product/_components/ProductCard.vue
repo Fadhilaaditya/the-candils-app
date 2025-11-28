@@ -13,24 +13,26 @@
     </div>
 
     <div class="p-4 flex flex-col flex-1">
-      <h3 class="text-lg font-bold text-gray-800 mb-2 line-clamp-2">
+      
+      <h3 class="text-lg font-bold text-gray-800 line-clamp-2 h-10"> 
         {{ product.namaProduk }}
-        <span v-if="product.namaUkuran" class="text-sm font-normal text-gray-500">
-          ({{ product.namaUkuran }})
-        </span>
       </h3>
 
+      <p v-if="product.namaUkuran" class="text-sm font-normal text-gray-500 mb-2 h-5">
+        ({{ product.namaUkuran }})
+      </p>
+      <p v-else class="text-sm font-normal text-gray-500 mb-2 h-5"></p>
+
+
       <p class="text-orange-600 font-semibold text-lg mb-2">
-         <!-- Panggil formatCurrency(finalPrice) -->
         {{ formatCurrency(finalPrice) }}
       </p>
 
-      <p class="text-gray-600 text-sm mb-3 line-clamp-2">
+      <p class="text-gray-600 text-sm mb-3 line-clamp-2 h-10"> 
         {{ product.deskripsi || 'Tidak ada deskripsi.' }}
       </p>
 
-      <!-- Bagian Rating -->
-      <div class="flex items-center justify-between mb-4 text-sm">
+      <div class="flex items-center justify-between mb-4 text-sm h-5"> 
         <div class="flex items-center">
           <div class="flex">
             <svg
@@ -50,7 +52,7 @@
         <span class="text-gray-500">{{ product.reviewCount || 0 }} Ulasan</span>
       </div>
 
-      <div class="mt-auto">
+      <div class="mt-auto"> 
         <button
           @click.stop="handleCheckout"
           class="bg-[#BAB772] hover:bg-[#a8a668] text-white font-medium py-2 px-6 rounded-lg transition-colors duration-200 w-full"
@@ -84,19 +86,16 @@ const formatCurrency = (value: number | undefined | null) => {
   }).format(value)
 }
 
-// --- PERBAIKAN DI COMPUTED 'finalPrice' ---
+// Computed 'finalPrice'
 const finalPrice = computed(() => {
-  // 1. Ubah string menjadi angka menggunakan parseFloat
   const base = parseFloat(props.product.hargaUnit as any);
   const additional = parseFloat(props.product.hargaTambahan as any);
 
-  // 2. Cek apakah hasilnya valid (bukan NaN), jika tidak, anggap 0
   const basePrice = !isNaN(base) ? base : 0;
   const additionalPrice = !isNaN(additional) ? additional : 0;
   
   return basePrice + additionalPrice;
 })
-// ----------------------------------------
 
 // Navigasi ke halaman detail
 const handleProductClick = () => {
@@ -110,6 +109,7 @@ const handleCheckout = () => {
 </script>
 
 <style scoped>
+/* Pastikan line-clamp berlaku */
 .line-clamp-2 {
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -118,4 +118,3 @@ const handleCheckout = () => {
   overflow: hidden;
 }
 </style>
-
