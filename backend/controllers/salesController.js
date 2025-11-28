@@ -15,7 +15,8 @@ const getSalesReport = async (req, res) => {
             SUM(DP.subtotal) AS totalHarga,
             L.name AS lokasi,
             DATE(PM.tanggalPesanan) AS date,
-            PM.pesananId
+            PM.pesananId,
+            PM.tipePesanan
         FROM
             Pemesanan PM
         JOIN
@@ -46,7 +47,7 @@ const getSalesReport = async (req, res) => {
 
     query += `
         GROUP BY
-            P.namaProduk, P.produkId, L.name, DATE(PM.tanggalPesanan), PM.pesananId
+            P.namaProduk, P.produkId, L.name, DATE(PM.tanggalPesanan), PM.pesananId, PM.tipePesanan
         ORDER BY
             PM.tanggalPesanan DESC, P.namaProduk ASC
     `;

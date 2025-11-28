@@ -16,7 +16,7 @@ exports.getReviewsByProduct = async (req, res) => {
       WHERE 
         produkId = ?
       ORDER BY 
-        tanggalUlasan DESC; -- Tampilkan yang terbaru dulu
+        tanggalUlasan DESC; 
     `;
 
     const [reviews] = await db.query(query, [produkId]);

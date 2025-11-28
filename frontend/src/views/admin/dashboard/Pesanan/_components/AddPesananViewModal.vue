@@ -45,13 +45,6 @@
           </div>
 
           <div class="mt-4">
-            <label for="alamatPengiriman" class="block text-sm font-semibold text-gray-700 mb-2">Alamat Pengiriman *</label>
-            <textarea v-model="form.alamatPengiriman" id="alamatPengiriman" rows="2" required
-              placeholder="Alamat lengkap pengiriman"
-              class="block w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-200 sm:text-sm"></textarea>
-          </div>
-
-          <div class="mt-4">
             <label for="lokasiId" class="block text-sm font-semibold text-gray-700 mb-2">Lokasi Penjualan *</label>
             <select v-model="form.lokasiId" id="lokasiId" required
               class="block w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-200 sm:text-sm bg-white">
@@ -215,7 +208,7 @@ const form = ref({
   lokasiId: null as number | null,
   namaPelanggan: '',
   kontakPelanggan: '',
-  alamatPengiriman: 'Penjualan Langsung di Lokasi',
+  alamatPengiriman: 'Pesanan Offline',
   items: [
     { produkId: null, ukuranId: null, quantity: 1, subtotal: 0 }
   ] as ItemInput[],

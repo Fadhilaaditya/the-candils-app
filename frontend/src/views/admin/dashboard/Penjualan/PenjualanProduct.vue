@@ -31,12 +31,6 @@
       @delete-sale="handleDeleteSale as any"
     />
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
-      <RevenueChart :revenue-data="revenueData as any" /> 
-      
-      <ProductsSoldChart :summary-data="productsSoldData as any" /> 
-    </div>
-
     <EditReportModal
       :is-visible="isEditModalVisible"
       :sale-data="saleToEdit" 
@@ -60,8 +54,6 @@ import { useToast } from 'vue-toastification';
 
 // 1. Import semua komponen tampilan
 import SalesTable from './_components/SalesTable.vue';
-import RevenueChart from './_components/RevenueChart.vue';
-import ProductsSoldChart from './_components/ProductsSoldChart.vue';
 import EditReportModal from './_components/EditReportModal.vue';
 import DeleteConfirmModal from './_components/DeleteConfirmModal.vue';
 

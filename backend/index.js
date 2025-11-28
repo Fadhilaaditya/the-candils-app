@@ -2,10 +2,14 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 
-require('dotenv').config({ 
-    path: path.resolve(__dirname, '.env.development') 
+// --- Load Environment (.env.development atau .env.production) ---
+require('dotenv').config({
+  path: process.env.NODE_ENV === 'production'
+    ? path.resolve(__dirname, '.env.production')
+    : path.resolve(__dirname, '.env.development')
 });
 
+// --- Cloudinary Config ---
 const cloudinary = require('cloudinary').v2;
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -13,33 +17,44 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-// ... (Debugging logs)
-
-// Impor Rute
+// --- Import Routes ---
 const authRoutes = require('./routes/auth');
 const productRoutes = require('./routes/productRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
-const pesananRoutes = require('./routes/pesananRoutes'); 
-const cartRoutes = require('./routes/cart'); 
-const salesRoutes = require('./routes/salesRoutes'); // ✅ IMPORT salesRoutes
+const pesananRoutes = require('./routes/pesananRoutes');
+const cartRoutes = require('./routes/cart');
+const salesRoutes = require('./routes/salesRoutes');
 
 const app = express();
 
 // --- Middleware ---
-app.use(cors()); 
+app.use(cors());
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// --- Rute ---
-// ... (Rute dasar)
-
+// --- Routes ---
 app.use('/api/auth', authRoutes);
 app.use('/api/products/:produkId/reviews', reviewRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/pesanan', pesananRoutes);
 app.use('/api/cart', cartRoutes);
-app.use('/api/sales', salesRoutes); // ✅ DAFTARKAN RUTE SALES
+app.use('/api/sales', salesRoutes);
 
-// ... (Error Handler & Server Listening)
+// --- Default Route ---
+app.get('/', (req, res) => {
+  res.send({ message: 'API is running...' });
+});
+
+// --- Error Handler (Opsional) ---
+app.use((err, req, res, next) => {
+  console.error('🔥 ERROR:', err);
+  res.status(500).json({ message: 'Internal Server Error', error: err.message });
+});
+
+// --- Start Server ---
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`🚀 Server berjalan di port ${PORT} (mode: ${process.env.NODE_ENV || 'development'})`);
+});
 
 module.exports = app;

@@ -48,6 +48,7 @@
             <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">NAMA PRODUK</th>
             <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">QTY</th>
             <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">TOTAL HARGA</th>
+            <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">TIPE PESANAN</th>
             <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">LOKASI</th>
             <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">DATE</th>
             <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">AKSI</th>
@@ -60,6 +61,7 @@
             <td class="px-4 py-4"><div class="h-4 bg-gray-200 rounded w-32"></div></td>
             <td class="px-4 py-4"><div class="h-4 bg-gray-200 rounded w-12"></div></td>
             <td class="px-4 py-4"><div class="h-4 bg-gray-200 rounded w-24"></div></td>
+            <td class="px-4 py-4"><div class="h-4 bg-gray-200 rounded w-20"></div></td>
             <td class="px-4 py-4"><div class="h-6 bg-gray-200 rounded-full w-20"></div></td>
             <td class="px-4 py-4"><div class="h-4 bg-gray-200 rounded w-24"></div></td>
             <td class="px-4 py-4">
@@ -76,6 +78,11 @@
             <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ sale.namaProduk }}</td>
             <td class="px-4 py-3 text-sm text-gray-700">{{ sale.QTY }}</td>
             <td class="px-4 py-3 text-sm text-gray-700">{{ formatCurrency(sale.totalHarga) }}</td>
+            <td class="px-4 py-3 text-sm text-gray-700">
+              <span :class="getTipeClass(sale.tipePesanan)" class="text-xs font-medium px-2 py-1 rounded">
+                {{ sale.tipePesanan || 'Online' }}
+              </span>
+            </td>
             <td class="px-4 py-3 text-sm text-gray-700"><span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">{{ sale.lokasi }}</span></td>
             <td class="px-4 py-3 text-sm text-gray-700">{{ formatDate(sale.date) }}</td>
             <td class="px-4 py-3 flex items-center gap-2">
@@ -117,6 +124,7 @@ interface SaleReport {
     namaProduk: string;
     QTY: number; 
     totalHarga: number; 
+    tipePesanan?: string;
     lokasi: string; 
     date: string; 
 }
@@ -167,4 +175,14 @@ const formatDate = (dateString: string): string => {
 
 const handleEdit = (sale: SaleReport) => emit('editSale', sale)
 const handleDelete = (sale: SaleReport) => emit('deleteSale', sale)
+
+// Fungsi untuk menentukan warna badge berdasarkan tipe pesanan
+function getTipeClass(tipe: string | undefined): string {
+  const normalizedTipe = (tipe || 'Online').toLowerCase()
+  
+  if (normalizedTipe.includes('offline')) {
+    return 'bg-pink-100 text-pink-800 border border-pink-300' // Tipe Offline (Laporan Manual)
+  }
+  return 'bg-indigo-100 text-indigo-800 border border-indigo-300' // Tipe Online (Default)
+}
 </script>

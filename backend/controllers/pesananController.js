@@ -259,10 +259,10 @@ const createPesanan = async (req, res) => {
  * @desc    Membuat pesanan baru untuk laporan offline (JSON Body)
  */
 const createPesananOffline = async (req, res) => {
-  const { lokasiId, namaPelanggan, kontakPelanggan, alamatPengiriman, totalHarga, items } = req.body;
+  const { lokasiId, namaPelanggan, kontakPelanggan, totalHarga, items } = req.body;
 
-  const statusAwal = 'Perlu Validasi';
-  const tipePesanan = 'Offline Report'; // ✅ NILAI BARU UNTUK PESANAN OFFLINE
+  const statusAwal = 'Selesai';
+  const tipePesanan = 'Offline'; // ✅ NILAI BARU UNTUK PESANAN OFFLINE
 
   const parsedLokasiId = lokasiId === null ? null : Number(lokasiId);
 
@@ -275,7 +275,7 @@ const createPesananOffline = async (req, res) => {
     const queryPemesanan = `
       INSERT INTO Pemesanan (
         lokasiId, namaPelanggan, tanggalPesanan, statusPesanan,
-        totalHarga, alamatPengiriman, kontakPelanggan, tipePesanan
+        totalHarga, kontakPelanggan, tipePesanan
       )
       VALUES (?, ?, NOW(), ?, ?, ?, ?, ?)
     `;
@@ -285,7 +285,6 @@ const createPesananOffline = async (req, res) => {
       namaPelanggan,
       statusAwal,
       totalHarga,
-      alamatPengiriman,
       kontakPelanggan,
       tipePesanan
     ]);
