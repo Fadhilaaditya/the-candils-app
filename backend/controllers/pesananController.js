@@ -196,16 +196,30 @@ const createPesanan = async (req, res) => {
       INSERT INTO DetailPemesanan (pesananId, ukuranId, produkId, quantity, subtotal)
       VALUES (?, ?, ?, ?, ?)
     `;
-    const itemPromises = items.map(item => {
-      return connection.execute(queryDetail, [
+    
+    // Gunakan for...of loop agar bisa await dan throw error dengan bersih
+    for (const item of items) {
+      // 1. Insert Detail Pesanan
+      await connection.execute(queryDetail, [
         newPesananId,
         item.ukuranId,
         item.produkId,
         item.quantity,
         item.subtotal
       ]);
-    });
-    await Promise.all(itemPromises);
+
+      // 2. 🛑 KURANGI STOK PRODUK
+      const [stockResult] = await connection.query(
+        'UPDATE Produk SET stok = stok - ? WHERE produkId = ? AND stok >= ?',
+        [item.quantity, item.produkId, item.quantity]
+      );
+
+      if (stockResult.affectedRows === 0) {
+        throw new Error(`Stok tidak mencukupi untuk produk ID ${item.produkId}`);
+      }
+    }
+    // Hapus Promise.all lama karena sudah diganti loop
+    // await Promise.all(itemPromises);
 
     // Upload file ke Cloudinary (tidak berubah)
     const uploadResult = await new Promise((resolve, reject) => {
@@ -297,17 +311,30 @@ const createPesananOffline = async (req, res) => {
       VALUES (?, ?, ?, ?, ?)
     `;
 
-    const itemPromises = items.map(item => {
-      return connection.execute(queryDetail, [
+    // Gunakan for...of loop
+    for (const item of items) {
+      // 1. Insert Detail
+      await connection.execute(queryDetail, [
         newPesananId,
         item.ukuranId,
         item.produkId,
         item.quantity,
         item.subtotal
       ]);
-    });
 
-    await Promise.all(itemPromises);
+      // 2. 🛑 KURANGI STOK
+      const [stockResult] = await connection.query(
+        'UPDATE Produk SET stok = stok - ? WHERE produkId = ? AND stok >= ?',
+        [item.quantity, item.produkId, item.quantity]
+      );
+
+      if (stockResult.affectedRows === 0) {
+        throw new Error(`Stok tidak mencukupi untuk produk ID ${item.produkId}`);
+      }
+    }
+    
+    // Hapus Promise.all lama
+    // await Promise.all(itemPromises);
 
     await connection.commit();
 
@@ -332,6 +359,8 @@ const createPesananOffline = async (req, res) => {
 
 
 // pesananController.js
+
+const whatsappService = require('../services/whatsappService'); // Import Service
 
 /**
  * @desc    Update status pesanan
@@ -366,10 +395,81 @@ const updateStatusPesanan = async (req, res) => {
       [statusPesanan, id]
     );
 
-    // ... (rest of the code)
     if (updateResult.affectedRows === 0) {
       return res.status(404).json({ message: 'Pesanan tidak ditemukan' });
     }
+
+    // 🚀 [BARU] Kirim Notifikasi WhatsApp jika status berubah jadi "Perlu Dikirim"
+    if (statusPesanan === 'Perlu Dikirim') {
+      try {
+        // Ambil detail lengkap pesanan untuk pesan WA
+        const [orderDetails] = await db.query(
+          `SELECT 
+            p.pesananId, p.namaPelanggan, p.kontakPelanggan, p.totalHarga, p.alamatPengiriman
+           FROM Pemesanan p 
+           WHERE p.pesananId = ?`,
+          [id]
+        );
+
+        if (orderDetails.length > 0) {
+          const order = orderDetails[0];
+          
+          // Ambil items
+          const [items] = await db.query(
+            `SELECT 
+               pr.namaProduk, u.namaUkuran, dp.quantity, dp.subtotal
+             FROM DetailPemesanan dp
+             JOIN Produk pr ON dp.produkId = pr.produkId
+             LEFT JOIN Ukuran u ON dp.ukuranId = u.ukuranId
+             WHERE dp.pesananId = ?`,
+            [id]
+          );
+          
+          order.items = items;
+
+          // Kirim WA (Async, jangan tunggu response agar tidak blocking)
+          whatsappService.sendOrderConfirmation(order.kontakPelanggan, order);
+        }
+      } catch (waError) {
+        console.error('⚠️ Gagal memproses notifikasi WA:', waError.message);
+        // Lanjut saja, jangan gagalkan response API
+      }
+    }
+
+    // 🚚 [BARU] Kirim Notifikasi WhatsApp jika status berubah jadi "Dikirim"
+    if (statusPesanan === 'Dikirim') {
+      try {
+        const [orderDetails] = await db.query(
+          `SELECT pesananId, namaPelanggan, kontakPelanggan, alamatPengiriman FROM Pemesanan WHERE pesananId = ?`,
+          [id]
+        );
+
+        if (orderDetails.length > 0) {
+          const order = orderDetails[0];
+          whatsappService.sendOrderShipped(order.kontakPelanggan, order);
+        }
+      } catch (waError) {
+        console.error('⚠️ Gagal memproses notifikasi WA (Dikirim):', waError.message);
+      }
+    }
+
+    // ✅ [BARU] Kirim Notifikasi WhatsApp jika status berubah jadi "Selesai"
+    if (statusPesanan === 'Selesai') {
+      try {
+        const [orderDetails] = await db.query(
+          `SELECT pesananId, namaPelanggan, kontakPelanggan FROM Pemesanan WHERE pesananId = ?`,
+          [id]
+        );
+
+        if (orderDetails.length > 0) {
+          const order = orderDetails[0];
+          whatsappService.sendOrderCompleted(order.kontakPelanggan, order);
+        }
+      } catch (waError) {
+        console.error('⚠️ Gagal memproses notifikasi WA (Selesai):', waError.message);
+      }
+    }
+
     res.json({
       message: `Status pesanan #${id} diperbarui ke ${statusPesanan}`,
       pesananId: id,

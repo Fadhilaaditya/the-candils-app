@@ -8,18 +8,103 @@ const db = require('../config/db');
  * POST /api/cart/add
  * (Menggunakan Stored Procedure - TIDAK DIUBAH)
  */
+/**
+ * Add item to cart
+ * POST /api/cart/add
+ * (Diganti dengan SQL Manual karena Stored Procedure bermasalah)
+ */
 exports.addToCart = async (req, res) => {
   try {
     const { cartSessionId, produkId, ukuranId, jumlah } = req.body;
+    const qty = parseInt(jumlah) || 1;
 
-    // Call stored procedure tambahItem
-    const query = 'CALL tambahItem(?, ?, ?, ?)';
-    await db.query(query, [
-      cartSessionId,
-      produkId,
-      ukuranId || null,
-      jumlah || 1
-    ]);
+    // 1. Hitung Harga Satuan (Base Price + Additional Price)
+    let hargaDasar = 0;
+    let hargaTambahan = 0;
+
+    // 1a. Ambil harga dasar produk DAN STOK
+    const [produk] = await db.query(
+      'SELECT IFNULL(hargaUnit, 0) AS harga, stok FROM Produk WHERE produkId = ?',
+      [produkId]
+    );
+    
+    if (produk.length === 0) {
+      return res.status(404).json({ success: false, message: 'Produk tidak ditemukan' });
+    }
+    hargaDasar = parseFloat(produk[0].harga);
+    const stokTersedia = produk[0].stok;
+
+    // 1b. Ambil harga tambahan ukuran (jika ada)
+    if (ukuranId) {
+      const [ukuran] = await db.query(
+        'SELECT IFNULL(hargaTambahan, 0) AS harga FROM Ukuran WHERE ukuranId = ?',
+        [ukuranId]
+      );
+      if (ukuran.length > 0) {
+        hargaTambahan = parseFloat(ukuran[0].harga);
+      }
+    }
+
+    const hargaSatuan = hargaDasar + hargaTambahan;
+
+    // 2. Pastikan tabel induk 'Keranjang' ada SEBELUM insert ke child table
+    // Ini penting untuk menghindari error Foreign Key Constraint
+    await db.query(
+      'INSERT IGNORE INTO Keranjang (cartSessionId, createdAt) VALUES (?, NOW())',
+      [cartSessionId]
+    );
+
+    // 3. Cek apakah item sudah ada di keranjang (untuk session ini, produk ini, dan ukuran ini)
+    // Perhatikan: ukuranId bisa NULL, jadi kita perlu query yang aman untuk NULL
+    let checkQuery = 'SELECT keranjangItemId, jumlah FROM `Keranjang Item` WHERE cartSessionId = ? AND produkId = ?';
+    let checkParams = [cartSessionId, produkId];
+
+    if (ukuranId) {
+      checkQuery += ' AND ukuranId = ?';
+      checkParams.push(ukuranId);
+    } else {
+      checkQuery += ' AND ukuranId IS NULL';
+    }
+
+    const [existingItem] = await db.query(checkQuery, checkParams);
+
+    if (existingItem.length > 0) {
+      // 4a. UPDATE: Jika sudah ada, tambahkan jumlahnya
+      const item = existingItem[0];
+      const newQuantity = item.jumlah + qty;
+
+      // 🛑 CEK STOK (Update)
+      if (newQuantity > stokTersedia) {
+        return res.status(400).json({ 
+          success: false, 
+          message: `Stok tidak mencukupi. Stok tersedia: ${stokTersedia}, di keranjang: ${item.jumlah}, ditambah: ${qty}` 
+        });
+      }
+
+      const newSubtotal = newQuantity * hargaSatuan;
+
+      await db.query(
+        'UPDATE `Keranjang Item` SET jumlah = ?, subtotal = ? WHERE keranjangItemId = ?',
+        [newQuantity, newSubtotal, item.keranjangItemId]
+      );
+    } else {
+      // 4b. INSERT: Jika belum ada, buat baris baru
+
+      // 🛑 CEK STOK (New Item)
+      if (qty > stokTersedia) {
+        return res.status(400).json({ 
+          success: false, 
+          message: `Stok tidak mencukupi. Stok tersedia: ${stokTersedia}` 
+        });
+      }
+
+      const subtotal = qty * hargaSatuan;
+      
+      await db.query(
+        'INSERT INTO `Keranjang Item` (cartSessionId, produkId, ukuranId, jumlah, subtotal) VALUES (?, ?, ?, ?, ?)',
+        [cartSessionId, produkId, ukuranId || null, qty, subtotal]
+      );
+    }
 
     res.status(200).json({
       success: true,
@@ -221,14 +306,14 @@ exports.updateCartItem = async (req, res) => {
 /**
  * Remove item from cart
  * DELETE /api/cart/remove/:keranjangItemId
- * (Menggunakan Stored Procedure - TIDAK DIUBAH)
+ * (Diganti dengan SQL Manual karena Stored Procedure bermasalah)
  */
 exports.removeCartItem = async (req, res) => {
   try {
     const { keranjangItemId } = req.params;
 
-    const query = 'CALL hapusItem(?)';
-    await db.query(query, [keranjangItemId]);
+    // Ganti CALL hapusItem(?) dengan DELETE langsung
+    await db.query('DELETE FROM `Keranjang Item` WHERE keranjangItemId = ?', [keranjangItemId]);
 
     res.status(200).json({
       success: true,

@@ -118,7 +118,10 @@ const getImageUrl = (fotoUrl: string | null | undefined): string => {
   
   // Legacy local path - construct full URL
   if (fotoUrl.startsWith('/')) {
-    return `https://backend-the-candils.vercel.app${fotoUrl}`
+    const BASE_URL = import.meta.env.PROD
+      ? 'https://backend-the-candils.vercel.app'
+      : 'http://localhost:3000';
+    return `${BASE_URL}${fotoUrl}`
   }
   
   // Fallback

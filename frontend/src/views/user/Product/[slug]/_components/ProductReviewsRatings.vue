@@ -109,6 +109,16 @@
           {{ review.komentar || 'User tidak memberikan komentar.' }}
         </p>
 
+        <!-- Review Image -->
+        <div v-if="review.foto" class="mt-3 mb-3">
+          <img 
+            :src="getImageUrl(review.foto)" 
+            alt="Foto Ulasan" 
+            class="h-32 w-auto object-cover rounded-lg border border-gray-200 cursor-pointer hover:opacity-90 transition-opacity"
+            @click="openImageModal(review.foto)"
+          />
+        </div>
+
         <!-- Date Footer -->
         <div class="flex items-center justify-end">
           <span class="text-xs text-gray-500">{{ formatDateTime(review.tanggalUlasan) }}</span>
@@ -199,15 +209,50 @@
         <label class="block text-sm font-medium text-gray-700 mb-2">
           Foto Produk (Opsional)
         </label>
-        <button
-          type="button"
-          class="flex items-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-[#BAB772] transition-all text-gray-600 hover:text-[#BAB772]"
-        >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-          </svg>
-          <span>Pilih Gambar</span>
-        </button>
+        
+        <!-- File Input (Hidden) -->
+        <input 
+          type="file" 
+          ref="fileInput" 
+          accept="image/*" 
+          class="hidden" 
+          @change="handleFileSelect"
+        />
+
+        <div class="flex items-start gap-4">
+          <!-- Upload Button -->
+          <button
+            type="button"
+            @click="triggerFileInput"
+            class="flex items-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-[#BAB772] transition-all text-gray-600 hover:text-[#BAB772]"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            <span>{{ selectedFile ? 'Ganti Gambar' : 'Pilih Gambar' }}</span>
+          </button>
+
+          <!-- Image Preview -->
+          <div v-if="imagePreview" class="relative group">
+            <img 
+              :src="imagePreview" 
+              alt="Preview" 
+              class="h-16 w-16 object-cover rounded-lg border border-gray-200"
+            />
+            <button 
+              @click="removeFile"
+              class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition-colors"
+              title="Hapus Gambar"
+            >
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+        <p v-if="selectedFile" class="text-xs text-gray-500 mt-2">
+          File terpilih: {{ selectedFile.name }}
+        </p>
       </div>
 
       <!-- Submit Button -->
@@ -264,6 +309,11 @@ const newReview = ref({
 const isSubmitting = ref(false)
 const submitError = ref<string | null>(null)
 const submitSuccess = ref(false)
+
+// File Upload State
+const fileInput = ref<HTMLInputElement | null>(null)
+const selectedFile = ref<File | null>(null)
+const imagePreview = ref<string | null>(null)
 
 // Computed
 const totalReviews = computed(() => props.reviews.length)
@@ -356,6 +406,54 @@ const formatRelativeTime = (dateString: string | undefined | null): string => {
   return Math.floor(seconds) + " detik lalu"
 }
 
+// Image Helper
+const getImageUrl = (path: string) => {
+  if (!path) return ''
+  if (path.startsWith('http')) return path
+  // Sesuaikan dengan base URL backend Anda
+  const BASE_URL = import.meta.env.PROD 
+    ? 'https://backend-the-candils.vercel.app' 
+    : 'http://localhost:3000';
+  return `${BASE_URL}${path}`
+}
+
+const openImageModal = (url: string) => {
+  window.open(getImageUrl(url), '_blank')
+}
+
+// File Handlers
+const triggerFileInput = () => {
+  fileInput.value?.click()
+}
+
+const handleFileSelect = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  if (target.files && target.files.length > 0) {
+    const file = target.files[0]
+    
+    // Validasi ukuran (misal max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      alert('Ukuran file terlalu besar (maksimal 2MB)')
+      target.value = ''
+      return
+    }
+
+    selectedFile.value = file
+    imagePreview.value = URL.createObjectURL(file)
+  }
+}
+
+const removeFile = () => {
+  selectedFile.value = null
+  if (imagePreview.value) {
+    URL.revokeObjectURL(imagePreview.value)
+    imagePreview.value = null
+  }
+  if (fileInput.value) {
+    fileInput.value.value = ''
+  }
+}
+
 // IMPLEMENTASI SUBMIT REVIEW SESUAI API ANDA
 const submitReview = async () => {
   if (!isReviewValid.value) return
@@ -371,20 +469,23 @@ const submitReview = async () => {
       throw new Error('ID Produk tidak valid')
     }
 
-    // Buat object data sesuai interface CreateReviewData
-    const reviewData = {
-      namaReviewer: newReview.value.namaReviewer.trim(),
-      rating: newReview.value.rating,
-      komentar: newReview.value.komentar.trim()
+    // Gunakan FormData untuk mengirim file
+    const formData = new FormData()
+    formData.append('namaReviewer', newReview.value.namaReviewer.trim())
+    formData.append('rating', String(newReview.value.rating))
+    formData.append('komentar', newReview.value.komentar.trim())
+    
+    if (selectedFile.value) {
+      formData.append('foto', selectedFile.value)
     }
 
     console.log('📤 Submitting review to API:', {
       produkId,
-      data: reviewData
+      hasFile: !!selectedFile.value
     })
 
-    // Panggil API dengan signature: createReview(produkId, data)
-    const response = await createReview(produkId, reviewData)
+    // Panggil API dengan signature: createReview(produkId, formData)
+    const response = await createReview(produkId, formData)
 
     console.log('✅ Review submitted successfully:', response)
 
@@ -394,6 +495,7 @@ const submitReview = async () => {
       namaReviewer: '',
       komentar: ''
     }
+    removeFile() // Reset file input
 
     // Tampilkan success message
     submitSuccess.value = true

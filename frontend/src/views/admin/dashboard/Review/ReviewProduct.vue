@@ -137,8 +137,20 @@ const loadProductVariantList = async () => {
   isLoadingList.value = true;
   listError.value = null;
   try {
-    const response = await getProducts();
-    productVariantList.value = response.data;
+    // 1. Ambil data produk (semua varian)
+    // Perbaikan: getProducts() sekarang mengembalikan PaginatedBackendResponse
+    // Jadi data array ada di response.data.data
+    const productResponse = await getProducts();
+    const allVariants = productResponse.data.data; // Akses .data lagi
+
+    // 2. Filter unik berdasarkan produkId (karena 1 produk bisa banyak varian ukuran)
+    const uniqueProductsMap = new Map();
+    allVariants.forEach((variant: any) => {
+      if (!uniqueProductsMap.has(variant.produkId)) {
+        uniqueProductsMap.set(variant.produkId, variant);
+      }
+    });
+    productVariantList.value = Array.from(uniqueProductsMap.values());
     
     if (productVariantList.value.length === 0) {
       listError.value = "Tidak ada produk yang bisa ditampilkan.";

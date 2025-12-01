@@ -51,6 +51,7 @@ export interface Ulasan {
   namaReviewer: string;
   rating: number;
   komentar?: string;
+  foto?: string;
   tanggalUlasan: string;
 }
 
@@ -138,6 +139,47 @@ export interface CreatePesananData {
 }
 
 // ========================================
+// TIPE DATA DASHBOARD BARU
+// ========================================
+
+export interface RevenuePerLocation {
+    lokasiId: number;
+    lokasi_name: string;
+    total_revenue: string; 
+}
+
+export interface RevenuePerDay {
+    pemesanan_date: string;
+    total_revenue: string;
+}
+
+export interface ProductsSoldPerLocation {
+    lokasiId: number;
+    lokasi_name: string;
+    total_products_sold: string;
+}
+
+export interface DashboardSummary {
+    revenuePerLocation: RevenuePerLocation[];
+    revenuePerDay: RevenuePerDay[];
+    productsSoldPerLocation: ProductsSoldPerLocation[];
+}
+
+export interface ProductContributionSummary {
+    namaProduk: string;
+    total_quantity_sold: string;
+}
+
+export interface ProductReviewSalesSummary {
+    produkId: number;
+    namaProduk: string;
+    average_rating: string;
+    review_count: number;
+    total_quantity_sold: string;
+}
+
+
+// ========================================
 // API PENJUALAN (SALES) - REVISI
 // ========================================
 
@@ -169,18 +211,59 @@ export const getSalesReport = (queryString: string): Promise<AxiosResponse<Backe
 };
 
 /**
- * Mengambil data ringkasan Pendapatan per Lokasi.
+ * Mengambil data ringkasan Pendapatan per Lokasi. (Versi Lama)
  */
 export const getSalesSummaryRevenue = (): Promise<AxiosResponse<BackendResponse<SaleRevenueSummary[]>>> => {
   return api.get<BackendResponse<SaleRevenueSummary[]>>('/sales/summary-revenue');
 };
 
 /**
- * Mengambil data ringkasan Kuantitas Terjual per Produk.
+ * Mengambil data ringkasan Kuantitas Terjual per Produk. (Versi Lama)
  */
 export const getSalesSummaryQuantity = (): Promise<AxiosResponse<BackendResponse<SaleQuantitySummary[]>>> => {
   return api.get<BackendResponse<SaleQuantitySummary[]>>('/sales/summary-quantity');
 };
+
+// --- FUNGSI DASHBOARD BARU ---
+
+/**
+ * Mengambil semua data dashboard dalam satu panggilan.
+ * Endpoint: GET /api/sales/dashboard-summary
+ */
+export const getDashboardSummaryData = (): Promise<AxiosResponse<BackendResponse<DashboardSummary>>> => {
+  return api.get<BackendResponse<DashboardSummary>>('/sales/dashboard-summary');
+};
+
+/**
+ * Mengambil ringkasan kuantitas terjual per jenis produk (untuk Pie Chart).
+ * Endpoint: GET /api/sales/summary-products-sold
+ */
+export const getProductsSoldChartData = (): Promise<AxiosResponse<BackendResponse<ProductContributionSummary[]>>> => {
+  return api.get<BackendResponse<ProductContributionSummary[]>>('/sales/summary-products-sold');
+};
+
+/**
+ * Mengambil ringkasan ulasan (rating) dan penjualan (quantity) per produk.
+ * Endpoint: GET /api/sales/product-review-summary
+ */
+export const getProductReviewSalesSummary = (): Promise<AxiosResponse<BackendResponse<ProductReviewSalesSummary[]>>> => {
+  return api.get<BackendResponse<ProductReviewSalesSummary[]>>('/sales/product-review-summary');
+};
+
+export interface OrderTypeSummary {
+    tipePesanan: string;
+    total_orders: number;
+    total_revenue: string;
+}
+
+/**
+ * Mengambil ringkasan penjualan per tipe pesanan (Online vs Offline).
+ * Endpoint: GET /api/sales/summary-order-type
+ */
+export const getSalesByOrderTypeSummary = (): Promise<AxiosResponse<BackendResponse<OrderTypeSummary[]>>> => {
+  return api.get<BackendResponse<OrderTypeSummary[]>>('/sales/summary-order-type');
+};
+
 
 /**
  * Update transaksi penjualan.
@@ -201,8 +284,19 @@ export const deleteSalesTransaction = (pesananId: number, produkId: number) => {
 // API PRODUK
 // ========================================
 
-export const getProducts = () => {
-  return api.get<ProductVariantRow[]>('/products');
+export interface PaginationMeta {
+  page: number;
+  limit: number;
+  totalItems: number;
+  totalPages: number;
+}
+
+export interface PaginatedBackendResponse<T> extends BackendResponse<T> {
+  meta: PaginationMeta;
+}
+
+export const getProducts = (page = 1, limit = 10) => {
+  return api.get<PaginatedBackendResponse<ProductVariantRow[]>>(`/products?page=${page}&limit=${limit}`);
 };
 
 export const getProductById = (id: number) => {
@@ -237,8 +331,10 @@ export const getReviewsByProductId = (produkId: number) => {
   return api.get<Ulasan[]>(`/products/${produkId}/reviews`);
 };
 
-export const createReview = (produkId: number, data: CreateReviewData) => {
-  return api.post(`/products/${produkId}/reviews`, data);
+export const createReview = (produkId: number, formData: FormData) => {
+  return api.post(`/products/${produkId}/reviews`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
 };
 
 // ========================================

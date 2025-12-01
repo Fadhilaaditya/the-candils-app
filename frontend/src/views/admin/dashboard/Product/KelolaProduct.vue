@@ -35,10 +35,14 @@
       :product-variants="productVariants"
       :is-loading="isLoading"
       :error-message="errorMessage"
+      :current-page="currentPage"
+      :total-pages="totalPages"
+      :total-items="totalItems"
       @add-product="handleAddProduct"
       @edit-product="handleEditProduct"  
       @delete-product="handleDeleteProduct" 
       @refresh-data-from-api="refreshDataFromApi"
+      @change-page="changePage"
     />
 
     <!-- Modal dan Overlay Lainnya -->
@@ -69,7 +73,7 @@
     <!-- Loading overlay (tetap untuk fetch detail) -->
     <div
       v-if="isFetchingDetails"
-      class="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50" 
+      class="fixed inset-0 z-[60] flex items-center justify-center bg-transparent" 
     >
       <svg class="h-10 w-10 text-white animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -105,6 +109,12 @@ const productVariants = ref<ProductVariantRow[]>([]) // State data tabel
 const isLoading = ref(true) // State loading utama
 const errorMessage = ref<string | null>(null); // State error utama
 
+// --- State Pagination ---
+const currentPage = ref(1);
+const itemsPerPage = ref(10);
+const totalItems = ref(0);
+const totalPages = ref(1);
+
 // --- State Modal ---
 const isAddModalVisible = ref(false)
 const isEditModalVisible = ref(false)
@@ -115,17 +125,32 @@ const isFetchingDetails = ref(false)
 
 // --- Logic Data Fetching ---
 
-const refreshDataFromApi = async () => {
+const refreshDataFromApi = async (page = currentPage.value) => {
   isLoading.value = true // Mulai loading
   errorMessage.value = null
   try {
-    const response = await getProducts()
-    productVariants.value = [...response.data]
+    // Update current page
+    currentPage.value = page;
+    
+    const response = await getProducts(page, itemsPerPage.value)
+    productVariants.value = [...response.data.data] // Akses .data dari axios, lalu .data dari backend response
+    
+    // Update metadata pagination
+    if (response.data.meta) {
+      totalItems.value = response.data.meta.totalItems;
+      totalPages.value = response.data.meta.totalPages;
+    }
   } catch (error) {
     console.error('Error loading product variants:', error)
     errorMessage.value = 'Gagal memuat data varian produk. Coba lagi nanti.'
   } finally {
     isLoading.value = false // Selesai loading
+  }
+}
+
+const changePage = (newPage: number) => {
+  if (newPage >= 1 && newPage <= totalPages.value) {
+    refreshDataFromApi(newPage);
   }
 }
 
