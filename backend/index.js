@@ -27,8 +27,34 @@ const salesRoutes = require('./routes/salesRoutes');
 
 const app = express();
 
+// -----------------------------------------------------------------
+// PERBAIKAN CORS: Izinkan permintaan dari frontend lokal (Vite default: 5173)
+// -----------------------------------------------------------------
+const allowedOrigins = [
+    // Tambahkan domain production Anda
+    'https://backend-the-candils.vercel.app', 
+    // Tambahkan domain frontend lokal default Vite
+    'http://localhost:5173', 
+];
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Izinkan permintaan jika origin tidak didefinisikan (Postman, cURL)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.includes(origin) || origin.startsWith('http://localhost')) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+  credentials: true,
+};
+
 // --- Middleware ---
-app.use(cors());
+// CORS harus dipasang sebelum route
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
@@ -48,6 +74,10 @@ app.get('/', (req, res) => {
 // --- Error Handler (Opsional) ---
 app.use((err, req, res, next) => {
   console.error('🔥 ERROR:', err);
+  // Log error jika CORS yang memblokir
+  if (err.message.includes('CORS')) {
+      console.error('CORS BLOCK:', req.originalUrl, 'from', req.headers.origin);
+  }
   res.status(500).json({ message: 'Internal Server Error', error: err.message });
 });
 

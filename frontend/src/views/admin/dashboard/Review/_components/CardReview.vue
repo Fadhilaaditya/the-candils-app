@@ -43,6 +43,16 @@
       {{ review.komentar || 'User tidak memberikan komentar.' }}
     </p>
 
+    <!-- Review Image -->
+    <div v-if="review.foto" class="mt-2 mb-3">
+      <img 
+        :src="getImageUrl(review.foto)" 
+        alt="Foto Ulasan" 
+        class="h-32 w-auto object-cover rounded-lg border border-gray-200 cursor-pointer hover:opacity-90 transition-opacity"
+        @click="openImageModal(review.foto)"
+      />
+    </div>
+
     <div class="flex items-center justify-end text-sm text-gray-500">
       <div class="text-xs">
         {{ formatDateTime(review.tanggalUlasan) }}
@@ -102,5 +112,19 @@ const getInitial = (name: string | undefined | null): string => {
   }
   
   return name.substring(0, 2).toUpperCase();
+}
+
+const getImageUrl = (path: string) => {
+  if (!path) return ''
+  if (path.startsWith('http')) return path
+  // Sesuaikan dengan base URL backend Anda
+  const BASE_URL = import.meta.env.PROD 
+    ? 'https://backend-the-candils.vercel.app' 
+    : 'http://localhost:3000';
+  return `${BASE_URL}${path}`
+}
+
+const openImageModal = (url: string) => {
+  window.open(getImageUrl(url), '_blank')
 }
 </script>

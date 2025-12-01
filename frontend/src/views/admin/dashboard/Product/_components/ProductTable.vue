@@ -88,9 +88,30 @@
         <p class="mt-1 text-sm text-gray-500">Mulai dengan menambahkan produk pertama.</p>
       </div>
 
-      <!-- Product Count -->
-      <div v-if="hasProducts" class="mt-4 text-sm text-gray-500 text-center">
-        Total: {{ totalVariants }} varian produk
+      <!-- Pagination Controls (Moved here) -->
+      <div v-if="hasProducts" class="flex flex-col sm:flex-row items-center justify-between mt-6 pt-4 border-t border-gray-100">
+        <div class="text-sm text-gray-600 mb-4 sm:mb-0">
+          Menampilkan halaman <span class="font-medium text-gray-900">{{ currentPage }}</span> dari <span class="font-medium text-gray-900">{{ totalPages }}</span>
+          <span class="text-gray-400 mx-2">|</span>
+          Total <span class="font-medium text-gray-900">{{ totalItems }}</span> varian
+        </div>
+        
+        <div class="flex gap-2">
+          <button 
+            @click="$emit('changePage', currentPage - 1)" 
+            :disabled="currentPage === 1"
+            class="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            Previous
+          </button>
+          <button 
+            @click="$emit('changePage', currentPage + 1)" 
+            :disabled="currentPage === totalPages"
+            class="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            Next
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -105,6 +126,9 @@ const props = defineProps<{
   productVariants: ProductVariantRow[] // Terima data sebagai prop
   isLoading: boolean // Terima loading state dari induk
   errorMessage: string | null // Terima error state dari induk
+  currentPage: number
+  totalPages: number
+  totalItems: number
 }>()
 
 const emit = defineEmits<{
@@ -112,6 +136,7 @@ const emit = defineEmits<{
   editProduct: [produkId: number]
   deleteProduct: [produkId: number]
   refreshDataFromApi: [] // Emit refresh event
+  changePage: [page: number]
 }>()
 
 // Computed properties (berdasarkan props)

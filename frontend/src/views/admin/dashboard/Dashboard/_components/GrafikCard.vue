@@ -1,24 +1,31 @@
 <template>
-  <div class="bg-white p-6 rounded-lg shadow-md">
-    <div class="flex justify-between items-center mb-4">
-      <h3 class="text-lg font-semibold text-gray-800">Grafik Penjualan Produk</h3>
-      <div class="flex space-x-2">
-        <input type="text" placeholder="dd/mm/yyyy" class="text-sm border rounded px-2 py-1 w-28">
-        <input type="text" placeholder="dd/mm/yyyy" class="text-sm border rounded px-2 py-1 w-28">
+  <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-full">
+    <div class="flex justify-between items-center mb-6">
+      <div>
+        <h3 class="text-lg font-bold text-gray-900">Grafik Penjualan Harian</h3>
+        <p class="text-sm text-gray-500">Tren pendapatan dalam 7 hari terakhir</p>
+      </div>
+      <div class="flex items-center space-x-2 bg-gray-50 rounded-lg p-1 border border-gray-100">
+        <button class="px-3 py-1 text-xs font-medium rounded-md bg-white shadow-sm text-gray-700">7 Hari</button>
+        <button class="px-3 py-1 text-xs font-medium rounded-md text-gray-500 hover:text-gray-700">30 Hari</button>
       </div>
     </div>
 
-    <div style="height: 300px;">
-      <Line v-if="graphData" :data="chartData" :options="chartOptions" />
+    <div v-if="graphData && graphData.data.length > 0" class="h-[350px] w-full">
+      <Line :data="chartData" :options="chartOptions" />
     </div>
-
+    <div v-else class="h-64 flex flex-col items-center justify-center text-gray-400 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 mb-2 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+        </svg>
+        <span class="text-sm font-medium">Belum ada data penjualan</span>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { defineProps, computed } from 'vue';
-// 1. Import komponen Line dan elemen-elemen yang dibutuhkan dari Chart.js
-import { Line } from 'vue-chartjs';
+import { Line } from 'vue-chartjs'; 
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -29,9 +36,8 @@ import {
   Tooltip,
   Legend,
   Filler
-} from 'chart.js';
+} from 'chart.js'; 
 
-// 2. Daftarkan elemen-elemen Chart.js
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -43,47 +49,82 @@ ChartJS.register(
   Filler
 );
 
-// Terima props seperti sebelumnya
+interface GraphData {
+    labels: string[]; 
+    data: number[]; 
+}
+
 const props = defineProps<{
-  graphData: {
-    labels: string[];
-    data: number[];
-  }
+  graphData: GraphData | null;
 }>();
 
-// 3. Siapkan data dalam format yang dimengerti oleh Chart.js
+// Warna Baru: Biru/Indigo (Lebih Modern)
+const ACCENT_COLOR = '#4F46E5'; // Indigo-600
+const FILL_COLOR = 'rgba(79, 70, 229, 0.3)'; // Indigo-600 dengan opacity
+
+const formatRupiah = (value: number) => {
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    minimumFractionDigits: 0
+  }).format(value);
+};
+
 const chartData = computed(() => ({
-  labels: props.graphData.labels,
+  labels: props.graphData?.labels || [],
   datasets: [
     {
       label: 'Omset Harian',
-      data: props.graphData.data,
-      borderColor: '#BAB772',
+      data: props.graphData?.data || [],
+      borderColor: ACCENT_COLOR, // Warna garis utama
       tension: 0.4,
       fill: true,
-      backgroundColor: '#BAB772',
-      pointBackgroundColor: '#BAB772',
+      backgroundColor: FILL_COLOR, // Warna area bawah garis
+      pointBackgroundColor: ACCENT_COLOR,
       pointBorderColor: '#fff',
       pointHoverRadius: 6,
-      pointHoverBackgroundColor: '#BAB772',
+      pointHoverBackgroundColor: ACCENT_COLOR,
     }
   ],
 }));
 
-// 4. Atur opsi tambahan untuk grafik (opsional)
 const chartOptions = {
   responsive: true,
   maintainAspectRatio: false,
   plugins: {
-    legend: {
-      display: false, // Menyembunyikan label dataset di atas grafik
+    legend: { display: false },
+    tooltip: {
+        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+        callbacks: {
+            label: function(context: any) {
+                let label = context.dataset.label || '';
+                if (context.parsed.y !== null) {
+                    label += `: ${formatRupiah(context.parsed.y)}`;
+                }
+                return label;
+            }
+        }
     },
   },
   scales: {
     y: {
       beginAtZero: true,
+      grid: { color: '#f3f4f6' }, // Garis grid yang sangat tipis
+      ticks: {
+          color: '#6b7280',
+          callback: function(value: any) {
+              const numericValue = parseFloat(value);
+              return new Intl.NumberFormat('id-ID', {
+                  notation: 'compact',
+                  maximumFractionDigits: 0
+              }).format(numericValue);
+          }
+      },
     },
+    x: {
+        grid: { display: false },
+        ticks: { color: '#6b7280' }
+    }
   },
 };
-
 </script>

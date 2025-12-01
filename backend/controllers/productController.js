@@ -26,6 +26,11 @@ exports.getProductIdList = async (req, res) => {
 // @desc    Mendapatkan semua produk/varian DENGAN RATING RATA-RATA (Publik)
 exports.getAllProducts = async (req, res) => {
   try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+
+    // 1. Query Data dengan Pagination
     const query = `
       SELECT
         P.produkId, P.namaProduk, P.deskripsi, P.stok,
@@ -45,9 +50,10 @@ exports.getAllProducts = async (req, res) => {
       GROUP BY
         P.produkId, U.ukuranId
       ORDER BY
-        P.produkId ASC, U.ukuranId ASC;
+        P.produkId ASC, U.ukuranId ASC
+      LIMIT ? OFFSET ?;
     `
-    const [productsWithVariantsAndRating] = await db.query(query)
+    const [productsWithVariantsAndRating] = await db.query(query, [limit, offset])
 
     const result = productsWithVariantsAndRating.map((item) => ({
       ...item,
@@ -55,7 +61,31 @@ exports.getAllProducts = async (req, res) => {
       reviewCount: parseInt(item.reviewCount || 0, 10),
     }))
 
-    res.json(result)
+    // 2. Query Total Data (untuk Metadata Pagination)
+    // Note: Karena kita group by variant (produkId, ukuranId), count harus sesuai.
+    // Query ini menghitung total baris yang akan dihasilkan jika tanpa LIMIT.
+    const countQuery = `
+      SELECT COUNT(*) as total FROM (
+        SELECT P.produkId 
+        FROM Produk P 
+        LEFT JOIN Ukuran U ON P.produkId = U.produkId 
+        GROUP BY P.produkId, U.ukuranId
+      ) as subquery
+    `;
+    const [countResult] = await db.query(countQuery);
+    const totalItems = countResult[0].total;
+    const totalPages = Math.ceil(totalItems / limit);
+
+    res.json({
+      success: true,
+      data: result,
+      meta: {
+        page,
+        limit,
+        totalItems,
+        totalPages
+      }
+    })
   } catch (err) {
     console.error(err.message)
     res.status(500).send('Server Error')

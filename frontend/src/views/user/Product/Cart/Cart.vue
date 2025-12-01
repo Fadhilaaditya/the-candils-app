@@ -85,7 +85,9 @@ const confirmModalRef = ref<InstanceType<typeof ConfirmModal> | null>(null)
 const cartItems = ref<CartItem[]>([])
 const loading = ref(true)
 
-const API_BASE_URL = 'https://backend-the-candils.vercel.app/api'
+const API_BASE_URL = import.meta.env.PROD
+  ? 'https://backend-the-candils.vercel.app/api'
+  : 'http://localhost:3000/api'
 
 // Get cart session ID
 const getCartSessionId = (): string => {

@@ -1,10 +1,22 @@
 import axios from 'axios'
 import router from '@/router' // Impor router Vue Anda
 
+// -----------------------------------------------------------------
+// PERBAIKAN: Deteksi Lingkungan untuk Base URL
+// -----------------------------------------------------------------
+// Base URL akan otomatis beralih:
+// - Development (npm run dev): http://localhost:3000/api
+// - Production (Deployment): https://backend-the-candils.vercel.app/api
+const BASE_URL = import.meta.env.PROD
+  ? 'https://backend-the-candils.vercel.app/api' 
+  : 'http://localhost:3000/api'; 
+// -----------------------------------------------------------------
+
+
 // Buat instansi Axios kustom
 const api = axios.create({
-  // Atur URL dasar untuk semua request ke backend Anda
-  baseURL: 'https://backend-the-candils.vercel.app/api',
+  // Gunakan BASE_URL yang dinamis
+  baseURL: BASE_URL,
 })
 
 // Interceptor (Penjaga) Request

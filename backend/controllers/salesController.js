@@ -1,35 +1,141 @@
-const db = require('../config/db');
+// controllers/salesController.js
+const pool = require('../config/db'); 
 
-/**
- * @desc    Mengambil data penjualan per produk, difilter berdasarkan tanggal dan lokasi.
- * @route   GET /api/sales/report
- */
+// Status pesanan yang dianggap sukses/berhasil
+const SUCCESS_STATUS = 'Selesai'; 
+
+// --- FUNGSI 1: Ringkasan Dashboard Utama ---
+const getDashboardSummary = async (req, res) => {
+    try {
+        const results = {};
+
+        // 1. Total Pendapatan per Lokasi
+        const revenuePerLocationQuery = `
+            SELECT 
+                L.lokasiId,
+                L.name AS lokasi_name,
+                COALESCE(SUM(P.TotalHarga), 0) AS total_revenue
+            FROM Lokasi L
+            LEFT JOIN Pemesanan P ON L.lokasiId = P.lokasiId AND P.statusPesanan = ?
+            GROUP BY L.lokasiId, L.name
+            ORDER BY L.lokasiId;
+        `;
+        const [revenuePerLocation] = await pool.query(revenuePerLocationQuery, [SUCCESS_STATUS]);
+        results.revenuePerLocation = revenuePerLocation;
+
+
+        // 2. Total Pendapatan per Hari (untuk Grafik)
+        const revenuePerDayQuery = `
+            SELECT 
+                DATE(tanggalPesanan) AS pemesanan_date,
+                COALESCE(SUM(TotalHarga), 0) AS total_revenue
+            FROM Pemesanan
+            WHERE statusPesanan = ?
+            GROUP BY DATE(tanggalPesanan)
+            ORDER BY pemesanan_date ASC;
+        `;
+        const [revenuePerDay] = await pool.query(revenuePerDayQuery, [SUCCESS_STATUS]);
+        results.revenuePerDay = revenuePerDay;
+
+        // 3. Total Produk Terjual per Lokasi
+        const totalProductsSoldPerLocationQuery = `
+            SELECT
+                L.lokasiId,
+                L.name AS lokasi_name,
+                COALESCE(SUM(DP.quantity), 0) AS total_products_sold
+            FROM Lokasi L
+            LEFT JOIN Pemesanan P ON L.lokasiId = P.lokasiId AND P.statusPesanan = ?
+            LEFT JOIN DetailPemesanan DP ON P.pesananid = DP.pesananid
+            GROUP BY L.lokasiId, L.name
+            ORDER BY L.lokasiId;
+        `;
+        const [productsSoldPerLocation] = await pool.query(totalProductsSoldPerLocationQuery, [SUCCESS_STATUS]);
+        results.productsSoldPerLocation = productsSoldPerLocation;
+
+
+        res.json({
+            success: true,
+            message: 'Data dashboard berhasil diambil',
+            data: results
+        });
+
+    } catch (error) {
+        console.error('💥 Error fetching dashboard summary:', error);
+        res.status(500).json({ 
+            success: false,
+            message: 'Gagal mengambil data dashboard', 
+            error: error.message 
+        });
+    }
+};
+
+// --- FUNGSI 2: Ringkasan Ulasan dan Penjualan Produk (Gabungan 4 Metrik) ---
+const getProductReviewSummary = async (req, res) => {
+    // Query ini menggabungkan Produk, Ulasan, dan Penjualan (DetailPemesanan + Pemesanan)
+    const query = `
+        SELECT 
+            P.produkId,
+            P.namaProduk,
+            COALESCE(CAST(AVG(U.rating) AS DECIMAL(10,2)), 0) AS average_rating,
+            COUNT(DISTINCT U.ulasanId) AS review_count,
+            COALESCE(SUM(DP.quantity), 0) AS total_quantity_sold
+        FROM 
+            Produk P
+        LEFT JOIN
+            Ulasan U ON P.produkId = U.produkId
+        LEFT JOIN
+            DetailPemesanan DP ON P.produkId = DP.produkId
+        LEFT JOIN
+            Pemesanan PM ON DP.pesananid = PM.pesananid AND PM.statusPesanan = ?
+        GROUP BY 
+            P.produkId, P.namaProduk
+        ORDER BY 
+            average_rating DESC, total_quantity_sold DESC;
+    `;
+
+    try {
+        const [summary] = await pool.query(query, [SUCCESS_STATUS]);
+
+        res.json({
+            success: true,
+            message: 'Ringkasan ulasan dan penjualan produk berhasil diambil',
+            data: summary
+        });
+    } catch (error) {
+        console.error('💥 Error fetching product review summary:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Gagal memuat ringkasan ulasan/penjualan produk',
+            error: error.message
+        });
+    }
+};
+
+// --- FUNGSI 3: Laporan Penjualan Detail ---
 const getSalesReport = async (req, res) => {
     const { startDate, endDate, lokasiId } = req.query;
 
     let query = `
         SELECT
             P.namaProduk AS namaProduk,
-            P.produkId AS produkId,
             SUM(DP.quantity) AS QTY,
             SUM(DP.subtotal) AS totalHarga,
             L.name AS lokasi,
             DATE(PM.tanggalPesanan) AS date,
-            PM.pesananId,
-            PM.tipePesanan
+            PM.pesananid
         FROM
             Pemesanan PM
         JOIN
-            DetailPemesanan DP ON PM.pesananId = DP.pesananId
+            DetailPemesanan DP ON PM.pesananid = DP.pesananid
         JOIN
             Produk P ON DP.produkId = P.produkId
         JOIN
             Lokasi L ON PM.lokasiId = L.lokasiId
         WHERE
-            PM.statusPesanan = 'Selesai'
+            PM.statusPesanan = ?
     `;
 
-    const params = [];
+    const params = [SUCCESS_STATUS];
 
     if (startDate) {
         query += ' AND PM.tanggalPesanan >= ?';
@@ -39,7 +145,6 @@ const getSalesReport = async (req, res) => {
         query += ' AND PM.tanggalPesanan <= DATE_ADD(?, INTERVAL 1 DAY)';
         params.push(endDate);
     }
-
     if (lokasiId && lokasiId !== 'all') {
         query += ' AND PM.lokasiId = ?';
         params.push(lokasiId);
@@ -47,13 +152,13 @@ const getSalesReport = async (req, res) => {
 
     query += `
         GROUP BY
-            P.namaProduk, P.produkId, L.name, DATE(PM.tanggalPesanan), PM.pesananId, PM.tipePesanan
+            P.namaProduk, L.name, DATE(PM.tanggalPesanan), PM.pesananid
         ORDER BY
             PM.tanggalPesanan DESC, P.namaProduk ASC
     `;
 
     try {
-        const [reportData] = await db.query(query, params);
+        const [reportData] = await pool.query(query, params);
         res.json({
             success: true,
             data: reportData
@@ -68,35 +173,30 @@ const getSalesReport = async (req, res) => {
     }
 };
 
-/**
- * @desc    Mengambil data ringkasan Pendapatan per Lokasi (untuk RevenueChart).
- * @route   GET /api/sales/summary-revenue
- */
+// --- FUNGSI 4: Ringkasan Pendapatan (Per Lokasi) ---
 const getSummaryRevenue = async (req, res) => {
     let query = `
         SELECT
             L.name AS lokasi,
-            SUM(PM.totalHarga) AS totalPendapatan
+            SUM(PM.TotalHarga) AS totalPendapatan
         FROM
             Pemesanan PM
         JOIN
             Lokasi L ON PM.lokasiId = L.lokasiId
         WHERE
-            PM.statusPesanan = 'Selesai'
+            PM.statusPesanan = ?
         GROUP BY
             L.name
-        ORDER BY
-            totalPendapatan DESC
     `;
 
     try {
-        const [summaryData] = await db.query(query);
+        const [summaryData] = await pool.query(query, [SUCCESS_STATUS]);
         res.json({
             success: true,
             data: summaryData
         });
     } catch (err) {
-        console.error('Error fetching summary revenue:', err);
+        console.error('Error fetching revenue summary:', err);
         res.status(500).json({
             success: false,
             message: 'Gagal memuat ringkasan pendapatan',
@@ -105,163 +205,122 @@ const getSummaryRevenue = async (req, res) => {
     }
 };
 
-/**
- * @desc    Mengambil data total Kuantitas Produk Terjual per Produk (untuk ProductsSoldChart).
- * @route   GET /api/sales/summary-quantity
- */
+// --- FUNGSI 5: Ringkasan Kuantitas Produk Terjual (Per Lokasi) ---
 const getSummaryQuantity = async (req, res) => {
     let query = `
         SELECT
-            P.namaProduk,
+            L.name AS lokasi,
             SUM(DP.quantity) AS totalProdukTerjual
         FROM
             Pemesanan PM
         JOIN
-            DetailPemesanan DP ON PM.pesananId = DP.pesananId
+            Lokasi L ON PM.lokasiId = L.lokasiId
         JOIN
-            Produk P ON DP.produkId = P.produkId
+            DetailPemesanan DP ON PM.pesananid = DP.pesananid
         WHERE
-            PM.statusPesanan = 'Selesai'
+            PM.statusPesanan = ?
         GROUP BY
-            P.namaProduk
-        ORDER BY
-            totalProdukTerjual DESC
+            L.name
     `;
 
     try {
-        const [summaryData] = await db.query(query);
+        const [summaryData] = await pool.query(query, [SUCCESS_STATUS]);
         res.json({
             success: true,
             data: summaryData
         });
     } catch (err) {
-        console.error('Error fetching summary quantity:', err);
+        console.error('Error fetching quantity summary:', err);
         res.status(500).json({
             success: false,
-            message: 'Gagal memuat ringkasan kuantitas produk',
+            message: 'Gagal memuat ringkasan kuantitas',
             error: err.message
         });
     }
 };
 
-/**
- * @desc    Update Kuantitas, Harga Satuan, dan Lokasi pada Transaksi Penjualan yang Sudah Selesai.
- * @route   PUT /api/sales/transaction/:pesananId/:produkId
- */
+// --- FUNGSI 6: Produk Terjual per Jenis Produk (untuk Pie Chart) ---
+const getProductsSoldSummary = async (req, res) => {
+    const query = `
+        SELECT 
+            P.namaProduk,
+            COALESCE(SUM(DP.quantity), 0) AS total_quantity_sold
+        FROM DetailPemesanan DP
+        JOIN Pemesanan PM ON DP.pesananid = PM.pesananid
+        JOIN Produk P ON DP.produkId = P.produkId
+        WHERE PM.statusPesanan = ?
+        GROUP BY P.namaProduk
+        ORDER BY total_quantity_sold DESC;
+    `;
+
+    try {
+        const [productsSummary] = await pool.query(query, [SUCCESS_STATUS]);
+
+        res.json({
+            success: true,
+            message: 'Ringkasan produk terjual per jenis berhasil diambil',
+            data: productsSummary
+        });
+    } catch (error) {
+        console.error('💥 Error fetching products sold summary:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Gagal memuat ringkasan produk terjual',
+            error: error.message
+        });
+    }
+};
+
+
+// --- FUNGSI 7: Ringkasan Penjualan per Tipe Pesanan (Online vs Offline) ---
+const getSalesByOrderTypeSummary = async (req, res) => {
+    const query = `
+        SELECT 
+            tipePesanan,
+            COUNT(pesananId) as total_orders,
+            COALESCE(SUM(TotalHarga), 0) as total_revenue
+        FROM Pemesanan
+        WHERE statusPesanan = ?
+        GROUP BY tipePesanan
+        ORDER BY total_revenue DESC;
+    `;
+
+    try {
+        const [summary] = await pool.query(query, [SUCCESS_STATUS]);
+
+        res.json({
+            success: true,
+            message: 'Ringkasan penjualan per tipe pesanan berhasil diambil',
+            data: summary
+        });
+    } catch (error) {
+        console.error('💥 Error fetching sales by order type summary:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Gagal memuat ringkasan tipe pesanan',
+            error: error.message
+        });
+    }
+};
+
+
+// --- FUNGSI LAINNYA ---
 const updateSalesTransaction = async (req, res) => {
-    const { pesananId, produkId } = req.params;
-    const { quantity, hargaSatuan, lokasiId } = req.body;
-
-    if (!quantity || !hargaSatuan || !lokasiId) {
-        return res.status(400).json({ success: false, message: 'Data kuantitas, harga satuan, dan lokasi wajib diisi.' });
-    }
-
-    const newQuantity = Number(quantity);
-    const newHargaSatuan = Number(hargaSatuan);
-    const newLokasiId = Number(lokasiId);
-    
-    const newSubtotal = newQuantity * newHargaSatuan;
-
-    let connection;
-    try {
-        connection = await db.getConnection();
-        await connection.beginTransaction();
-
-        // 1. UPDATE DetailPemesanan
-        await connection.query(
-            `UPDATE DetailPemesanan SET 
-                quantity = ?, 
-                subtotal = ? 
-             WHERE pesananId = ? AND produkId = ?`,
-            [newQuantity, newSubtotal, pesananId, produkId]
-        );
-        
-        // 2. UPDATE Pemesanan (Lokasi)
-        await connection.query(
-            `UPDATE Pemesanan SET lokasiId = ? WHERE pesananId = ?`,
-            [newLokasiId, pesananId]
-        );
-
-        // 3. Hitung Ulang Total Harga Pesanan
-        const [recalculateResult] = await connection.query(
-            `SELECT SUM(subtotal) AS newTotal FROM DetailPemesanan WHERE pesananId = ?`,
-            [pesananId]
-        );
-        const newTotalHarga = recalculateResult[0].newTotal || 0;
-
-        // 4. UPDATE Total Harga di Pemesanan
-        await connection.query(
-            `UPDATE Pemesanan SET totalHarga = ? WHERE pesananId = ?`,
-            [newTotalHarga, pesananId]
-        );
-
-        await connection.commit();
-        res.json({ success: true, message: 'Transaksi penjualan berhasil diperbarui.', newTotal: newTotalHarga });
-
-    } catch (err) {
-        if (connection) await connection.rollback();
-        console.error('Error updating sales transaction:', err);
-        res.status(500).json({ success: false, message: 'Gagal memperbarui transaksi penjualan.', error: err.message });
-    } finally {
-        if (connection) connection.release();
-    }
+    res.status(501).json({ message: 'Not implemented yet' });
 };
 
-/**
- * @desc    Hapus item dari Transaksi Penjualan.
- * @route   DELETE /api/sales/transaction/:pesananId/:produkId
- */
 const deleteSalesTransaction = async (req, res) => {
-    const { pesananId, produkId } = req.params;
-
-    let connection;
-    try {
-        connection = await db.getConnection();
-        await connection.beginTransaction();
-
-        // 1. Hapus DetailPemesanan
-        await connection.query(
-            'DELETE FROM DetailPemesanan WHERE pesananId = ? AND produkId = ?',
-            [pesananId, produkId]
-        );
-
-        // 2. Cek sisa item dan hitung ulang Total
-        const [remainingItems] = await connection.query(
-            'SELECT COUNT(*) as count FROM DetailPemesanan WHERE pesananId = ?',
-            [pesananId]
-        );
-        
-        if (remainingItems[0].count === 0) {
-            await connection.query('DELETE FROM Pemesanan WHERE pesananId = ?', [pesananId]);
-            await connection.commit();
-            return res.json({ success: true, message: 'Transaksi dan Pemesanan induk berhasil dihapus.' });
-        }
-
-        const [recalculateResult] = await connection.query(
-            'SELECT SUM(subtotal) AS newTotal FROM DetailPemesanan WHERE pesananId = ?',
-            [pesananId]
-        );
-        const newTotalHarga = recalculateResult[0].newTotal || 0;
-
-        await connection.query('UPDATE Pemesanan SET totalHarga = ? WHERE pesananId = ?', [newTotalHarga, pesananId]);
-
-        await connection.commit();
-        res.json({ success: true, message: 'Item transaksi berhasil dihapus.', newTotal: newTotalHarga });
-
-    } catch (err) {
-        if (connection) await connection.rollback();
-        console.error('Error deleting sales transaction item:', err);
-        res.status(500).json({ success: false, message: 'Gagal menghapus item transaksi.', error: err.message });
-    } finally {
-        if (connection) connection.release();
-    }
+    res.status(501).json({ message: 'Not implemented yet' });
 };
-
 
 module.exports = {
+    getDashboardSummary,
+    getProductReviewSummary, 
     getSalesReport,
-    getSummaryRevenue,     // ✅ Export Pendapatan
-    getSummaryQuantity,    // ✅ Export Kuantitas Terjual
+    getSummaryRevenue,
+    getSummaryQuantity,
+    getProductsSoldSummary,
+    getSalesByOrderTypeSummary, 
     updateSalesTransaction,
-    deleteSalesTransaction,
+    deleteSalesTransaction
 };

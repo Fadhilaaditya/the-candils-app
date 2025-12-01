@@ -7,22 +7,18 @@
         <div class="grid grid-cols-1 lg:grid-cols-2">
           <div class="p-6 md:p-8">
             <div v-if="isLoading" class="text-center py-10">
-              <p>Memuat keranjang...</p>
+              <div class="animate-spin inline-block w-6 h-6 border-[3px] border-current border-t-transparent text-indigo-600 rounded-full"></div>
+              <p class="mt-2 text-gray-600">Memuat keranjang...</p>
             </div>
 
             <div v-else-if="error" class="text-center py-10">
-              <p class="text-red-500">{{ error }}</p>
-              <router-link to="/cart" class="text-[#BAB772] hover:underline mt-4"
-                >Kembali ke Keranjang</router-link
+              <p class="text-red-500 mb-4">{{ error }}</p>
+              <router-link to="/cart" class="text-indigo-600 hover:text-indigo-800 font-medium"
+                >&#8592; Kembali ke Keranjang</router-link
               >
             </div>
 
-            <!-- 
-              [PERUBAHAN]: 
-              - Menghapus v-model:payment-method (tidak lagi dipakai)
-              - Menambahkan prop file-preview-url
-              - Mengubah emit @submit-order menjadi @submit-order-and-upload
-            -->
+            <!-- Komponen Formulir Checkout -->
             <CheckoutFormComponent
               v-else
               v-model:full-name="form.fullName"
@@ -41,11 +37,11 @@
             </CheckoutFormComponent>
           </div>
 
-          <div class="hidden lg:block p-8">
+          <div class="hidden lg:block p-8 bg-indigo-50/50">
             <img
               :src="displayImageUrl"
               alt="Ringkasan Pesanan"
-              class="w-full h-[560px] object-cover rounded-2xl shadow-lg"
+              class="w-full h-[560px] object-cover rounded-2xl shadow-lg border border-indigo-200"
             />
           </div>
         </div>
@@ -67,9 +63,8 @@ interface CartItem {
   produkId: number
   ukuranId: number | null
   jumlah: number
-  // Kita asumsikan harga_satuan membawa harga yang benar
   harga_satuan: number | string 
-  subtotal: number | string // Nilai ini mungkin 0 dari API, sehingga perlu dihitung ulang
+  subtotal: number | string 
   namaProduk: string
   namaUkuran: string | null
   foto: string
@@ -84,8 +79,14 @@ const error = ref<string | null>(null)
 const selectedFile = ref<File | null>(null)
 const filePreviewUrl = ref<string | null>(null)
 
-const API_CART_URL = 'https://backend-the-candils.vercel.app/api/cart'
-const API_ORDER_URL = 'https://backend-the-candils.vercel.app/api/pesanan'
+// API URLs (Menggunakan fetch bawaan browser)
+// Gunakan logika yang sama dengan api.ts untuk menentukan BASE_URL
+const API_BASE = import.meta.env.PROD
+  ? 'https://backend-the-candils.vercel.app/api'
+  : 'http://localhost:3000/api';
+
+const API_CART_URL = `${API_BASE}/cart`;
+const API_ORDER_URL = `${API_BASE}/pesanan`;
 
 const form = reactive({
   fullName: '',
@@ -104,38 +105,46 @@ const toNumber = (value: number | string): number => {
   return isNaN(num) ? 0 : num
 }
 
-// Helper function untuk menghitung subtotal item (fungsi yang benar)
+// Helper function untuk menghitung subtotal item
 const getItemSubtotal = (item: CartItem): number => {
   return toNumber(item.harga_satuan) * item.jumlah
 }
 
 
-// Computed property 'displayImageUrl' (tidak berubah)
+// Computed property 'displayImageUrl'
 const displayImageUrl = computed(() => {
+  if (filePreviewUrl.value) return filePreviewUrl.value; // Tampilkan preview file yang diupload
+  
   if (orderItems.value.length > 0) {
     const fotoUrl = orderItems.value[0].foto
+    // Tentukan base URL untuk gambar default
+    const imageBase = import.meta.env.PROD ? 'https://backend-the-candils.vercel.app' : 'http://localhost:3000';
+    
     if (fotoUrl && fotoUrl.startsWith('http')) {
       return fotoUrl
     }
-    return `https://backend-the-candils.vercel.app${fotoUrl || '/placeholder.svg'}`
+    return `${imageBase}${fotoUrl || '/placeholder.svg'}`
   }
   return '/placeholder.svg'
 })
 
-// 'loadCheckoutData' (tidak berubah)
+// --- Data Fetching ---
 onMounted(() => {
   loadCheckoutData()
 })
+
 const getCartSessionId = (): string | null => {
   return localStorage.getItem('cartSessionId')
 }
+
 const loadCheckoutData = async () => {
   isLoading.value = true
   error.value = null
   const directDataRaw = sessionStorage.getItem('directCheckoutData')
 
+  // Logika Direct Checkout
   if (directDataRaw) {
-    console.log('Memuat data dari Direct Checkout (sessionStorage)...')
+    // ... (Logika Direct Checkout) ...
     try {
       const directData = JSON.parse(directDataRaw)
       if (directData && directData.items && directData.items.length > 0) {
@@ -154,7 +163,7 @@ const loadCheckoutData = async () => {
       isLoading.value = false
     }
   } else {
-    console.log('Memuat data dari Keranjang Utama (API)...')
+    // Logika Checkout dari Keranjang Utama (Menggunakan fetch)
     const cartSessionId = getCartSessionId()
     if (!cartSessionId) {
       error.value = 'Keranjang Anda kosong atau sesi tidak ditemukan.'
@@ -163,9 +172,10 @@ const loadCheckoutData = async () => {
       return
     }
     try {
-      const response = await fetch(`${API_CART_URL}/${cartSessionId}`)
+      // NOTE: Menggunakan fetch, bukan Axios, jadi tidak perlu interceptor di sini
+      const response = await fetch(`${API_CART_URL}/${cartSessionId}`) 
       const result = await response.json()
-      if (result.success && result.data && result.data.length > 0) {
+      if (response.ok && result.success && result.data && result.data.length > 0) {
         orderItems.value = result.data
       } else {
         error.value = 'Keranjang Anda kosong.'
@@ -182,26 +192,23 @@ const loadCheckoutData = async () => {
   }
 }
 
-// ✅ FIX KRITIS: Computed properties 'subtotal' dan 'total'
-// Menggunakan item.jumlah * item.harga_satuan untuk perhitungan yang akurat
+// Computed properties
 const subtotal = computed(() => orderItems.value.reduce((acc, item) => {
     return acc + getItemSubtotal(item)
 }, 0))
 
 const total = computed(() => subtotal.value)
 
-// ✅ FIX KRITIS: Computed property untuk summary component
-// Mengganti item.subtotal yang 0 dengan perhitungan yang benar
 const summaryItems = computed(() => {
   return orderItems.value.map(item => ({
     ...item,
-    // Timpa nilai item.subtotal yang 0 dengan perhitungan yang benar
     subtotal: getItemSubtotal(item) 
   }));
 });
 
 
-// --- Handler untuk file selected (diubah untuk menerima Event DOM) ---
+// --- HANDLERS (Dikonsolidasi dan Dihapus Duplikat) ---
+
 const handleFileSelected = (event: Event) => {
   const target = event.target as HTMLInputElement
   if (target.files && target.files.length > 0) {
@@ -210,30 +217,28 @@ const handleFileSelected = (event: Event) => {
     // Buat URL sementara untuk preview gambar
     filePreviewUrl.value = URL.createObjectURL(file)
   } else {
-    selectedFile.value = null;
-    filePreviewUrl.value = null;
+    // Jika file dibatalkan, bersihkan state
     if (filePreviewUrl.value) {
         URL.revokeObjectURL(filePreviewUrl.value);
     }
+    selectedFile.value = null;
+    filePreviewUrl.value = null;
     toast.info('Pilihan file dibatalkan.');
   }
 };
 
-
-// Handler untuk menghapus file
 const handleFileRemoved = () => {
-  // Dihandle oleh komponen CheckoutForm.vue sekarang, 
-  // tetapi logika pembersihan state lokal tetap di sini.
+  // Hapus URL object jika ada
   if (filePreviewUrl.value) {
     URL.revokeObjectURL(filePreviewUrl.value)
   }
   selectedFile.value = null
   filePreviewUrl.value = null
-  toast.info('Gambar telah dihapus')
+  toast.info('Gambar bukti pembayaran dihapus')
 }
 
-// Handler untuk error file
 const handleFileError = (message: string) => {
+  // Split pesan menjadi array dan tampilkan sebagai toast
   const lines = message.split('\n').filter((line) => line.trim() !== '')
   const mainMessage = lines[0] || 'Terjadi kesalahan pada file'
   const details = lines.slice(1).join(' | ')
@@ -243,28 +248,6 @@ const handleFileError = (message: string) => {
   })
 }
 
-// Handler untuk menghapus file
-const handleFileRemoved = () => {
-  // Hapus URL object jika ada
-  if (filePreviewUrl.value) {
-    URL.revokeObjectURL(filePreviewUrl.value)
-  }
-  selectedFile.value = null
-  filePreviewUrl.value = null
-  toast.info('Gambar telah dihapus')
-}
-
-// Handler untuk error file
-const handleFileError = (message: string) => {
-  // Split pesan menjadi array dan tampilkan sebagai toast
-  const lines = message.split('\n').filter((line) => line.trim() !== '')
-  const mainMessage = lines[0] || 'Terjadi kesalahan pada file'
-  const details = lines.slice(1).join(' | ')
-
-  toast.error(mainMessage + (details ? `\n${details}` : ''), {
-    timeout: 5000, // Tampilkan selama 5 detik
-  })
-}
 
 // --- Fungsi 'submitOrderAndUpload' ---
 const submitOrderAndUpload = async () => {
@@ -294,7 +277,6 @@ const submitOrderAndUpload = async () => {
   formData.append('kontakPelanggan', form.contact)
 
   // Tambahkan data 'items' sebagai JSON string
-  // ✅ PENTING: Gunakan summaryItems untuk memastikan subtotal yang benar dikirim ke backend
   const itemsPayload = summaryItems.value.map((item) => ({
     produkId: item.produkId,
     ukuranId: item.ukuranId || null,
@@ -303,17 +285,17 @@ const submitOrderAndUpload = async () => {
   }))
   formData.append('items', JSON.stringify(itemsPayload))
 
+  // Tambahkan total harga
+  formData.append('totalHarga', String(total.value));
+  
   // Tambahkan file
   formData.append('buktiPembayaran', selectedFile.value)
-
-  console.log('Mengirim Pesanan (FormData)...')
 
   // 3. Kirim FormData ke API 'createPesanan'
   try {
     const response = await fetch(API_ORDER_URL, {
       method: 'POST',
       body: formData,
-      // JANGAN set 'Content-Type: application/json'
     })
 
     const result = await response.json()
@@ -325,7 +307,9 @@ const submitOrderAndUpload = async () => {
       if (!isDirectCheckout.value) {
         const cartSessionId = getCartSessionId()
         if (cartSessionId) {
+          // Menggunakan fetch untuk menghindari masalah Axios interceptor
           await fetch(`${API_CART_URL}/clear/${cartSessionId}`, { method: 'DELETE' })
+          // Trigger event untuk update UI keranjang di komponen lain
           window.dispatchEvent(new Event('cartUpdated'))
         }
       }
