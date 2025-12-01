@@ -85,8 +85,9 @@ const fetchProductsData = async () => {
   isLoading.value = true
   errorMessage.value = null
   try {
-    const response = await getProducts()
-    allProductVariants.value = response.data
+    // Fetch products (default limit 10, bisa dinaikkan jika perlu)
+    const response = await getProducts(1, 100); // Ambil 100 produk pertama dulu
+    allProductVariants.value = response.data.data; // Akses .data.data karena response paginated
   } catch (error: unknown) {
     console.error('Gagal mengambil data produk:', error)
     if (isAxiosError(error) && error.response.status === 404) {
