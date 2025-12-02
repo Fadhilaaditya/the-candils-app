@@ -8,8 +8,8 @@ import router from '@/router' // Impor router Vue Anda
 // - Development (npm run dev): http://localhost:3000/api
 // - Production (Deployment): https://backend-the-candils.vercel.app/api
 const BASE_URL = import.meta.env.PROD
-  ? 'https://backend-the-candils.vercel.app/api' 
-  : 'http://localhost:3000/api'; 
+  ? 'https://backend-the-candils.vercel.app' 
+  : 'http://localhost:3000'; 
 // -----------------------------------------------------------------
 
 
