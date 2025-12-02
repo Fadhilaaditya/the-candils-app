@@ -6,50 +6,80 @@ const SUCCESS_STATUS = 'Selesai';
 
 // --- FUNGSI 1: Ringkasan Dashboard Utama ---
 const getDashboardSummary = async (req, res) => {
+    const { startDate, endDate } = req.query;
     try {
         const results = {};
 
         // 1. Total Pendapatan per Lokasi
-        const revenuePerLocationQuery = `
+        let revenuePerLocationQuery = `
             SELECT 
                 L.lokasiId,
                 L.name AS lokasi_name,
                 COALESCE(SUM(P.TotalHarga), 0) AS total_revenue
             FROM Lokasi L
             LEFT JOIN Pemesanan P ON L.lokasiId = P.lokasiId AND P.statusPesanan = ?
-            GROUP BY L.lokasiId, L.name
-            ORDER BY L.lokasiId;
         `;
-        const [revenuePerLocation] = await pool.query(revenuePerLocationQuery, [SUCCESS_STATUS]);
+        const revenueParams = [SUCCESS_STATUS];
+        if (startDate) {
+            revenuePerLocationQuery += ' AND DATE(P.tanggalPesanan) >= ?';
+            revenueParams.push(startDate);
+        }
+        if (endDate) {
+            revenuePerLocationQuery += ' AND DATE(P.tanggalPesanan) <= ?';
+            revenueParams.push(endDate);
+        }
+        revenuePerLocationQuery += ' GROUP BY L.lokasiId, L.name ORDER BY L.lokasiId;';
+        
+        const [revenuePerLocation] = await pool.query(revenuePerLocationQuery, revenueParams);
         results.revenuePerLocation = revenuePerLocation;
 
 
         // 2. Total Pendapatan per Hari (untuk Grafik)
-        const revenuePerDayQuery = `
+        let revenuePerDayQuery = `
             SELECT 
                 DATE(tanggalPesanan) AS pemesanan_date,
                 COALESCE(SUM(TotalHarga), 0) AS total_revenue
             FROM Pemesanan
             WHERE statusPesanan = ?
-            GROUP BY DATE(tanggalPesanan)
-            ORDER BY pemesanan_date ASC;
         `;
-        const [revenuePerDay] = await pool.query(revenuePerDayQuery, [SUCCESS_STATUS]);
+        const dayParams = [SUCCESS_STATUS];
+        if (startDate) {
+            revenuePerDayQuery += ' AND DATE(tanggalPesanan) >= ?';
+            dayParams.push(startDate);
+        }
+        if (endDate) {
+            revenuePerDayQuery += ' AND DATE(tanggalPesanan) <= ?';
+            dayParams.push(endDate);
+        }
+        revenuePerDayQuery += ' GROUP BY DATE(tanggalPesanan) ORDER BY pemesanan_date ASC;';
+
+        const [revenuePerDay] = await pool.query(revenuePerDayQuery, dayParams);
         results.revenuePerDay = revenuePerDay;
 
         // 3. Total Produk Terjual per Lokasi
-        const totalProductsSoldPerLocationQuery = `
+        let totalProductsSoldPerLocationQuery = `
             SELECT
                 L.lokasiId,
                 L.name AS lokasi_name,
                 COALESCE(SUM(DP.quantity), 0) AS total_products_sold
             FROM Lokasi L
             LEFT JOIN Pemesanan P ON L.lokasiId = P.lokasiId AND P.statusPesanan = ?
+        `;
+        const productParams = [SUCCESS_STATUS];
+        if (startDate) {
+            totalProductsSoldPerLocationQuery += ' AND DATE(P.tanggalPesanan) >= ?';
+            productParams.push(startDate);
+        }
+        if (endDate) {
+            totalProductsSoldPerLocationQuery += ' AND DATE(P.tanggalPesanan) <= ?';
+            productParams.push(endDate);
+        }
+        totalProductsSoldPerLocationQuery += `
             LEFT JOIN DetailPemesanan DP ON P.pesananid = DP.pesananid
             GROUP BY L.lokasiId, L.name
             ORDER BY L.lokasiId;
         `;
-        const [productsSoldPerLocation] = await pool.query(totalProductsSoldPerLocationQuery, [SUCCESS_STATUS]);
+        const [productsSoldPerLocation] = await pool.query(totalProductsSoldPerLocationQuery, productParams);
         results.productsSoldPerLocation = productsSoldPerLocation;
 
 
@@ -72,7 +102,9 @@ const getDashboardSummary = async (req, res) => {
 // --- FUNGSI 2: Ringkasan Ulasan dan Penjualan Produk (Gabungan 4 Metrik) ---
 const getProductReviewSummary = async (req, res) => {
     // Query ini menggabungkan Produk, Ulasan, dan Penjualan (DetailPemesanan + Pemesanan)
-    const query = `
+    const { startDate, endDate } = req.query;
+
+    let query = `
         SELECT 
             P.produkId,
             P.namaProduk,
@@ -87,6 +119,19 @@ const getProductReviewSummary = async (req, res) => {
             DetailPemesanan DP ON P.produkId = DP.produkId
         LEFT JOIN
             Pemesanan PM ON DP.pesananid = PM.pesananid AND PM.statusPesanan = ?
+    `;
+
+    const params = [SUCCESS_STATUS];
+    if (startDate) {
+        query += ' AND DATE(PM.tanggalPesanan) >= ?';
+        params.push(startDate);
+    }
+    if (endDate) {
+        query += ' AND DATE(PM.tanggalPesanan) <= ?';
+        params.push(endDate);
+    }
+
+    query += `
         GROUP BY 
             P.produkId, P.namaProduk
         ORDER BY 
@@ -94,7 +139,7 @@ const getProductReviewSummary = async (req, res) => {
     `;
 
     try {
-        const [summary] = await pool.query(query, [SUCCESS_STATUS]);
+        const [summary] = await pool.query(query, params);
 
         res.json({
             success: true,
@@ -175,6 +220,8 @@ const getSalesReport = async (req, res) => {
 
 // --- FUNGSI 4: Ringkasan Pendapatan (Per Lokasi) ---
 const getSummaryRevenue = async (req, res) => {
+    const { startDate, endDate } = req.query;
+
     let query = `
         SELECT
             L.name AS lokasi,
@@ -185,12 +232,26 @@ const getSummaryRevenue = async (req, res) => {
             Lokasi L ON PM.lokasiId = L.lokasiId
         WHERE
             PM.statusPesanan = ?
+    `;
+
+    const params = [SUCCESS_STATUS];
+
+    if (startDate) {
+        query += ' AND DATE(PM.tanggalPesanan) >= ?';
+        params.push(startDate);
+    }
+    if (endDate) {
+        query += ' AND DATE(PM.tanggalPesanan) <= ?';
+        params.push(endDate);
+    }
+
+    query += `
         GROUP BY
             L.name
     `;
 
     try {
-        const [summaryData] = await pool.query(query, [SUCCESS_STATUS]);
+        const [summaryData] = await pool.query(query, params);
         res.json({
             success: true,
             data: summaryData
@@ -241,7 +302,9 @@ const getSummaryQuantity = async (req, res) => {
 
 // --- FUNGSI 6: Produk Terjual per Jenis Produk (untuk Pie Chart) ---
 const getProductsSoldSummary = async (req, res) => {
-    const query = `
+    const { startDate, endDate } = req.query;
+
+    let query = `
         SELECT 
             P.namaProduk,
             COALESCE(SUM(DP.quantity), 0) AS total_quantity_sold
@@ -249,12 +312,25 @@ const getProductsSoldSummary = async (req, res) => {
         JOIN Pemesanan PM ON DP.pesananid = PM.pesananid
         JOIN Produk P ON DP.produkId = P.produkId
         WHERE PM.statusPesanan = ?
+    `;
+
+    const params = [SUCCESS_STATUS];
+    if (startDate) {
+        query += ' AND DATE(PM.tanggalPesanan) >= ?';
+        params.push(startDate);
+    }
+    if (endDate) {
+        query += ' AND DATE(PM.tanggalPesanan) <= ?';
+        params.push(endDate);
+    }
+
+    query += `
         GROUP BY P.namaProduk
         ORDER BY total_quantity_sold DESC;
     `;
 
     try {
-        const [productsSummary] = await pool.query(query, [SUCCESS_STATUS]);
+        const [productsSummary] = await pool.query(query, params);
 
         res.json({
             success: true,
@@ -274,19 +350,35 @@ const getProductsSoldSummary = async (req, res) => {
 
 // --- FUNGSI 7: Ringkasan Penjualan per Tipe Pesanan (Online vs Offline) ---
 const getSalesByOrderTypeSummary = async (req, res) => {
-    const query = `
+    const { startDate, endDate } = req.query;
+
+    let query = `
         SELECT 
             tipePesanan,
             COUNT(pesananId) as total_orders,
             COALESCE(SUM(TotalHarga), 0) as total_revenue
         FROM Pemesanan
         WHERE statusPesanan = ?
+    `;
+
+    const params = [SUCCESS_STATUS];
+
+    if (startDate) {
+        query += ' AND DATE(tanggalPesanan) >= ?';
+        params.push(startDate);
+    }
+    if (endDate) {
+        query += ' AND DATE(tanggalPesanan) <= ?';
+        params.push(endDate);
+    }
+
+    query += `
         GROUP BY tipePesanan
         ORDER BY total_revenue DESC;
     `;
 
     try {
-        const [summary] = await pool.query(query, [SUCCESS_STATUS]);
+        const [summary] = await pool.query(query, params);
 
         res.json({
             success: true,

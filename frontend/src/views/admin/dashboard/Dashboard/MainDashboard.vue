@@ -8,8 +8,29 @@
             </h1>
             <p class="text-sm text-gray-500 mt-1">Selamat datang kembali, Admin! Berikut ringkasan performa bisnis Anda.</p>
         </div>
-        <div class="mt-4 md:mt-0">
-            <button class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg shadow-sm text-sm font-medium transition-colors duration-200 flex items-center">
+        <div class="mt-4 md:mt-0 flex flex-col md:flex-row gap-3">
+            <!-- Filter Date -->
+            <div class="flex items-center space-x-2">
+                <input 
+                    type="date" 
+                    v-model="state.startDate"
+                    class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <span class="text-gray-500">-</span>
+                <input 
+                    type="date" 
+                    v-model="state.endDate"
+                    class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <button 
+                    @click="fetchData" 
+                    class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg shadow-sm text-sm font-medium transition-colors duration-200"
+                >
+                    Filter
+                </button>
+            </div>
+
+            <button class="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2 rounded-lg shadow-sm text-sm font-medium transition-colors duration-200 flex items-center justify-center">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                 </svg>
@@ -127,6 +148,8 @@ interface DashboardState {
     revenuePerLocationChart: SaleRevenueSummary[];
     productReviews: ProductReviewSalesSummary[];
     orderTypeChart: OrderTypeSummary[];
+    startDate: string;
+    endDate: string;
 }
 
 const state = reactive<DashboardState>({
@@ -138,6 +161,8 @@ const state = reactive<DashboardState>({
     revenuePerLocationChart: [],
     productReviews: [],
     orderTypeChart: [],
+    startDate: '',
+    endDate: '',
 });
 
 
@@ -167,7 +192,7 @@ const combineLocationSummary = (
     return Array.from(map.values()) as LocationCardData[];
 };
 
-const prepareDailySalesGraph = (rawRevenueData: RevenuePerDay[]): ProcessedGraphData => {
+const prepareDailySalesGraph = (rawRevenueData: RevenuePerDay[], startDate?: string, endDate?: string): ProcessedGraphData => {
     const dayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
     const labels: string[] = [];
     const data: number[] = [];
@@ -178,16 +203,23 @@ const prepareDailySalesGraph = (rawRevenueData: RevenuePerDay[]): ProcessedGraph
         revenueMap.set(dateKey, parseFloat(item.total_revenue) || 0);
     });
 
-    const daysInWeek = 7;
-    const today = new Date();
+    let start: Date;
+    let end: Date;
 
-    for (let i = daysInWeek - 1; i >= 0; i--) {
-        const date = new Date(today);
-        date.setDate(today.getDate() - i);
-        
-        const dateKey = date.toISOString().split('T')[0];
-        const dayIndex = date.getDay();
-        
+    if (startDate && endDate) {
+        start = new Date(startDate);
+        end = new Date(endDate);
+    } else {
+        // Default: 7 hari terakhir sampai hari ini
+        end = new Date();
+        start = new Date();
+        start.setDate(end.getDate() - 6);
+    }
+
+    // Loop dari start date sampai end date
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        const dateKey = d.toISOString().split('T')[0];
+        const dayIndex = d.getDay();
         const revenue = revenueMap.get(dateKey) || 0;
 
         labels.push(dayNames[dayIndex]);
@@ -211,11 +243,11 @@ const fetchData = async () => {
             revenueChartRes,
             orderTypeRes 
         ] = await Promise.all([
-            getDashboardSummaryData(),
-            getProductsSoldChartData(),
-            getProductReviewSalesSummary(),
-            getSalesSummaryRevenue(),
-            getSalesByOrderTypeSummary() 
+            getDashboardSummaryData(state.startDate, state.endDate),
+            getProductsSoldChartData(state.startDate, state.endDate),
+            getProductReviewSalesSummary(state.startDate, state.endDate),
+            getSalesSummaryRevenue(state.startDate, state.endDate),
+            getSalesByOrderTypeSummary(state.startDate, state.endDate) 
         ]);
 
         const summaryData = dashboardSummaryRes.data.data as DashboardSummary;
@@ -224,7 +256,7 @@ const fetchData = async () => {
             summaryData.revenuePerLocation, 
             summaryData.productsSoldPerLocation
         );
-        state.dailySalesGraph = prepareDailySalesGraph(summaryData.revenuePerDay);
+        state.dailySalesGraph = prepareDailySalesGraph(summaryData.revenuePerDay, state.startDate, state.endDate);
 
         state.productContributionChart = productContributionRes.data.data;
         state.productReviews = productReviewRes.data.data;
