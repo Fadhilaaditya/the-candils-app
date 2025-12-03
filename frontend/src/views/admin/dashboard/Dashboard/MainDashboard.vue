@@ -127,6 +127,8 @@ interface DashboardState {
     revenuePerLocationChart: SaleRevenueSummary[];
     productReviews: ProductReviewSalesSummary[];
     orderTypeChart: OrderTypeSummary[];
+    startDate: string;
+    endDate: string;
 }
 
 const state = reactive<DashboardState>({
@@ -138,6 +140,8 @@ const state = reactive<DashboardState>({
     revenuePerLocationChart: [],
     productReviews: [],
     orderTypeChart: [],
+    startDate: '',
+    endDate: '',
 });
 
 
@@ -167,7 +171,7 @@ const combineLocationSummary = (
     return Array.from(map.values()) as LocationCardData[];
 };
 
-const prepareDailySalesGraph = (rawRevenueData: RevenuePerDay[]): ProcessedGraphData => {
+const prepareDailySalesGraph = (rawRevenueData: RevenuePerDay[], startDate?: string, endDate?: string): ProcessedGraphData => {
     const dayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
     const labels: string[] = [];
     const data: number[] = [];
@@ -178,16 +182,23 @@ const prepareDailySalesGraph = (rawRevenueData: RevenuePerDay[]): ProcessedGraph
         revenueMap.set(dateKey, parseFloat(item.total_revenue) || 0);
     });
 
-    const daysInWeek = 7;
-    const today = new Date();
+    let start: Date;
+    let end: Date;
 
-    for (let i = daysInWeek - 1; i >= 0; i--) {
-        const date = new Date(today);
-        date.setDate(today.getDate() - i);
-        
-        const dateKey = date.toISOString().split('T')[0];
-        const dayIndex = date.getDay();
-        
+    if (startDate && endDate) {
+        start = new Date(startDate);
+        end = new Date(endDate);
+    } else {
+        // Default: 7 hari terakhir sampai hari ini
+        end = new Date();
+        start = new Date();
+        start.setDate(end.getDate() - 6);
+    }
+
+    // Loop dari start date sampai end date
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        const dateKey = d.toISOString().split('T')[0];
+        const dayIndex = d.getDay();
         const revenue = revenueMap.get(dateKey) || 0;
 
         labels.push(dayNames[dayIndex]);
@@ -211,11 +222,11 @@ const fetchData = async () => {
             revenueChartRes,
             orderTypeRes 
         ] = await Promise.all([
-            getDashboardSummaryData(),
-            getProductsSoldChartData(),
-            getProductReviewSalesSummary(),
-            getSalesSummaryRevenue(),
-            getSalesByOrderTypeSummary() 
+            getDashboardSummaryData(state.startDate, state.endDate),
+            getProductsSoldChartData(state.startDate, state.endDate),
+            getProductReviewSalesSummary(state.startDate, state.endDate),
+            getSalesSummaryRevenue(state.startDate, state.endDate),
+            getSalesByOrderTypeSummary(state.startDate, state.endDate) 
         ]);
 
         const summaryData = dashboardSummaryRes.data.data as DashboardSummary;
@@ -224,7 +235,7 @@ const fetchData = async () => {
             summaryData.revenuePerLocation, 
             summaryData.productsSoldPerLocation
         );
-        state.dailySalesGraph = prepareDailySalesGraph(summaryData.revenuePerDay);
+        state.dailySalesGraph = prepareDailySalesGraph(summaryData.revenuePerDay, state.startDate, state.endDate);
 
         state.productContributionChart = productContributionRes.data.data;
         state.productReviews = productReviewRes.data.data;

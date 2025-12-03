@@ -213,8 +213,15 @@ export const getSalesReport = (queryString: string): Promise<AxiosResponse<Backe
 /**
  * Mengambil data ringkasan Pendapatan per Lokasi. (Versi Lama)
  */
-export const getSalesSummaryRevenue = (): Promise<AxiosResponse<BackendResponse<SaleRevenueSummary[]>>> => {
-  return api.get<BackendResponse<SaleRevenueSummary[]>>('/sales/summary-revenue');
+export const getSalesSummaryRevenue = (startDate?: string, endDate?: string): Promise<AxiosResponse<BackendResponse<SaleRevenueSummary[]>>> => {
+  let url = '/sales/summary-revenue';
+  const params = new URLSearchParams();
+  if (startDate) params.append('startDate', startDate);
+  if (endDate) params.append('endDate', endDate);
+  
+  if (params.toString()) url += `?${params.toString()}`;
+  
+  return api.get<BackendResponse<SaleRevenueSummary[]>>(url);
 };
 
 /**
@@ -230,24 +237,45 @@ export const getSalesSummaryQuantity = (): Promise<AxiosResponse<BackendResponse
  * Mengambil semua data dashboard dalam satu panggilan.
  * Endpoint: GET /api/sales/dashboard-summary
  */
-export const getDashboardSummaryData = (): Promise<AxiosResponse<BackendResponse<DashboardSummary>>> => {
-  return api.get<BackendResponse<DashboardSummary>>('/sales/dashboard-summary');
+export const getDashboardSummaryData = (startDate?: string, endDate?: string): Promise<AxiosResponse<BackendResponse<DashboardSummary>>> => {
+  let url = '/sales/dashboard-summary';
+  const params = new URLSearchParams();
+  if (startDate) params.append('startDate', startDate);
+  if (endDate) params.append('endDate', endDate);
+
+  if (params.toString()) url += `?${params.toString()}`;
+
+  return api.get<BackendResponse<DashboardSummary>>(url);
 };
 
 /**
  * Mengambil ringkasan kuantitas terjual per jenis produk (untuk Pie Chart).
  * Endpoint: GET /api/sales/summary-products-sold
  */
-export const getProductsSoldChartData = (): Promise<AxiosResponse<BackendResponse<ProductContributionSummary[]>>> => {
-  return api.get<BackendResponse<ProductContributionSummary[]>>('/sales/summary-products-sold');
+export const getProductsSoldChartData = (startDate?: string, endDate?: string): Promise<AxiosResponse<BackendResponse<ProductContributionSummary[]>>> => {
+  let url = '/sales/summary-products-sold';
+  const params = new URLSearchParams();
+  if (startDate) params.append('startDate', startDate);
+  if (endDate) params.append('endDate', endDate);
+
+  if (params.toString()) url += `?${params.toString()}`;
+
+  return api.get<BackendResponse<ProductContributionSummary[]>>(url);
 };
 
 /**
  * Mengambil ringkasan ulasan (rating) dan penjualan (quantity) per produk.
  * Endpoint: GET /api/sales/product-review-summary
  */
-export const getProductReviewSalesSummary = (): Promise<AxiosResponse<BackendResponse<ProductReviewSalesSummary[]>>> => {
-  return api.get<BackendResponse<ProductReviewSalesSummary[]>>('/sales/product-review-summary');
+export const getProductReviewSalesSummary = (startDate?: string, endDate?: string): Promise<AxiosResponse<BackendResponse<ProductReviewSalesSummary[]>>> => {
+  let url = '/sales/product-review-summary';
+  const params = new URLSearchParams();
+  if (startDate) params.append('startDate', startDate);
+  if (endDate) params.append('endDate', endDate);
+
+  if (params.toString()) url += `?${params.toString()}`;
+
+  return api.get<BackendResponse<ProductReviewSalesSummary[]>>(url);
 };
 
 export interface OrderTypeSummary {
@@ -260,8 +288,15 @@ export interface OrderTypeSummary {
  * Mengambil ringkasan penjualan per tipe pesanan (Online vs Offline).
  * Endpoint: GET /api/sales/summary-order-type
  */
-export const getSalesByOrderTypeSummary = (): Promise<AxiosResponse<BackendResponse<OrderTypeSummary[]>>> => {
-  return api.get<BackendResponse<OrderTypeSummary[]>>('/sales/summary-order-type');
+export const getSalesByOrderTypeSummary = (startDate?: string, endDate?: string): Promise<AxiosResponse<BackendResponse<OrderTypeSummary[]>>> => {
+  let url = '/sales/summary-order-type';
+  const params = new URLSearchParams();
+  if (startDate) params.append('startDate', startDate);
+  if (endDate) params.append('endDate', endDate);
+
+  if (params.toString()) url += `?${params.toString()}`;
+
+  return api.get<BackendResponse<OrderTypeSummary[]>>(url);
 };
 
 

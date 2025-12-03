@@ -6,8 +6,7 @@
         <p class="text-sm text-gray-500">Tren pendapatan dalam 7 hari terakhir</p>
       </div>
       <div class="flex items-center space-x-2 bg-gray-50 rounded-lg p-1 border border-gray-100">
-        <button class="px-3 py-1 text-xs font-medium rounded-md bg-white shadow-sm text-gray-700">7 Hari</button>
-        <button class="px-3 py-1 text-xs font-medium rounded-md text-gray-500 hover:text-gray-700">30 Hari</button>
+        <!-- Buttons removed as per request -->
       </div>
     </div>
 

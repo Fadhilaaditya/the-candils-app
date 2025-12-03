@@ -291,7 +291,7 @@ const createPesananOffline = async (req, res) => {
         lokasiId, namaPelanggan, tanggalPesanan, statusPesanan,
         totalHarga, kontakPelanggan, tipePesanan
       )
-      VALUES (?, ?, NOW(), ?, ?, ?, ?, ?)
+      VALUES (?, ?, NOW(), ?, ?, ?, ?)
     `;
 
     const [orderResult] = await connection.execute(queryPemesanan, [
