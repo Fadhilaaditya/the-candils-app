@@ -58,8 +58,8 @@ const props = defineProps<{
 }>();
 
 // Warna Baru: Biru/Indigo (Lebih Modern)
-const ACCENT_COLOR = '#4F46E5'; // Indigo-600
-const FILL_COLOR = 'rgba(79, 70, 229, 0.3)'; // Indigo-600 dengan opacity
+const ACCENT_COLOR = '#BAB772'; // Primary Color
+const FILL_COLOR = 'rgba(186, 183, 114, 0.3)'; // Primary with opacity
 
 const formatRupiah = (value: number) => {
   return new Intl.NumberFormat('id-ID', {

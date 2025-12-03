@@ -47,7 +47,7 @@ const props = defineProps<{
 const dataToWatch = computed(() => props.revenueData);
 
 // Warna Baru: Biru/Indigo
-const BAR_COLOR = '#3B82F6';
+const BAR_COLOR = '#BAB772';
 
 const formatRupiahCompact = (value: number) => {
     return new Intl.NumberFormat('id-ID', { 

@@ -8,30 +8,9 @@
             </h1>
             <p class="text-sm text-gray-500 mt-1">Selamat datang kembali, Admin! Berikut ringkasan performa bisnis Anda.</p>
         </div>
-        <div class="mt-4 md:mt-0 flex flex-col md:flex-row gap-3">
-            <!-- Filter Date -->
-            <div class="flex items-center space-x-2">
-                <input 
-                    type="date" 
-                    v-model="state.startDate"
-                    class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-                <span class="text-gray-500">-</span>
-                <input 
-                    type="date" 
-                    v-model="state.endDate"
-                    class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-                <button 
-                    @click="fetchData" 
-                    class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg shadow-sm text-sm font-medium transition-colors duration-200"
-                >
-                    Filter
-                </button>
-            </div>
-
-            <button class="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2 rounded-lg shadow-sm text-sm font-medium transition-colors duration-200 flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div class="mt-4 md:mt-0">
+            <button class="bg-[#BAB772] hover:bg-[#a8a668] text-white px-4 py-2 rounded-lg shadow-sm text-sm font-medium transition-colors duration-200 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                 </svg>
                 Unduh Laporan

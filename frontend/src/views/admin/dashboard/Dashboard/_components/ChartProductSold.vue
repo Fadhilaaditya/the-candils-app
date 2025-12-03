@@ -39,12 +39,12 @@ const dataToWatch = computed(() => props.summaryData);
 
 // Palet warna yang lebih modern
 const backgroundColors = [
-  '#4F46E5', // Indigo
-  '#22C55E', // Green
+  '#BAB772', // Primary
+  '#D4D196', // Light Primary
+  '#95925B', // Dark Primary
+  '#E5E7EB', // Gray
   '#F59E0B', // Amber
-  '#EC4899', // Pink
-  '#8B5CF6', // Violet
-  '#3B82F6', // Blue
+  '#10B981', // Emerald
 ];
 
 const chartData = computed(() => ({
