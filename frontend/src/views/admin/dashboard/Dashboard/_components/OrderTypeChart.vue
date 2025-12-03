@@ -45,8 +45,8 @@ const chartData = computed(() => ({
     label: 'Total Pendapatan',
     data: dataToWatch.value.map(item => parseFloat(item.total_revenue)),
     backgroundColor: [
-      '#3B82F6', // Blue
-      '#F59E0B', // Amber
+      '#BAB772', // Primary
+      '#E5E7EB', // Gray
     ],
     borderRadius: 6,
     barThickness: 40,

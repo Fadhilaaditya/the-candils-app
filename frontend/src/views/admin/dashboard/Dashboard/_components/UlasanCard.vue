@@ -2,7 +2,7 @@
   <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 h-full flex flex-col">
     <div class="flex justify-between items-center mb-6">
         <h3 class="text-lg font-bold text-gray-900">Top Produk Populer</h3>
-        <a href="#" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">Lihat Semua</a>
+        <a href="#" class="text-sm text-primary hover:text-primary/80 font-medium">Lihat Semua</a>
     </div>
     
     <div v-if="reviews && reviews.length > 0" class="flex-grow overflow-y-auto pr-2 custom-scrollbar">
@@ -10,13 +10,13 @@
         <li v-for="(review, index) in reviews.slice(0, 7)" :key="review.produkId" class="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors group">
           <div class="flex items-center min-w-0">
             <!-- Nomor Urut -->
-            <span :class="{'text-indigo-600 font-bold': index < 3, 'text-gray-400 font-medium': index >= 3}" class="text-lg w-8 flex-shrink-0">
+            <span :class="{'text-primary font-bold': index < 3, 'text-gray-400 font-medium': index >= 3}" class="text-lg w-8 flex-shrink-0">
                 #{{ index + 1 }}
             </span>
             
             <div class="ml-2">
               <!-- Nama Produk -->
-              <p class="font-semibold text-gray-900 text-sm group-hover:text-indigo-600 transition-colors">{{ review.namaProduk }}</p>
+              <p class="font-semibold text-gray-900 text-sm group-hover:text-primary transition-colors">{{ review.namaProduk }}</p>
               <div class="flex items-center text-xs text-gray-500 mt-1 space-x-3">
                 <!-- Rating -->
                 <span class="flex items-center bg-yellow-50 text-yellow-700 px-1.5 py-0.5 rounded border border-yellow-100">
@@ -31,7 +31,7 @@
             </div>
           </div>
           
-          <button class="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 text-xs bg-white border border-gray-200 hover:border-indigo-300 text-gray-600 hover:text-indigo-600 font-medium py-1.5 px-3 rounded-md shadow-sm">
+          <button class="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 text-xs bg-white border border-gray-200 hover:border-primary/50 text-gray-600 hover:text-primary font-medium py-1.5 px-3 rounded-md shadow-sm">
             Detail
           </button>
         </li>
