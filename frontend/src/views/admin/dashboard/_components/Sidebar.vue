@@ -1,15 +1,23 @@
 <template>
-  <div class="flex flex-col w-64 h-screen px-4 py-8 bg-white">
+  <div class="flex flex-col w-64 h-screen px-4 py-8 bg-white border-r">
     
     <!-- Header Sidebar -->
-    <div class="flex items-center px-4 mb-8">
-      <div class="flex-shrink-0">
-        <span class="inline-block p-2 text-xl font-bold text-white bg-[#BAB772] rounded-lg">TC</span>
+    <div class="flex items-center justify-between px-4 mb-8">
+      <div class="flex items-center">
+        <div class="flex-shrink-0">
+          <span class="inline-block p-2 text-xl font-bold text-white bg-[#BAB772] rounded-lg">TC</span>
+        </div>
+        <div class="ml-3">
+          <h2 class="text-sm font-bold text-gray-800">The Candil's</h2>
+          <span class="text-xs text-gray-500">TBC ADMIN</span>
+        </div>
       </div>
-      <div class="ml-3">
-        <h2 class="text-sm font-bold text-gray-800">The Candil's</h2>
-        <span class="text-xs text-gray-500">TBC ADMIN</span>
-      </div>
+      <!-- Close Button (Mobile Only) -->
+      <button @click="$emit('close')" class="lg:hidden text-gray-500 hover:text-gray-700">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
     </div>
 
     <!-- Menu Navigasi -->
@@ -57,6 +65,7 @@ import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 defineOptions({ name: 'AdminSidebar' })
+defineEmits(['close'])
 
 const route = useRoute()
 const router = useRouter()

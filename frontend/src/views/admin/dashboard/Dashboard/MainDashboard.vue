@@ -38,7 +38,7 @@
     <div v-else class="space-y-8">
         
         <!-- BAGIAN 1: STATS CARDS -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             <LocationCard
                 v-for="location in state.summaryCards"
                 :key="location.lokasiId"

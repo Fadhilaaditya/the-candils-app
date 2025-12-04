@@ -9,11 +9,11 @@
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div class="order-2 lg:order-1">
+        <div>
           <GoogleMaps :locations="allLocations" :center="mapCenter" :zoom="13" />
         </div>
 
-        <div class="order-1 lg:order-2">
+        <div>
           <LocationList
             :branches="branches"
             @focus-location="focusOnLocation"

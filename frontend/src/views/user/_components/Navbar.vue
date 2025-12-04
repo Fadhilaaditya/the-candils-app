@@ -1,6 +1,6 @@
 <template>
   <nav class="bg-white shadow-sm sticky top-0 z-50">
-    <div class="max-w-7xl mx-auto px-8 py-4">
+    <div class="max-w-7xl mx-auto px-4 md:px-8 py-4">
       <div class="flex justify-between items-center">
         <!-- Logo -->
         <div class="flex items-center">
@@ -10,8 +10,8 @@
           </router-link>
         </div>
 
-        <!-- Navigation Links -->
-        <div class="flex gap-8 items-center">
+        <!-- Desktop Navigation -->
+        <div class="hidden md:flex gap-8 items-center">
           <router-link
             v-for="link in navLinks"
             :key="link.to"
@@ -56,6 +56,52 @@
             Admin
           </router-link>
         </div>
+
+        <!-- Mobile Menu Button -->
+        <div class="md:hidden flex items-center gap-4">
+          <!-- Cart Icon (Visible on Mobile) -->
+          <router-link
+            to="/cart"
+            class="relative inline-flex text-gray-600 hover:text-[#BAB772] transition-colors duration-300 p-2"
+          >
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+            <span v-if="cartItemCount > 0" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1.5 shadow-lg">
+              {{ cartItemCount > 99 ? '99+' : cartItemCount }}
+            </span>
+          </router-link>
+
+          <button @click="isMenuOpen = !isMenuOpen" class="text-gray-600 hover:text-[#BAB772] focus:outline-none">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path v-if="!isMenuOpen" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+              <path v-else stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile Menu Dropdown -->
+    <div v-show="isMenuOpen" class="md:hidden bg-white border-t border-gray-100">
+      <div class="px-4 pt-2 pb-4 space-y-1">
+        <router-link
+          v-for="link in navLinks"
+          :key="link.to"
+          :to="link.to"
+          class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-[#BAB772] hover:bg-gray-50 transition-colors duration-200"
+          active-class="text-[#BAB772] bg-gray-50"
+          @click="isMenuOpen = false"
+        >
+          {{ link.label }}
+        </router-link>
+        <router-link
+          to="/admin/login"
+          class="block w-full text-center mt-4 bg-[#BAB772] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#a8a668] transition-colors duration-300"
+          @click="isMenuOpen = false"
+        >
+          Admin Area
+        </router-link>
       </div>
     </div>
   </nav>
@@ -64,6 +110,8 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import { RouterLink } from 'vue-router' // Tambahkan impor ini
+
+const isMenuOpen = ref(false)
 
 const API_BASE_URL = import.meta.env.PROD
   ? 'https://backend-the-candils.vercel.app/api/cart'

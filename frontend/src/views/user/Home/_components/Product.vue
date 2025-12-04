@@ -9,7 +9,7 @@
         <article
           v-for="(item, idx) in content.items"
           :key="idx"
-          class="h-[357px] w-[325px] rounded-lg bg-white p-4 shadow-sm"
+          class="h-auto min-h-[357px] w-full max-w-[325px] rounded-lg bg-white p-4 shadow-sm"
         >
           <img :src="item.imageUrl" :alt="item.name" class="h-40 w-full rounded object-cover" />
           <h3 class="mt-4 text-xl font-semibold">{{ item.name }}</h3>

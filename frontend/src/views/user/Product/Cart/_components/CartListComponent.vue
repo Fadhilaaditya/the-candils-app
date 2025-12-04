@@ -3,7 +3,7 @@
     <div
       v-for="item in items"
       :key="item.keranjangItemId"
-      class="bg-white rounded-lg shadow-sm p-6 flex gap-6"
+      class="bg-white rounded-lg shadow-sm p-4 md:p-6 flex flex-col sm:flex-row gap-4 sm:gap-6"
     >
       <!-- ✅ Image dengan Cloudinary Logic -->
       <div class="w-24 h-24 bg-gray-200 rounded-lg flex-shrink-0 overflow-hidden">
@@ -34,10 +34,10 @@
         </div>
       </div>
 
-      <div class="flex flex-col items-end justify-between">
+      <div class="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:mt-0 mt-2">
         <button
           @click="$emit('removeItem', item.keranjangItemId)"
-          class="text-red-500 hover:text-red-700 mb-5 transition-colors"
+          class="text-red-500 hover:text-red-700 sm:mb-5 transition-colors"
           title="Hapus dari keranjang"
         >
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -67,7 +67,7 @@
           </button>
         </div>
 
-        <div class="text-right mt-2">
+        <div class="text-right sm:mt-2 ml-auto sm:ml-0">
           <div class="text-xs text-gray-500">Subtotal</div>
           <div class="text-lg font-bold text-gray-800">
             Rp {{ formatPrice(getItemSubtotal(item)) }}

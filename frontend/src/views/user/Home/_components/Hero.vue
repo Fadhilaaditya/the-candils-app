@@ -1,9 +1,9 @@
 <template>
   <section
-    class="relative min-h-[445px] overflow-hidden bg-cover bg-center"
+    class="relative min-h-[300px] md:min-h-[445px] overflow-hidden bg-cover bg-center"
     :style="backgroundStyle"
   >
-    <div class="h-[445px] bg-black/40">
+    <div class="h-[300px] md:h-[445px] bg-black/40">
     </div>
   </section>
 </template>
