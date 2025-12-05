@@ -33,7 +33,7 @@
         
         <!-- Tabel Data Nyata -->
         <tbody 
-          v-for="(product, index) in groupedProducts" 
+          v-for="(product, index) in paginatedProducts" 
           :key="product.produkId"
           class="bg-white divide-y divide-gray-200"
         >
@@ -49,7 +49,7 @@
             ]"
           >
             <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
-              {{ index + 1 }}
+              {{ (currentPage - 1) * itemsPerPage + index + 1 }}
             </td>
             <td class="px-4 py-4 whitespace-nowrap">
               <img :src="product.foto" :alt="product.namaProduk" class="w-10 h-10 object-cover rounded" @error="handleImageError"/>
@@ -85,9 +85,32 @@
       </table>
     </div>
 
-    <!-- Footer Tabel -->
-    <div class="pt-4 text-right text-sm text-gray-600">
-      Total: {{ groupedProducts ? groupedProducts.length : 0 }} produk
+    <!-- Footer Tabel & Pagination -->
+    <div class="pt-4 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="text-sm text-gray-600">
+        Total: {{ groupedProducts ? groupedProducts.length : 0 }} produk
+        <span v-if="totalPages > 1" class="ml-1">
+          (Halaman {{ currentPage }} dari {{ totalPages }})
+        </span>
+      </div>
+
+      <!-- Pagination Controls -->
+      <div class="flex gap-2">
+        <button 
+          @click="prevPage" 
+          :disabled="currentPage === 1"
+          class="px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          Previous
+        </button>
+        <button 
+          @click="nextPage" 
+          :disabled="currentPage === totalPages || totalPages === 0"
+          class="px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          Next
+        </button>
+      </div>
     </div>
 
   </div>
@@ -186,4 +209,34 @@ const formatCurrency = (value: number | undefined | null) => {
   }).format(value)
 }
 
+// --- Pagination Logic ---
+import { ref, watch } from 'vue'
+
+const currentPage = ref(1)
+const itemsPerPage = 5
+
+const totalPages = computed(() => Math.ceil(groupedProducts.value.length / itemsPerPage))
+
+const paginatedProducts = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage
+  const end = start + itemsPerPage
+  return groupedProducts.value.slice(start, end)
+})
+
+const nextPage = () => {
+  if (currentPage.value < totalPages.value) {
+    currentPage.value++
+  }
+}
+
+const prevPage = () => {
+  if (currentPage.value > 1) {
+    currentPage.value--
+  }
+}
+
+// Reset page when data changes
+watch(() => props.variants, () => {
+  currentPage.value = 1
+})
 </script>

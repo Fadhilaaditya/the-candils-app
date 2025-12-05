@@ -9,7 +9,11 @@ const authController = require('../controllers/authController');
 const authMiddleware = require('../middleware/authMiddleware');
 
 // Rute login (Publik, tidak perlu middleware)
+// Rute login (Publik, tidak perlu middleware)
 router.post('/login', authController.login);
+
+// Rute register (Publik, untuk membuat akun admin baru)
+router.post('/register', authController.register);
 
 // Rute /me (Dilindungi, HARUS login) (BARU)
 // Ini akan menjalankan authMiddleware DULU, baru authController.getMe

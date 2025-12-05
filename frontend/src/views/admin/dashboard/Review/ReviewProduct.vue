@@ -87,7 +87,30 @@
             v-else-if="productReviews.length > 0"
             class="flex flex-col gap-4"
           >
-            <CardReview v-for="review in productReviews" :key="review.ulasanId" :review="review" />
+            <CardReview v-for="review in paginatedReviews" :key="review.ulasanId" :review="review" />
+            
+            <!-- Pagination Controls -->
+            <div class="flex items-center justify-between pt-4 border-t border-gray-100">
+              <div class="text-sm text-gray-600">
+                Halaman <span class="font-medium">{{ currentPage }}</span> dari <span class="font-medium">{{ totalPages }}</span>
+              </div>
+              <div class="flex gap-2">
+                <button 
+                  @click="prevPage" 
+                  :disabled="currentPage === 1"
+                  class="px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Previous
+                </button>
+                <button 
+                  @click="nextPage" 
+                  :disabled="currentPage === totalPages || totalPages === 0"
+                  class="px-3 py-1.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
           </div>
           
           <div v-else class="text-center py-12">
@@ -131,6 +154,33 @@ const listError = ref<string | null>(null)
 const selectedProductId = ref<number | null>(null)
 const selectedProductName = ref<string | null>(null)
 
+// --- State Pagination ---
+const currentPage = ref(1)
+const itemsPerPage = 10
+
+// --- Computed Pagination ---
+import { computed } from 'vue'
+
+const totalPages = computed(() => Math.ceil(productReviews.value.length / itemsPerPage))
+
+const paginatedReviews = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage
+  const end = start + itemsPerPage
+  return productReviews.value.slice(start, end)
+})
+
+const nextPage = () => {
+  if (currentPage.value < totalPages.value) {
+    currentPage.value++
+  }
+}
+
+const prevPage = () => {
+  if (currentPage.value > 1) {
+    currentPage.value--
+  }
+}
+
 // --- Methods ---
 
 const loadProductVariantList = async () => {
@@ -138,9 +188,8 @@ const loadProductVariantList = async () => {
   listError.value = null;
   try {
     // 1. Ambil data produk (semua varian)
-    // Perbaikan: getProducts() sekarang mengembalikan PaginatedBackendResponse
-    // Jadi data array ada di response.data.data
-    const productResponse = await getProducts();
+    // Fetch a large number of items to ensure we get all variants for client-side grouping
+    const productResponse = await getProducts(1, 1000);
     const allVariants = productResponse.data.data; // Akses .data lagi
 
     // 2. Filter unik berdasarkan produkId (karena 1 produk bisa banyak varian ukuran)
@@ -173,6 +222,7 @@ const handleProductClicked = async (product: any) => {
 
   isLoadingReviews.value = true;
   productReviews.value = []; 
+  currentPage.value = 1; // Reset pagination 
 
   try {
     const response = await getReviewsByProductId(product.produkId);

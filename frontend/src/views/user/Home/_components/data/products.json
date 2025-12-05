@@ -18,5 +18,5 @@
       "imageUrl": "/product.svg"
     }
   ],
-  "cta": { "label": "All Product", "href": "/product" }
+  "cta": { "label": "All Product", "href": "/products" }
 }

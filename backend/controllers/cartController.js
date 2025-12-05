@@ -143,6 +143,7 @@ exports.getCartItems = async (req, res) => {
         p.namaProduk, 
         p.deskripsi, 
         p.foto,
+        p.stok, -- <-- Tambahkan stok
         u.namaUkuran
       FROM 
         \`Keranjang Item\` ki
@@ -256,13 +257,24 @@ exports.updateCartItem = async (req, res) => {
     let hargaTambahan = 0;
     let hargaSatuan = 0;
 
-    // 3a. Ambil harga dasar (hargaUnit)
+    // 3a. Ambil harga dasar (hargaUnit) DAN STOK
     const [produk] = await db.query(
-      'SELECT IFNULL(hargaUnit, 0) AS harga FROM Produk WHERE produkId = ?',
+      'SELECT IFNULL(hargaUnit, 0) AS harga, stok FROM Produk WHERE produkId = ?',
       [item.produkId]
     );
+    
+    let stokTersedia = 0;
     if (produk.length > 0) {
       hargaDasar = parseFloat(produk[0].harga); // Gunakan parseFloat untuk keamanan
+      stokTersedia = produk[0].stok;
+    }
+
+    // 🛑 CEK STOK SEBELUM UPDATE
+    if (jumlah > stokTersedia) {
+      return res.status(400).json({ 
+        success: false, 
+        message: `Stok tidak mencukupi. Stok tersedia: ${stokTersedia}` 
+      });
     }
 
     // 3b. Ambil harga tambahan (jika ada ukuran)

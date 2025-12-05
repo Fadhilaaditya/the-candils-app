@@ -10,7 +10,14 @@
             <h2 class="text-2xl font-bold text-gray-800">Kelola Produk & Varian</h2>
             <p class="text-gray-600 mt-1">Setiap baris mewakili satu varian produk</p>
           </div>
-          <div class="mt-4 lg:mt-0 bg-gray-300 h-10 w-40 rounded-lg animate-pulse"></div>
+          <!-- Button Add Product (Static) -->
+          <button
+            @click="handleAddProduct"
+            class="mt-4 lg:mt-0 bg-[#BAB772] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#a8a668] transition-colors duration-200 flex items-center gap-2"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+            Tambah Produk
+          </button>
         </div>
         
         <!-- Panggil Skeleton Komponen -->

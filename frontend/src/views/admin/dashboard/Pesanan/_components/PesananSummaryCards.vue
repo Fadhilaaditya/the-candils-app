@@ -18,160 +18,145 @@
     </div>
     
     <!-- GRID 5 STATUS -->
-    <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-5">
+    <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
       
       <!-- Card 1: Perlu Validasi (Yellow) -->
       <div 
-        class="relative overflow-hidden bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-lg p-4 hover:shadow-lg transition-all duration-300 cursor-pointer group border border-yellow-200"
+        class="flex flex-col h-full bg-yellow-50 rounded-xl border border-yellow-100 p-3 hover:shadow-md transition-all duration-300 cursor-pointer group"
         @click="$emit('filter-status', 'perlu-validasi')"
       >
-        <div class="flex items-start justify-between">
-          <div class="flex-1">
-            <p class="text-xs font-medium text-yellow-600 uppercase tracking-wide mb-1">
+        <div class="flex items-start justify-between mb-3">
+          <div>
+            <p class="text-[10px] font-bold text-yellow-600 uppercase tracking-wider">
               Perlu Validasi
             </p>
-            <p class="text-3xl font-bold text-yellow-900">
+            <p class="text-2xl font-bold text-gray-800 mt-1">
               {{ actionCards.perluValidasi }}
             </p>
           </div>
-          <div class="flex-shrink-0">
-            <div class="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
-              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <!-- Icon: Alert/Exclamation -->
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-            </div>
+          <div class="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600 group-hover:bg-yellow-500 group-hover:text-white transition-colors duration-300">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
           </div>
         </div>
-        <div class="mt-3 flex items-center text-xs text-yellow-600">
-          <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <div class="mt-auto flex items-center text-[10px] font-medium text-yellow-700 bg-yellow-100/50 px-2 py-1 rounded-md">
+          <svg class="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <span class="font-medium">Menunggu validasi</span>
+          <span class="truncate">Menunggu validasi</span>
         </div>
       </div>
       
-      <!-- Card 2: Perlu Dikirim (Blue - Pengemasan) -->
+      <!-- Card 2: Perlu Dikirim (Blue) -->
       <div 
-        class="relative overflow-hidden bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 hover:shadow-lg transition-all duration-300 cursor-pointer group border border-blue-200"
+        class="flex flex-col h-full bg-blue-50 rounded-xl border border-blue-100 p-3 hover:shadow-md transition-all duration-300 cursor-pointer group"
         @click="$emit('filter-status', 'perlu-dikirim')"
       >
-        <div class="flex items-start justify-between">
-          <div class="flex-1">
-            <p class="text-xs font-medium text-blue-600 uppercase tracking-wide mb-1">
+        <div class="flex items-start justify-between mb-3">
+          <div>
+            <p class="text-[10px] font-bold text-blue-600 uppercase tracking-wider">
               Perlu Dikirim
             </p>
-            <p class="text-3xl font-bold text-blue-900">
+            <p class="text-2xl font-bold text-gray-800 mt-1">
               {{ actionCards.perluDikirim }}
             </p>
           </div>
-          <div class="flex-shrink-0">
-            <div class="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
-              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <!-- Icon: Packing/Package -->
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-              </svg>
-            </div>
+          <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 group-hover:bg-blue-500 group-hover:text-white transition-colors duration-300">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+            </svg>
           </div>
         </div>
-        <div class="mt-3 flex items-center text-xs text-blue-600">
-          <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+        <div class="mt-auto flex items-center text-[10px] font-medium text-blue-700 bg-blue-100/50 px-2 py-1 rounded-md">
+          <svg class="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
           </svg>
-          <span class="font-medium">Menunggu pengemasan</span>
+          <span class="truncate">Menunggu pengemasan</span>
         </div>
       </div>
       
-      <!-- Card 3: Dikirim (Purple - Delivery) -->
+      <!-- Card 3: Dikirim (Purple) -->
       <div 
-        class="relative overflow-hidden bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4 hover:shadow-lg transition-all duration-300 cursor-pointer group border border-purple-200"
+        class="flex flex-col h-full bg-purple-50 rounded-xl border border-purple-100 p-3 hover:shadow-md transition-all duration-300 cursor-pointer group"
         @click="$emit('filter-status', 'dikirim')"
       >
-        <div class="flex items-start justify-between">
-          <div class="flex-1">
-            <p class="text-xs font-medium text-purple-600 uppercase tracking-wide mb-1">
+        <div class="flex items-start justify-between mb-3">
+          <div>
+            <p class="text-[10px] font-bold text-purple-600 uppercase tracking-wider">
               Dikirim
             </p>
-            <p class="text-3xl font-bold text-purple-900">
+            <p class="text-2xl font-bold text-gray-800 mt-1">
               {{ actionCards.dikirim }}
             </p>
           </div>
-          <div class="flex-shrink-0">
-            <div class="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
-              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <!-- Icon: Truck/Shipping -->
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2v5.707a1 1 0 00.293.707l3 3a1 1 0 001.414 0l3-3a1 1 0 00.293-.707V10c0-1.105-1.343-2-3-2z" />
-              </svg>
-            </div>
+          <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 group-hover:bg-purple-500 group-hover:text-white transition-colors duration-300">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
           </div>
         </div>
-        <div class="mt-3 flex items-center text-xs text-purple-600">
-          <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+        <div class="mt-auto flex items-center text-[10px] font-medium text-purple-700 bg-purple-100/50 px-2 py-1 rounded-md">
+          <svg class="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <span class="font-medium">Dalam proses pengiriman</span>
+          <span class="truncate">Sedang dikirim</span>
         </div>
       </div>
       
-      <!-- Card 4: Selesai (Green - Success) -->
+      <!-- Card 4: Selesai (Green) -->
       <div 
-        class="relative overflow-hidden bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 hover:shadow-lg transition-all duration-300 cursor-pointer group border border-green-200"
+        class="flex flex-col h-full bg-green-50 rounded-xl border border-green-100 p-3 hover:shadow-md transition-all duration-300 cursor-pointer group"
         @click="$emit('filter-status', 'selesai')"
       >
-        <div class="flex items-start justify-between">
-          <div class="flex-1">
-            <p class="text-xs font-medium text-green-600 uppercase tracking-wide mb-1">
+        <div class="flex items-start justify-between mb-3">
+          <div>
+            <p class="text-[10px] font-bold text-green-600 uppercase tracking-wider">
               Selesai
             </p>
-            <p class="text-3xl font-bold text-green-900">
+            <p class="text-2xl font-bold text-gray-800 mt-1">
               {{ actionCards.selesai }}
             </p>
           </div>
-          <div class="flex-shrink-0">
-            <div class="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
-              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <!-- Icon: Checkmark Circle -->
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
+          <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center text-green-600 group-hover:bg-green-500 group-hover:text-white transition-colors duration-300">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
           </div>
         </div>
-        <div class="mt-3 flex items-center text-xs text-green-600">
-          <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        <div class="mt-auto flex items-center text-[10px] font-medium text-green-700 bg-green-100/50 px-2 py-1 rounded-md">
+          <svg class="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <span class="font-medium">Pesanan berhasil diselesaikan</span>
+          <span class="truncate">Berhasil selesai</span>
         </div>
       </div>
 
-      <!-- Card 5: Dibatalkan (Red - Cancel) -->
+      <!-- Card 5: Dibatalkan (Red) -->
       <div 
-        class="relative overflow-hidden bg-gradient-to-br from-red-50 to-red-100 rounded-lg p-4 hover:shadow-lg transition-all duration-300 cursor-pointer group border border-red-200"
+        class="flex flex-col h-full bg-red-50 rounded-xl border border-red-100 p-3 hover:shadow-md transition-all duration-300 cursor-pointer group"
         @click="$emit('filter-status', 'dibatalkan')"
       >
-        <div class="flex items-start justify-between">
-          <div class="flex-1">
-            <p class="text-xs font-medium text-red-600 uppercase tracking-wide mb-1">
+        <div class="flex items-start justify-between mb-3">
+          <div>
+            <p class="text-[10px] font-bold text-red-600 uppercase tracking-wider">
               Dibatalkan
             </p>
-            <p class="text-3xl font-bold text-red-900">
+            <p class="text-2xl font-bold text-gray-800 mt-1">
               {{ actionCards.dibatalkan }}
             </p>
           </div>
-          <div class="flex-shrink-0">
-            <div class="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
-              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <!-- Icon: Stop/Cancel -->
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
+          <div class="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center text-red-600 group-hover:bg-red-500 group-hover:text-white transition-colors duration-300">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </div>
         </div>
-        <div class="mt-3 flex items-center text-xs text-red-600">
-          <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="mt-auto flex items-center text-[10px] font-medium text-red-700 bg-red-100/50 px-2 py-1 rounded-md">
+          <svg class="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <span class="font-medium">Pesanan dibatalkan</span>
+          <span class="truncate">Pesanan batal</span>
         </div>
       </div>
     </div>

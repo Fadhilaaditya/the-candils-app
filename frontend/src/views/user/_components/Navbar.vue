@@ -48,13 +48,6 @@
             </Transition>
           </router-link>
 
-          <!-- Admin Button -->
-          <router-link
-            to="/admin/login"
-            class="bg-[#BAB772] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#a8a668] transition-colors duration-300 no-underline shadow-sm hover:shadow-md"
-          >
-            Admin
-          </router-link>
         </div>
 
         <!-- Mobile Menu Button -->
@@ -94,13 +87,6 @@
           @click="isMenuOpen = false"
         >
           {{ link.label }}
-        </router-link>
-        <router-link
-          to="/admin/login"
-          class="block w-full text-center mt-4 bg-[#BAB772] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#a8a668] transition-colors duration-300"
-          @click="isMenuOpen = false"
-        >
-          Admin Area
         </router-link>
       </div>
     </div>

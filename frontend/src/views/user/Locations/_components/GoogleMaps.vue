@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full h-96 md:h-[500px] relative">
+  <div class="w-full h-96 lg:h-full min-h-[400px] relative">
     <!-- Map Container -->
     <div ref="mapContainer" class="w-full h-full rounded-lg shadow-lg"></div>
 

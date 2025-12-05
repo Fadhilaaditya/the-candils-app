@@ -76,6 +76,7 @@ interface CartItem {
   jumlah: number
   harga_satuan: number | string
   subtotal: number | string
+  stok: number // Tambahkan properti stok
 }
 
 const router = useRouter()

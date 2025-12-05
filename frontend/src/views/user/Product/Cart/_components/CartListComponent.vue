@@ -34,7 +34,7 @@
         </div>
       </div>
 
-      <div class="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:mt-0 mt-2">
+      <div class="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:mt-0 mt-2 relative">
         <button
           @click="$emit('removeItem', item.keranjangItemId)"
           class="text-red-500 hover:text-red-700 sm:mb-5 transition-colors"
@@ -61,10 +61,14 @@
           <span class="px-3 py-1 font-medium">{{ item.jumlah }}</span>
           <button
             @click="$emit('increaseQty', item)"
-            class="px-3 py-1 hover:bg-gray-100 transition-colors"
+            class="px-3 py-1 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            :disabled="item.jumlah >= item.stok"
           >
             +
           </button>
+        </div>
+        <div v-if="item.jumlah >= item.stok" class="text-xs text-red-500 mt-1 sm:absolute sm:bottom-[-20px] sm:right-0 w-full text-right">
+          Max stok: {{ item.stok }}
         </div>
 
         <div class="text-right sm:mt-2 ml-auto sm:ml-0">
@@ -91,6 +95,7 @@ interface CartItem {
   jumlah: number
   harga_satuan: number | string
   subtotal: number | string
+  stok: number // Tambahkan properti stok
 }
 
 // Props

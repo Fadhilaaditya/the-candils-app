@@ -1,27 +1,8 @@
 <template>
   <div class="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-    <!-- Loading State dengan Skeleton -->
-    <div v-if="isLoading" class="space-y-16">
-      <!-- Skeleton untuk Best Seller Section -->
-      <div class="max-w-7xl mx-auto">
-        <div class="h-10 bg-gray-200 rounded-lg w-64 mb-8 animate-pulse"></div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <SkeletonProductCard v-for="n in 4" :key="n" />
-        </div>
-      </div>
-
-      <!-- Skeleton untuk All Product Section -->
-      <div class="max-w-7xl mx-auto">
-        <div class="h-10 bg-gray-200 rounded-lg w-64 mb-8 animate-pulse"></div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <SkeletonProductCard v-for="n in 8" :key="n" />
-        </div>
-      </div>
-    </div>
-
     <!-- Error State -->
     <div
-      v-else-if="errorMessage"
+      v-if="errorMessage"
       class="text-center py-20 bg-red-50 rounded-lg max-w-2xl mx-auto p-6"
     >
       <svg
@@ -40,17 +21,36 @@
       <h3 class="text-lg font-medium text-red-800 mb-2">Gagal Memuat Data</h3>
       <p class="text-red-600 mb-4">{{ errorMessage }}</p>
       <button
-        @click="fetchProductsData"
+        @click="fetchProductsData(1)"
         class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors duration-200"
       >
         Coba Lagi
       </button>
     </div>
 
-    <!-- Tampilkan Konten jika Sukses -->
+    <!-- Tampilkan Konten (Skeleton ditangani di dalam komponen) -->
     <div v-else class="space-y-16">
-      <BestSellerSection :products="uniqueProducts" />
-      <AllProductSection :products="uniqueProducts" />
+      <!-- Best Seller Section (Ikut terfilter search) -->
+      <BestSellerSection 
+        :products="filteredProducts" 
+        :searchQuery="searchQuery"
+        :isLoading="isLoading"
+        @update:searchQuery="searchQuery = $event"
+      />
+      
+      <!-- Tampilkan pesan jika hasil pencarian kosong (Hanya jika tidak loading) -->
+      <div v-if="!isLoading && searchQuery && filteredProducts.length === 0" class="text-center py-12">
+        <p class="text-gray-500 text-lg">Tidak ada produk yang cocok dengan "{{ searchQuery }}"</p>
+      </div>
+
+      <!-- Hanya tampilkan AllProductSection jika ada hasil (atau tidak sedang search) ATAU sedang loading -->
+      <AllProductSection 
+        v-if="isLoading || filteredProducts.length > 0" 
+        :products="filteredProducts" 
+        :isLoading="isLoading"
+        :hasMore="currentPage < totalPages"
+        @loadMore="loadMoreProducts"
+      />
     </div>
   </div>
 </template>
@@ -66,6 +66,9 @@ import { getProducts, type ProductVariantRow } from '@/services/productService'
 const allProductVariants = ref<ProductVariantRow[]>([])
 const isLoading = ref(true)
 const errorMessage = ref<string | null>(null)
+const searchQuery = ref('')
+const currentPage = ref(1)
+const totalPages = ref(1)
 
 // Helper function to check if error is an Axios error with response
 const isAxiosError = (error: unknown): error is { response: { status: number } } => {
@@ -81,13 +84,23 @@ const isAxiosError = (error: unknown): error is { response: { status: number } }
 }
 
 // Fetch data
-const fetchProductsData = async () => {
+const fetchProductsData = async (page = 1) => {
   isLoading.value = true
   errorMessage.value = null
   try {
-    // Fetch products (default limit 10, bisa dinaikkan jika perlu)
-    const response = await getProducts(1, 100); // Ambil 100 produk pertama dulu
-    allProductVariants.value = response.data.data; // Akses .data.data karena response paginated
+    // Fetch products (limit 8 per request)
+    const response = await getProducts(page, 8); 
+    
+    if (page === 1) {
+      allProductVariants.value = response.data.data;
+    } else {
+      allProductVariants.value = [...allProductVariants.value, ...response.data.data];
+    }
+    
+    // Update pagination meta
+    currentPage.value = response.data.meta.page;
+    totalPages.value = response.data.meta.totalPages;
+    
   } catch (error: unknown) {
     console.error('Gagal mengambil data produk:', error)
     if (isAxiosError(error) && error.response.status === 404) {
@@ -95,9 +108,15 @@ const fetchProductsData = async () => {
     } else {
       errorMessage.value = 'Tidak dapat terhubung ke server atau terjadi kesalahan lain.'
     }
-    allProductVariants.value = []
+    if (page === 1) allProductVariants.value = []
   } finally {
     isLoading.value = false
+  }
+}
+
+const loadMoreProducts = () => {
+  if (currentPage.value < totalPages.value) {
+    fetchProductsData(currentPage.value + 1)
   }
 }
 
@@ -112,8 +131,34 @@ const uniqueProducts = computed(() => {
   return Array.from(uniqueMap.values())
 })
 
+// Computed untuk memfilter produk berdasarkan pencarian
+const filteredProducts = computed(() => {
+  if (!searchQuery.value) {
+    return uniqueProducts.value
+  }
+  const query = searchQuery.value.toLowerCase()
+  return uniqueProducts.value.filter((product) =>
+    product.namaProduk.toLowerCase().includes(query)
+  )
+})
+
 // Panggil API saat komponen dimuat
-onMounted(() => {
-  fetchProductsData()
+onMounted(async () => {
+  // Initial fetch
+  await fetchProductsData(1)
+  
+  // Recursively fetch more pages until we have at least 8 unique products
+  // or we run out of pages, with a safety limit of 5 retries
+  let retries = 0;
+  const maxRetries = 5;
+  
+  while (
+    uniqueProducts.value.length < 8 && 
+    currentPage.value < totalPages.value && 
+    retries < maxRetries
+  ) {
+    await fetchProductsData(currentPage.value + 1)
+    retries++;
+  }
 })
 </script>

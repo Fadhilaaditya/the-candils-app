@@ -127,11 +127,13 @@
                     {'disabled:opacity-60 disabled:cursor-not-allowed': isStatusDisabled(pesanan.statusPesanan)} // Styling disabled
                   ]"
                   :disabled="isStatusDisabled(pesanan.statusPesanan)" >
-                  <option value="Perlu Validasi">Perlu Validasi</option>
-                  <option value="Perlu Dikirim">Perlu Dikirim</option>
-                  <option value="Dikirim">Dikirim</option>
-                  <option value="Selesai">Selesai</option>
-                  <option value="Dibatalkan">Dibatalkan</option>
+                  <option 
+                    v-for="status in getAvailableStatuses(pesanan.statusPesanan)" 
+                    :key="status" 
+                    :value="status"
+                  >
+                    {{ status }}
+                  </option>
                 </select>
               </td>
               <td class="px-4 py-4">
@@ -341,6 +343,28 @@ function handleLokasiChange(pesanan: Pemesanan, newLokasiId: number) {
 // ✅ FUNGSI BARU: Menentukan apakah field harus dinonaktifkan
 function isStatusDisabled(status: string): boolean {
     return status === 'Selesai' || status === 'Dibatalkan';
+}
+
+function getAvailableStatuses(currentStatus: string): string[] {
+  const options = [currentStatus]; // Status saat ini selalu ada
+
+  switch (currentStatus) {
+    case 'Perlu Validasi':
+      options.push('Perlu Dikirim');
+      options.push('Dibatalkan'); // Menambahkan opsi Dibatalkan
+      break;
+    case 'Perlu Dikirim':
+      options.push('Dikirim');
+      options.push('Dibatalkan'); // Menambahkan opsi Dibatalkan
+      break;
+    case 'Dikirim':
+      options.push('Selesai');
+      options.push('Dibatalkan');
+      break;
+  }
+  
+  // Hapus duplikat jika ada
+  return [...new Set(options)];
 }
 
 // Helper Functions

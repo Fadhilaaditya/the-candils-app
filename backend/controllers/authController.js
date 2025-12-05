@@ -64,6 +64,46 @@ exports.login = async (req, res) => {
   }
 };
 
+// Fungsi untuk registrasi admin baru
+exports.register = async (req, res) => {
+  const { username, password, namaLengkap, role } = req.body;
+
+  if (!username || !password || !namaLengkap) {
+    return res.status(400).json({ message: 'Mohon lengkapi semua data' });
+  }
+
+  try {
+    // 1. Cek apakah username sudah ada
+    const [existingUser] = await db.query(
+      'SELECT userId FROM Users WHERE username = ?',
+      [username]
+    );
+
+    if (existingUser.length > 0) {
+      return res.status(400).json({ message: 'Username sudah digunakan' });
+    }
+
+    // 2. Hash password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // 3. Simpan ke database
+    // Default role 'admin' jika tidak ditentukan
+    const userRole = role || 'admin';
+    
+    await db.query(
+      'INSERT INTO Users (username, password, namaLengkap, role) VALUES (?, ?, ?, ?)',
+      [username, hashedPassword, namaLengkap, userRole]
+    );
+
+    res.status(201).json({ message: 'Registrasi berhasil' });
+
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server Error');
+  }
+};
+
 // --- INI KODE BARU YANG DITAMBAHKAN ---
 
 // Fungsi untuk mendapatkan data user yang sedang login

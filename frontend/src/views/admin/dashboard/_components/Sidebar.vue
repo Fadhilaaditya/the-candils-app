@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col w-64 h-screen px-4 py-8 bg-white border-r">
+  <div class="flex flex-col w-50 lg:w-64 h-[100dvh] px-4 py-4 lg:py-8 bg-white border-r">
     
     <!-- Header Sidebar -->
     <div class="flex items-center justify-between px-4 mb-8">

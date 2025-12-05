@@ -4,7 +4,7 @@
     <div class="bg-white shadow-sm">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <h1 class="text-2xl font-bold text-gray-900">
-          {{ product ? product.namaProduk : 'Detail Produk' }}
+          Detail Produk
         </h1>
       </div>
     </div>
@@ -12,11 +12,8 @@
     <!-- Main Content -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <!-- Loading State -->
-      <div v-if="loading" class="flex justify-center items-center py-20">
-        <svg class="h-12 w-12 text-[#BAB772] animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-        </svg>
+      <div v-if="loading">
+        <SkeletonDetailProduct />
       </div>
 
       <!-- Error State -->
@@ -79,6 +76,7 @@ import ProductImage from './_components/ProductImage.vue'
 import ProductInfo from './_components/ProductInfo.vue'
 import ProductDetails from './_components/ProductDetails.vue'
 import ProductReviewsRatings from './_components/ProductReviewsRatings.vue'
+import SkeletonDetailProduct from './_components/SkeletonDetailProduct.vue'
 
 const route = useRoute()
 

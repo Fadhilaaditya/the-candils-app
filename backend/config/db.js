@@ -20,12 +20,12 @@ const connectionConfig = {
   // Hostinger TIDAK butuh SSL
   waitForConnections: true,
   connectionLimit: 10,
-  maxIdle: 10, // max idle connections, the default value is the same as `connectionLimit`
-  idleTimeout: 60000, // idle connections timeout, in milliseconds, the default value 60000
   queueLimit: 0,
-  connectTimeout: 20000, // Increased timeout
   enableKeepAlive: true,
-  keepAliveInitialDelay: 0
+  keepAliveInitialDelay: 0,
+  maxIdle: 0, // Force close idle connections immediately to avoid server timeout
+  idleTimeout: 2500, // Close idle connections after 2.5s (Hostinger kills them fast)
+  connectTimeout: 20000,
 };
 
 // Debug output
@@ -39,6 +39,21 @@ console.log("   Database:", connectionConfig.database);
 // 📌 Pool Koneksi
 // -------------------------------
 const pool = mysql.createPool(connectionConfig).promise();
+
+// Wrapper untuk handle auto-retry saat ECONNRESET
+const originalQuery = pool.query.bind(pool);
+
+pool.query = async function (...args) {
+  try {
+    return await originalQuery(...args);
+  } catch (err) {
+    if (err.code === 'ECONNRESET' || err.code === 'PROTOCOL_CONNECTION_LOST') {
+      console.warn('🔄 Database connection lost (ECONNRESET), retrying query...');
+      return await originalQuery(...args);
+    }
+    throw err;
+  }
+};
 
 // -------------------------------
 // 📌 Error Handling
