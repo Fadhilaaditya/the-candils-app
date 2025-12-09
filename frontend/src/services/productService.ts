@@ -105,6 +105,8 @@ export interface Pemesanan {
   items?: OrderItem[];
   buktiPembayaranUrl?: string | null;
   tipePesanan?: string; 
+  ongkirId?: number | null;
+  biayaPemesanan?: number;
 }
 
 export interface Lokasi {
@@ -166,6 +168,7 @@ export interface DashboardSummary {
 }
 
 export interface ProductContributionSummary {
+    produkId: number;
     namaProduk: string;
     total_quantity_sold: string;
 }
@@ -194,6 +197,7 @@ export interface SaleReportItem {
 }
 
 export interface SaleRevenueSummary {
+    lokasiId: number;
     lokasi: string;
     totalPendapatan: number;
 }
@@ -213,11 +217,14 @@ export const getSalesReport = (queryString: string): Promise<AxiosResponse<Backe
 /**
  * Mengambil data ringkasan Pendapatan per Lokasi. (Versi Lama)
  */
-export const getSalesSummaryRevenue = (startDate?: string, endDate?: string): Promise<AxiosResponse<BackendResponse<SaleRevenueSummary[]>>> => {
+export const getSalesSummaryRevenue = (startDate?: string, endDate?: string, productId?: number | null, locationId?: number | null, orderType?: string | null): Promise<AxiosResponse<BackendResponse<SaleRevenueSummary[]>>> => {
   let url = '/sales/summary-revenue';
   const params = new URLSearchParams();
   if (startDate) params.append('startDate', startDate);
   if (endDate) params.append('endDate', endDate);
+  if (productId) params.append('productId', productId.toString());
+  if (locationId) params.append('locationId', locationId.toString());
+  if (orderType) params.append('orderType', orderType);
   
   if (params.toString()) url += `?${params.toString()}`;
   
@@ -237,11 +244,14 @@ export const getSalesSummaryQuantity = (): Promise<AxiosResponse<BackendResponse
  * Mengambil semua data dashboard dalam satu panggilan.
  * Endpoint: GET /api/sales/dashboard-summary
  */
-export const getDashboardSummaryData = (startDate?: string, endDate?: string): Promise<AxiosResponse<BackendResponse<DashboardSummary>>> => {
+export const getDashboardSummaryData = (startDate?: string, endDate?: string, productId?: number | null, locationId?: number | null, orderType?: string | null): Promise<AxiosResponse<BackendResponse<DashboardSummary>>> => {
   let url = '/sales/dashboard-summary';
   const params = new URLSearchParams();
   if (startDate) params.append('startDate', startDate);
   if (endDate) params.append('endDate', endDate);
+  if (productId) params.append('productId', productId.toString());
+  if (locationId) params.append('locationId', locationId.toString());
+  if (orderType) params.append('orderType', orderType);
 
   if (params.toString()) url += `?${params.toString()}`;
 
@@ -252,11 +262,14 @@ export const getDashboardSummaryData = (startDate?: string, endDate?: string): P
  * Mengambil ringkasan kuantitas terjual per jenis produk (untuk Pie Chart).
  * Endpoint: GET /api/sales/summary-products-sold
  */
-export const getProductsSoldChartData = (startDate?: string, endDate?: string): Promise<AxiosResponse<BackendResponse<ProductContributionSummary[]>>> => {
+export const getProductsSoldChartData = (startDate?: string, endDate?: string, locationId?: number | null, productId?: number | null, orderType?: string | null): Promise<AxiosResponse<BackendResponse<ProductContributionSummary[]>>> => {
   let url = '/sales/summary-products-sold';
   const params = new URLSearchParams();
   if (startDate) params.append('startDate', startDate);
   if (endDate) params.append('endDate', endDate);
+  if (locationId) params.append('locationId', locationId.toString());
+  if (productId) params.append('productId', productId.toString());
+  if (orderType) params.append('orderType', orderType);
 
   if (params.toString()) url += `?${params.toString()}`;
 
@@ -267,11 +280,14 @@ export const getProductsSoldChartData = (startDate?: string, endDate?: string): 
  * Mengambil ringkasan ulasan (rating) dan penjualan (quantity) per produk.
  * Endpoint: GET /api/sales/product-review-summary
  */
-export const getProductReviewSalesSummary = (startDate?: string, endDate?: string): Promise<AxiosResponse<BackendResponse<ProductReviewSalesSummary[]>>> => {
+export const getProductReviewSalesSummary = (startDate?: string, endDate?: string, productId?: number | null, locationId?: number | null, orderType?: string | null): Promise<AxiosResponse<BackendResponse<ProductReviewSalesSummary[]>>> => {
   let url = '/sales/product-review-summary';
   const params = new URLSearchParams();
   if (startDate) params.append('startDate', startDate);
   if (endDate) params.append('endDate', endDate);
+  if (productId) params.append('productId', productId.toString());
+  if (locationId) params.append('locationId', locationId.toString());
+  if (orderType) params.append('orderType', orderType);
 
   if (params.toString()) url += `?${params.toString()}`;
 
@@ -288,11 +304,14 @@ export interface OrderTypeSummary {
  * Mengambil ringkasan penjualan per tipe pesanan (Online vs Offline).
  * Endpoint: GET /api/sales/summary-order-type
  */
-export const getSalesByOrderTypeSummary = (startDate?: string, endDate?: string): Promise<AxiosResponse<BackendResponse<OrderTypeSummary[]>>> => {
+export const getSalesByOrderTypeSummary = (startDate?: string, endDate?: string, productId?: number | null, locationId?: number | null, orderType?: string | null): Promise<AxiosResponse<BackendResponse<OrderTypeSummary[]>>> => {
   let url = '/sales/summary-order-type';
   const params = new URLSearchParams();
   if (startDate) params.append('startDate', startDate);
   if (endDate) params.append('endDate', endDate);
+  if (productId) params.append('productId', productId.toString());
+  if (locationId) params.append('locationId', locationId.toString());
+  if (orderType) params.append('orderType', orderType);
 
   if (params.toString()) url += `?${params.toString()}`;
 
@@ -396,8 +415,16 @@ export const getAllProdukPesanan = () => {
 // API PESANAN - CRUD
 // ========================================
 
-export const getAllPesanan = () => {
-  return api.get<Pemesanan[]>('/pesanan');
+export const getAllPesanan = (startDate?: string, endDate?: string, tipePesanan?: string) => {
+  let url = '/pesanan';
+  const params = new URLSearchParams();
+  if (startDate) params.append('startDate', startDate);
+  if (endDate) params.append('endDate', endDate);
+  if (tipePesanan && tipePesanan !== 'all') params.append('tipePesanan', tipePesanan);
+  
+  if (params.toString()) url += `?${params.toString()}`;
+  
+  return api.get<Pemesanan[]>(url);
 };
 
 export const getPesananById = (id: number) => {

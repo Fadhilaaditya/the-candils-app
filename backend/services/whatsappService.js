@@ -104,6 +104,21 @@ const sendOrderCompleted = async (phoneNumber, orderDetails) => {
 
     if (!API_TOKEN) return;
 
+    const frontendUrl = process.env.FRONTEND_URL || 'https://the-candils.com';
+    
+    // Generate Review Links
+    let reviewSection = '';
+    if (orderDetails.items && orderDetails.items.length > 0) {
+      const links = orderDetails.items.map(item => 
+        `- ${item.namaProduk}: ${frontendUrl}/products/${item.produkId}`
+      ).join('\n');
+      
+      reviewSection = `
+*Berikan Ulasan Produk:*
+${links}
+      `.trim();
+    }
+
     const message = `
 Halo *${orderDetails.namaPelanggan}*,
 Pesanan Anda *#${orderDetails.pesananId}* telah *SELESAI*! ✅
@@ -111,7 +126,8 @@ Pesanan Anda *#${orderDetails.pesananId}* telah *SELESAI*! ✅
 Terima kasih telah berbelanja di The Candil's.
 Kami harap Anda menyukai produk kami! 🌟
 
-Jangan lupa untuk memberikan ulasan produk ya!
+${reviewSection}
+
 Sampai jumpa di pesanan berikutnya.
     `.trim();
 

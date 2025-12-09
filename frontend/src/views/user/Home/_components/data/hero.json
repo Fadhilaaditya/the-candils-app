@@ -1,9 +1,0 @@
-{
-  "title": "The Candil's",
-  "subtitle": "Menyajikan camilan tradisional Indonesia yang otentik, sehat, dan penuh makna.",
-  "imageUrl": "/hero1.svg",
-  "buttons": [
-    { "label": "Tentang Kami", "href": "/about" },
-    { "label": "Produk", "href": "/product" }
-  ]
-}

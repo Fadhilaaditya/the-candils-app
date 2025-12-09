@@ -6,10 +6,7 @@
       <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
         <div class="grid grid-cols-1 lg:grid-cols-2">
           <div class="p-6 md:p-8">
-            <div v-if="isLoading" class="text-center py-10">
-              <div class="animate-spin inline-block w-6 h-6 border-[3px] border-current border-t-transparent text-indigo-600 rounded-full"></div>
-              <p class="mt-2 text-gray-600">Memuat keranjang...</p>
-            </div>
+            <SkeletonCheckout v-if="isLoading" />
 
             <div v-else-if="error" class="text-center py-10">
               <p class="text-red-500 mb-4">{{ error }}</p>
@@ -24,6 +21,8 @@
               v-model:full-name="form.fullName"
               v-model:address="form.address"
               v-model:contact="form.contact"
+              v-model:selected-ongkir-id="selectedOngkirId"
+              :ongkir-list="ongkirList"
               :is-submitting="isSubmitting"
               :file-preview-url="filePreviewUrl"
               @file-selected="handleFileSelected"
@@ -32,13 +31,20 @@
               @submit-order-and-upload="submitOrderAndUpload"
             >
               <template #summary>
-                <OrderSummaryComponent :items="summaryItems" :subtotal="subtotal" :total="total" />
+                <OrderSummaryComponent 
+                  :items="summaryItems" 
+                  :subtotal="subtotal" 
+                  :shipping-cost="shippingCost"
+                  :total="total" 
+                />
               </template>
             </CheckoutFormComponent>
           </div>
 
           <div class="hidden lg:block p-8 bg-indigo-50/50">
+            <div v-if="isLoading" class="w-full h-[560px] bg-gray-200 rounded-2xl animate-pulse"></div>
             <img
+              v-else
               :src="displayImageUrl"
               alt="Ringkasan Pesanan"
               class="w-full h-[560px] object-cover rounded-2xl shadow-lg border border-indigo-200"
@@ -57,6 +63,7 @@ import { useToast } from 'vue-toastification'
 
 import CheckoutFormComponent from './_components/CheckoutForm.vue'
 import OrderSummaryComponent from './_components/OrderSummary.vue'
+import SkeletonCheckout from './_components/SkeletonCheckout.vue'
 
 interface CartItem {
   keranjangItemId: number
@@ -99,6 +106,10 @@ const isDirectCheckout = ref(false)
 const router = useRouter()
 const toast = useToast()
 
+// Ongkir State
+const ongkirList = ref<any[]>([])
+const selectedOngkirId = ref<number | null>(null)
+
 // Helper function untuk konversi nilai string/number ke number
 const toNumber = (value: number | string): number => {
   const num = typeof value === 'string' ? parseFloat(value) : value
@@ -131,20 +142,34 @@ const displayImageUrl = computed(() => {
 // --- Data Fetching ---
 onMounted(() => {
   loadCheckoutData()
+  fetchOngkirList()
 })
+
+const fetchOngkirList = async () => {
+  try {
+    const response = await fetch(`${API_BASE}/pesanan/ongkir`)
+    const data = await response.json()
+    if (Array.isArray(data)) {
+      ongkirList.value = data
+    }
+  } catch (err) {
+    console.error('Gagal memuat data ongkir:', err)
+    toast.error('Gagal memuat opsi pengiriman.')
+  }
+}
 
 const getCartSessionId = (): string | null => {
   return localStorage.getItem('cartSessionId')
 }
 
 const loadCheckoutData = async () => {
+  // ... (existing loadCheckoutData logic) ...
   isLoading.value = true
   error.value = null
   const directDataRaw = sessionStorage.getItem('directCheckoutData')
 
   // Logika Direct Checkout
   if (directDataRaw) {
-    // ... (Logika Direct Checkout) ...
     try {
       const directData = JSON.parse(directDataRaw)
       if (directData && directData.items && directData.items.length > 0) {
@@ -197,7 +222,13 @@ const subtotal = computed(() => orderItems.value.reduce((acc, item) => {
     return acc + getItemSubtotal(item)
 }, 0))
 
-const total = computed(() => subtotal.value)
+const shippingCost = computed(() => {
+  if (!selectedOngkirId.value) return 0
+  const selected = ongkirList.value.find(o => o.ongkirId === selectedOngkirId.value)
+  return selected ? Number(selected.biaya) : 0
+})
+
+const total = computed(() => subtotal.value + shippingCost.value)
 
 const summaryItems = computed(() => {
   return orderItems.value.map(item => ({
@@ -256,6 +287,10 @@ const submitOrderAndUpload = async () => {
     toast.error('Lengkapi data pemesan terlebih dahulu')
     return
   }
+  if (!selectedOngkirId.value) {
+    toast.error('Silakan pilih opsi pengiriman.')
+    return
+  }
   if (orderItems.value.length === 0) {
     toast.error('Tidak ada item untuk di-checkout.')
     return
@@ -275,6 +310,10 @@ const submitOrderAndUpload = async () => {
   formData.append('namaPelanggan', form.fullName)
   formData.append('alamatPengiriman', form.address)
   formData.append('kontakPelanggan', form.contact)
+  
+  // Tambahkan data Ongkir
+  formData.append('ongkirId', String(selectedOngkirId.value))
+  formData.append('biayaOngkir', String(shippingCost.value))
 
   // Tambahkan data 'items' sebagai JSON string
   const itemsPayload = summaryItems.value.map((item) => ({
@@ -285,7 +324,7 @@ const submitOrderAndUpload = async () => {
   }))
   formData.append('items', JSON.stringify(itemsPayload))
 
-  // Tambahkan total harga
+  // Tambahkan total harga (Grand Total)
   formData.append('totalHarga', String(total.value));
   
   // Tambahkan file

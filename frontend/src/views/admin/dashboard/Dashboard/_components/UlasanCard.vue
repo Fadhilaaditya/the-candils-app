@@ -47,7 +47,6 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps } from 'vue';
 import type { ProductReviewSalesSummary } from '@/services/productService'; // 🛑 GANTI JALUR INI!
 
 // Gunakan interface dari productservice untuk mendefinisikan props

@@ -30,6 +30,9 @@ router.get('/ukuran', pesananController.getAllUkuran);
 // GET /api/pesanan/produk - Ambil semua produk (Master Data)
 router.get('/produk', pesananController.getAllProduk);
 
+// GET /api/pesanan/ongkir - Ambil semua ongkir
+router.get('/ongkir', pesananController.getAllOngkir);
+
 
 // ===============================================
 // RUTE PESANAN (Umum, bisa diakses user setelah login atau admin)

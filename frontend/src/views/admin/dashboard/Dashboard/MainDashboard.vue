@@ -1,20 +1,32 @@
 <template>
   <div class="bg-gray-50 min-h-screen p-6 md:p-8 font-sans">
     <!-- Header Section -->
-    <div class="mb-8 flex flex-col md:flex-row md:items-center md:justify-between">
+    <div class="mb-8 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
-            <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">
+            <h1 class="text-2xl font-extrabold text-gray-900 tracking-tight">
                 Dashboard
             </h1>
             <p class="text-sm text-gray-500 mt-1">Selamat datang kembali, Admin! Berikut ringkasan performa bisnis Anda.</p>
         </div>
-        <div class="mt-4 md:mt-0">
-            <button class="bg-[#BAB772] hover:bg-[#a8a668] text-white px-4 py-2 rounded-lg shadow-sm text-sm font-medium transition-colors duration-200 flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                </svg>
-                Unduh Laporan
-            </button>
+        <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            <div class="flex items-center bg-white p-1 rounded-lg border border-gray-200 shadow-sm">
+                <input 
+                    type="date" 
+                    v-model="state.startDate"
+                    :max="today"
+                    class="border-none focus:ring-0 text-xs text-gray-600 bg-transparent p-1.5 w-28" 
+                    placeholder="Mulai"
+                />
+                <span class="text-gray-400 text-xs px-1">-</span>
+                <input 
+                    type="date" 
+                    v-model="state.endDate"
+                    :min="state.startDate"
+                    :max="today"
+                    class="border-none focus:ring-0 text-xs text-gray-600 bg-transparent p-1.5 w-28"
+                    placeholder="Selesai"
+                />
+            </div>
         </div>
     </div>
 
@@ -55,7 +67,10 @@
 
             <!-- Pie Chart Kontribusi (Sempit) -->
             <div class="lg:col-span-1">
-                <ProductSoldChart :summary-data="state.productContributionChart" />
+                <ProductSoldChart 
+                    :summary-data="state.productContributionChart" 
+                    @product-click="handleProductClick"
+                />
             </div>
         </div>
         
@@ -64,10 +79,17 @@
             <!-- Left Column: Charts (Stacked Vertically) -->
             <div class="lg:col-span-2 flex flex-col gap-6">
                 <!-- Grafik Pendapatan per Lokasi -->
-                <RevenueChart :revenue-data="state.revenuePerLocationChart" />
+                <RevenueChart 
+                    :revenue-data="state.revenuePerLocationChart" 
+                    @location-click="handleLocationClick"
+                />
                 
                 <!-- Diagram Tipe Pesanan -->
-                <OrderTypeChart :summary-data="state.orderTypeChart" />
+                <!-- Diagram Tipe Pesanan -->
+                <OrderTypeChart 
+                    :summary-data="state.orderTypeChart" 
+                    @order-type-click="handleOrderTypeClick"
+                />
             </div>
 
             <!-- Right Column: List Produk Populer -->
@@ -81,7 +103,11 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive } from 'vue';
+import { onMounted, reactive, watch } from 'vue';
+// ... imports ...
+
+// ... existing code ...
+
 import { 
     getDashboardSummaryData, 
     getProductsSoldChartData, 
@@ -129,7 +155,12 @@ interface DashboardState {
     orderTypeChart: OrderTypeSummary[];
     startDate: string;
     endDate: string;
+    selectedProductId: number | null;
+    selectedLocationId: number | null;
+    selectedOrderType: string | null;
 }
+
+
 
 const state = reactive<DashboardState>({
     loading: false,
@@ -142,7 +173,12 @@ const state = reactive<DashboardState>({
     orderTypeChart: [],
     startDate: '',
     endDate: '',
+    selectedProductId: null,
+    selectedLocationId: null,
+    selectedOrderType: null,
 });
+
+const today = new Date().toISOString().split('T')[0];
 
 
 // --- LOGIKA PENGOLAHAN DATA ---
@@ -222,11 +258,11 @@ const fetchData = async () => {
             revenueChartRes,
             orderTypeRes 
         ] = await Promise.all([
-            getDashboardSummaryData(state.startDate, state.endDate),
-            getProductsSoldChartData(state.startDate, state.endDate),
-            getProductReviewSalesSummary(state.startDate, state.endDate),
-            getSalesSummaryRevenue(state.startDate, state.endDate),
-            getSalesByOrderTypeSummary(state.startDate, state.endDate) 
+            getDashboardSummaryData(state.startDate, state.endDate, state.selectedProductId, state.selectedLocationId, state.selectedOrderType),
+            getProductsSoldChartData(state.startDate, state.endDate, state.selectedLocationId, state.selectedProductId, state.selectedOrderType), 
+            getProductReviewSalesSummary(state.startDate, state.endDate, state.selectedProductId, state.selectedLocationId, state.selectedOrderType),
+            getSalesSummaryRevenue(state.startDate, state.endDate, state.selectedProductId, state.selectedLocationId, state.selectedOrderType),
+            getSalesByOrderTypeSummary(state.startDate, state.endDate, state.selectedProductId, state.selectedLocationId, state.selectedOrderType) 
         ]);
 
         const summaryData = dashboardSummaryRes.data.data as DashboardSummary;
@@ -251,5 +287,36 @@ const fetchData = async () => {
     }
 };
 
+const handleProductClick = (produkId: number) => {
+    if (state.selectedProductId === produkId) {
+        state.selectedProductId = null; // Toggle off
+    } else {
+        state.selectedProductId = produkId; // Toggle on
+    }
+    fetchData();
+};
+
+const handleLocationClick = (lokasiId: number) => {
+    if (state.selectedLocationId === lokasiId) {
+        state.selectedLocationId = null; // Toggle off
+    } else {
+        state.selectedLocationId = lokasiId; // Toggle on
+    }
+    fetchData();
+};
+
+const handleOrderTypeClick = (orderType: string) => {
+    if (state.selectedOrderType === orderType) {
+        state.selectedOrderType = null; // Toggle off
+    } else {
+        state.selectedOrderType = orderType; // Toggle on
+    }
+    fetchData();
+};
+
 onMounted(fetchData);
+
+watch(() => [state.startDate, state.endDate], () => {
+    fetchData();
+});
 </script>

@@ -19,30 +19,23 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import fallbackData from './data/budaya.json'
+import { ref, watch } from 'vue'
+import type { CultureData } from '@/services/homeService';
 
 defineOptions({ name: 'BudayaSection' })
 
-interface BudayaData {
-  title: string
-  image: string
-  paragraphs: string[]
-}
+const props = defineProps<{ initialData?: CultureData }>()
 
-const props = defineProps<{ endpoint?: string; initialData?: BudayaData }>()
-const content = ref<BudayaData>({ ...fallbackData })
+const defaultCultureData: CultureData = {
+    title: '',
+    image: '',
+    paragraphs: []
+};
+const content = ref<CultureData>(props.initialData || defaultCultureData)
 
-onMounted(async () => {
-  if (props.initialData) {
-    content.value = props.initialData
-    return
-  }
-  if (props.endpoint) {
-    try {
-      const res = await fetch(props.endpoint)
-      if (res.ok) content.value = await res.json()
-    } catch {}
-  }
-})
+watch(() => props.initialData, (newVal) => {
+    if (newVal) {
+        content.value = newVal
+    }
+}, { immediate: true })
 </script>

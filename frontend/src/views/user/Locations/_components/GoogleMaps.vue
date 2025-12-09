@@ -19,7 +19,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 
 // Google Maps is loaded dynamically
 declare global {
@@ -175,6 +175,17 @@ const initMap = () => {
 
   isLoading.value = false
 }
+
+// Watch for changes in locations prop
+watch(
+  () => props.locations,
+  () => {
+    if (map) {
+      addMarkers()
+    }
+  },
+  { deep: true }
+)
 
 // Add markers to map
 const addMarkers = () => {

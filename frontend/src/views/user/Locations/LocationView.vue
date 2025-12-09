@@ -25,27 +25,27 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import GoogleMaps from './_components/GoogleMaps.vue'
-import LocationList from './_components/LocationList.vue' // <-- Impor komponen baru
-import locationData from './_components/data/locationData.json'
+import LocationList from './_components/LocationList.vue'
+import { getHomeContent } from '@/services/homeService';
+import type { LocationItem, LocationsData } from '@/services/homeService';
 
-// Type definitions tetap di sini karena dibutuhkan oleh parent
-interface Location {
-  id: string
-  name: string
-  address: string
-  lat: number
-  lng: number
-  type: 'branch' | 'competitor' | 'landmark'
-  phone?: string
-  hours?: string
-}
+// Re-export Location type for compatibility if necessary, or use LocationItem everywhere
+// Adapting local interface to match service interface if they differ, or just using service interface
+type Location = LocationItem;
 
-// Semua state dan logika tetap di parent
-const branches = ref<Location[]>(locationData.branches as Location[])
+const branches = ref<Location[]>([])
+const competitors = ref<Location[]>([]) 
+const landmarks = ref<Location[]>([])
 
-const allLocations = computed(() => [...branches.value])
+const allLocations = computed(() => {
+    return [
+        ...branches.value,
+        ...competitors.value,
+        ...landmarks.value
+    ];
+});
 
 const mapCenter = computed(() => ({
   lat: -6.31,
@@ -57,4 +57,18 @@ const focusOnLocation = (location: Location) => {
   // Di sini Anda bisa mengubah mapCenter atau state lain untuk memfokuskan peta
   // mapCenter.value = { lat: location.lat, lng: location.lng }
 }
+
+onMounted(async () => {
+    try {
+        const response = await getHomeContent();
+        if (response.data.success && response.data.data.locations) {
+            const locations = response.data.data.locations;
+            branches.value = locations.branches;
+            competitors.value = locations.competitors;
+            landmarks.value = locations.landmarks;
+        }
+    } catch (error) {
+        console.error('Failed to fetch locations:', error);
+    }
+});
 </script>

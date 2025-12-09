@@ -19,20 +19,42 @@
       </div>
     </div>
 
-    <div class="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-end">
+    <div class="bg-white border-b border-gray-200 px-4 py-3 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <!-- Filter Inputs -->
+      <div class="flex flex-col md:flex-row gap-3 w-full md:w-auto">
+        <div class="flex items-center gap-2">
+            <input 
+              type="date" 
+              :value="startDate"
+              :max="endDate || today"
+              @input="$emit('update:startDate', ($event.target as HTMLInputElement).value)"
+              class="border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Dari Tanggal"
+            />
+            <span class="text-gray-400">-</span>
+            <input 
+              type="date" 
+              :value="endDate"
+              :min="startDate"
+              :max="today"
+              @input="$emit('update:endDate', ($event.target as HTMLInputElement).value)"
+              class="border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Sampai Tanggal"
+            />
+        </div>
+
+        <select 
+          :value="tipePesananFilter"
+          @change="$emit('update:tipePesananFilter', ($event.target as HTMLSelectElement).value)"
+          class="border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="all">Semua Tipe</option>
+          <option value="Online">Online</option>
+          <option value="Offline">Offline</option>
+        </select>
+      </div>
+
       <div class="flex items-center space-x-2">
-        <button class="flex items-center px-3 py-2 text-sm text-gray-700 hover:text-gray-900 border border-gray-300 rounded hover:bg-gray-50">
-          <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-          </svg>
-          Urutkan
-        </button>
-        <button class="flex items-center px-3 py-2 text-sm text-gray-700 hover:text-gray-900 border border-gray-300 rounded hover:bg-gray-50">
-          <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-          Ekspor
-        </button>
         <button 
           @click="$emit('open-add-modal')"
           class="flex items-center px-3 py-2 text-sm font-medium text-white bg-blue-600 border border-blue-600 rounded hover:bg-blue-700 transition-colors"
@@ -184,49 +206,29 @@
       </div>
 
       <!-- Pagination Controls -->
-      <div v-if="!loading && pesananList.length > 0" class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
-        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-          <div>
-            <p class="text-sm text-gray-700">
-              Menampilkan
-              <span class="font-medium">{{ startIndex }}</span>
-              sampai
-              <span class="font-medium">{{ endIndex }}</span>
-              dari
-              <span class="font-medium">{{ pesananList.length }}</span>
-              hasil
-            </p>
-          </div>
-          <div>
-            <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-              <button
-                @click="prevPage"
-                :disabled="currentPage === 1"
-                class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <span class="sr-only">Previous</span>
-                <!-- Heroicon name: solid/chevron-left -->
-                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                  <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
-                </svg>
-              </button>
-              <!-- Current Page Indicator -->
-               <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
-                 {{ currentPage }} / {{ totalPages }}
-               </span>
-              <button
-                @click="nextPage"
-                :disabled="currentPage === totalPages"
-                class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <span class="sr-only">Next</span>
-                <!-- Heroicon name: solid/chevron-right -->
-                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                  <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
-                </svg>
-              </button>
-            </nav>
-          </div>
+      <!-- Pagination Controls matches ProductTable -->
+      <div v-if="!loading && pesananList.length > 0" class="flex flex-col sm:flex-row items-center justify-between px-4 py-3 bg-white border-t border-gray-200 sm:px-6">
+        <div class="text-sm text-gray-600 mb-4 sm:mb-0">
+          Menampilkan halaman <span class="font-medium text-gray-900">{{ currentPage }}</span> dari <span class="font-medium text-gray-900">{{ totalPages }}</span>
+          <span class="text-gray-400 mx-2">|</span>
+          Total <span class="font-medium text-gray-900">{{ pesananList.length }}</span> pesanan
+        </div>
+        
+        <div class="flex gap-2">
+          <button 
+            @click="prevPage" 
+            :disabled="currentPage === 1"
+            class="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            Previous
+          </button>
+          <button 
+            @click="nextPage" 
+            :disabled="currentPage === totalPages"
+            class="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            Next
+          </button>
         </div>
       </div>
 
@@ -259,10 +261,16 @@ interface Props {
   lokasiList: Lokasi[]
   activeFilters: number
   loading?: boolean
+  startDate: string 
+  endDate: string   
+  tipePesananFilter: string 
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  loading: false
+  loading: false,
+  startDate: '',
+  endDate: '',
+  tipePesananFilter: 'all'
 })
 
 const emit = defineEmits<{
@@ -273,11 +281,17 @@ const emit = defineEmits<{
   'update-lokasi': [pesanan: Pemesanan]
   'open-detail': [pesanan: Pemesanan]
   'open-add-modal': [] 
+  'update:startDate': [value: string] // New Emit
+  'update:endDate': [value: string]   // New Emit
+  'update:tipePesananFilter': [value: string] // New Emit - filters by online/offline
 }>()
 
 // Pagination
 const currentPage = ref(1)
-const itemsPerPage = 5
+const itemsPerPage = 10
+
+// Date Limits
+const today = new Date().toISOString().split('T')[0]
 
 // Reset page when data changes
 watch(() => props.pesananList, () => {

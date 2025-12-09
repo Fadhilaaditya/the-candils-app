@@ -10,29 +10,22 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import fallbackData from './data/funfact.json'
+import { ref, watch } from 'vue'
+import type { FunFactData } from '@/services/homeService';
 
 defineOptions({ name: 'FunFactSection' })
 
-interface FunFactData {
-  kicker: string
-  text: string
-}
+const props = defineProps<{ initialData?: FunFactData }>()
 
-const props = defineProps<{ endpoint?: string; initialData?: FunFactData }>()
-const content = ref<FunFactData>({ ...fallbackData })
+const defaultFunFactData: FunFactData = {
+    kicker: '',
+    text: ''
+};
+const content = ref<FunFactData>(props.initialData || defaultFunFactData)
 
-onMounted(async () => {
-  if (props.initialData) {
-    content.value = props.initialData
-    return
-  }
-  if (props.endpoint) {
-    try {
-      const res = await fetch(props.endpoint)
-      if (res.ok) content.value = await res.json()
-    } catch {}
-  }
-})
+watch(() => props.initialData, (newVal) => {
+    if (newVal) {
+        content.value = newVal
+    }
+}, { immediate: true })
 </script>

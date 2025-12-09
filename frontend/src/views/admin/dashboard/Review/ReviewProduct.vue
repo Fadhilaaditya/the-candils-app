@@ -87,6 +87,9 @@
             v-else-if="productReviews.length > 0"
             class="flex flex-col gap-4"
           >
+            <!-- Rating Summary Component -->
+            <ReviewSummary :reviews="productReviews" />
+
             <CardReview v-for="review in paginatedReviews" :key="review.ulasanId" :review="review" />
             
             <!-- Pagination Controls -->
@@ -134,6 +137,7 @@ import ProductReviewTable from './_components/DetailCardReview.vue'
 import CardReview from './_components/CardReview.vue'       
 import SkeletonProductTable from './_components/SkeletonTableProduct.vue'
 import SkeletonReviewCard from './_components/SkeletonCardReview.vue'
+import ReviewSummary from './_components/ReviewSummary.vue'
 
 import { 
   getProducts,

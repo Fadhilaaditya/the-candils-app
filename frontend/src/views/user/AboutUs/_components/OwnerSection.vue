@@ -19,32 +19,25 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import fallbackData from './data/owner.json'
+import { ref, watch } from 'vue'
+import type { OwnerData } from '@/services/homeService';
 
 defineOptions({ name: 'OwnerSection' })
 
-interface OwnerData {
-  heading: string
-  name: string
-  role: string
-  photo: string
-  story: string[]
-}
+const props = defineProps<{ initialData?: OwnerData }>()
 
-const props = defineProps<{ endpoint?: string; initialData?: OwnerData }>()
-const content = ref<OwnerData>({ ...fallbackData })
+const defaultOwnerData: OwnerData = {
+    heading: '',
+    name: '',
+    role: '',
+    photo: '',
+    story: []
+};
+const content = ref<OwnerData>(props.initialData || defaultOwnerData)
 
-onMounted(async () => {
-  if (props.initialData) {
-    content.value = props.initialData
-    return
-  }
-  if (props.endpoint) {
-    try {
-      const res = await fetch(props.endpoint)
-      if (res.ok) content.value = await res.json()
-    } catch {}
-  }
-})
+watch(() => props.initialData, (newVal) => {
+    if (newVal) {
+        content.value = newVal
+    }
+}, { immediate: true })
 </script>

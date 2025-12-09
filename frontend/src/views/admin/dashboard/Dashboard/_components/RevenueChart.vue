@@ -25,7 +25,7 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps, computed } from 'vue';
+import { computed } from 'vue';
 import { Bar } from 'vue-chartjs'; // Komponen Vue Wrapper
 import {
   Chart as ChartJS,
@@ -101,6 +101,19 @@ const chartOptions = {
       }
     }
   },
-  interaction: { intersect: false, mode: 'index' as const } 
+  interaction: { intersect: false, mode: 'index' as const },
+  onClick: (event: any, elements: any) => {
+    if (elements && elements.length > 0) {
+      const index = elements[0].index;
+      const selectedLocation = dataToWatch.value[index];
+      if (selectedLocation) {
+        emit('location-click', selectedLocation.lokasiId);
+      }
+    }
+  }
 };
+
+const emit = defineEmits<{
+  (e: 'location-click', lokasiId: number): void
+}>();
 </script>

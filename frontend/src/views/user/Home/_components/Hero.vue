@@ -9,47 +9,30 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, computed, ref } from 'vue'
-import fallbackData from './data/hero.json'
+import { ref, watch, computed } from 'vue'
+import type { HeroData } from '@/services/homeService';
 
 defineOptions({ name: 'HomeHero' })
 
-interface HeroButton {
-  label: string
-  href: string
-}
-interface HeroData {
-  title: string
-  subtitle: string
-  imageUrl: string
-  buttons: HeroButton[]
-}
+const props = defineProps<{ initialData?: HeroData }>()
 
-const props = defineProps<{
-  endpoint?: string
-  initialData?: HeroData
-}>()
+const defaultHeroData: HeroData = {
+    title: '',
+    subtitle: '',
+    imageUrl: '',
+    buttons: []
+};
 
-const content = ref<HeroData>({
-  ...fallbackData,
-})
+const content = ref<HeroData>(props.initialData || defaultHeroData)
 
 const backgroundStyle = computed(() => ({
   backgroundImage: `url(${content.value.imageUrl})`,
 }))
 
-onMounted(async () => {
-  if (props.initialData) {
-    content.value = props.initialData
-    return
-  }
-  if (props.endpoint) {
-    try {
-      const res = await fetch(props.endpoint)
-      if (res.ok) {
-        content.value = await res.json()
-      }
-    } catch {}
-  }
-})
+watch(() => props.initialData, (newVal) => {
+    if (newVal) {
+        content.value = newVal
+    }
+}, { immediate: true })
+
 </script>

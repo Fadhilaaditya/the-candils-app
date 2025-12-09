@@ -6,7 +6,7 @@ const SUCCESS_STATUS = 'Selesai';
 
 // --- FUNGSI 1: Ringkasan Dashboard Utama ---
 const getDashboardSummary = async (req, res) => {
-    const { startDate, endDate } = req.query;
+    const { startDate, endDate, productId, locationId, orderType } = req.query;
     try {
         const results = {};
 
@@ -15,10 +15,15 @@ const getDashboardSummary = async (req, res) => {
             SELECT 
                 L.lokasiId,
                 L.name AS lokasi_name,
-                COALESCE(SUM(P.TotalHarga), 0) AS total_revenue
+                COALESCE(SUM(${productId ? 'DP.subtotal' : 'P.TotalHarga'}), 0) AS total_revenue
             FROM Lokasi L
             LEFT JOIN Pemesanan P ON L.lokasiId = P.lokasiId AND P.statusPesanan = ?
         `;
+        
+        if (productId) {
+            revenuePerLocationQuery += ' LEFT JOIN DetailPemesanan DP ON P.pesananid = DP.pesananid';
+        }
+
         const revenueParams = [SUCCESS_STATUS];
         if (startDate) {
             revenuePerLocationQuery += ' AND DATE(P.tanggalPesanan) >= ?';
@@ -27,6 +32,18 @@ const getDashboardSummary = async (req, res) => {
         if (endDate) {
             revenuePerLocationQuery += ' AND DATE(P.tanggalPesanan) <= ?';
             revenueParams.push(endDate);
+        }
+        if (productId) {
+            revenuePerLocationQuery += ' AND DP.produkId = ?';
+            revenueParams.push(productId);
+        }
+        if (locationId) {
+            revenuePerLocationQuery += ' AND P.lokasiId = ?';
+            revenueParams.push(locationId);
+        }
+        if (orderType) {
+            revenuePerLocationQuery += ' AND P.tipePesanan = ?';
+            revenueParams.push(orderType);
         }
         revenuePerLocationQuery += ' GROUP BY L.lokasiId, L.name ORDER BY L.lokasiId;';
         
@@ -37,21 +54,39 @@ const getDashboardSummary = async (req, res) => {
         // 2. Total Pendapatan per Hari (untuk Grafik)
         let revenuePerDayQuery = `
             SELECT 
-                DATE(tanggalPesanan) AS pemesanan_date,
-                COALESCE(SUM(TotalHarga), 0) AS total_revenue
-            FROM Pemesanan
-            WHERE statusPesanan = ?
+                DATE(P.tanggalPesanan) AS pemesanan_date,
+                COALESCE(SUM(${productId ? 'DP.subtotal' : 'P.TotalHarga'}), 0) AS total_revenue
+            FROM Pemesanan P
         `;
+        
+        if (productId) {
+            revenuePerDayQuery += ' JOIN DetailPemesanan DP ON P.pesananid = DP.pesananid';
+        }
+
+        revenuePerDayQuery += ' WHERE P.statusPesanan = ?';
         const dayParams = [SUCCESS_STATUS];
+        
         if (startDate) {
-            revenuePerDayQuery += ' AND DATE(tanggalPesanan) >= ?';
+            revenuePerDayQuery += ' AND DATE(P.tanggalPesanan) >= ?';
             dayParams.push(startDate);
         }
         if (endDate) {
-            revenuePerDayQuery += ' AND DATE(tanggalPesanan) <= ?';
+            revenuePerDayQuery += ' AND DATE(P.tanggalPesanan) <= ?';
             dayParams.push(endDate);
         }
-        revenuePerDayQuery += ' GROUP BY DATE(tanggalPesanan) ORDER BY pemesanan_date ASC;';
+        if (productId) {
+            revenuePerDayQuery += ' AND DP.produkId = ?';
+            dayParams.push(productId);
+        }
+        if (locationId) {
+            revenuePerDayQuery += ' AND P.lokasiId = ?';
+            dayParams.push(locationId);
+        }
+        if (orderType) {
+            revenuePerDayQuery += ' AND P.tipePesanan = ?';
+            dayParams.push(orderType);
+        }
+        revenuePerDayQuery += ' GROUP BY DATE(P.tanggalPesanan) ORDER BY pemesanan_date ASC;';
 
         const [revenuePerDay] = await pool.query(revenuePerDayQuery, dayParams);
         results.revenuePerDay = revenuePerDay;
@@ -65,7 +100,9 @@ const getDashboardSummary = async (req, res) => {
             FROM Lokasi L
             LEFT JOIN Pemesanan P ON L.lokasiId = P.lokasiId AND P.statusPesanan = ?
         `;
+        
         const productParams = [SUCCESS_STATUS];
+        
         if (startDate) {
             totalProductsSoldPerLocationQuery += ' AND DATE(P.tanggalPesanan) >= ?';
             productParams.push(startDate);
@@ -74,11 +111,27 @@ const getDashboardSummary = async (req, res) => {
             totalProductsSoldPerLocationQuery += ' AND DATE(P.tanggalPesanan) <= ?';
             productParams.push(endDate);
         }
+        if (locationId) {
+            totalProductsSoldPerLocationQuery += ' AND P.lokasiId = ?';
+            productParams.push(locationId);
+        }
+        if (orderType) {
+            totalProductsSoldPerLocationQuery += ' AND P.tipePesanan = ?';
+            productParams.push(orderType);
+        }
+        
+        totalProductsSoldPerLocationQuery += ' LEFT JOIN DetailPemesanan DP ON P.pesananid = DP.pesananid';
+        
+        if (productId) {
+            totalProductsSoldPerLocationQuery += ' AND DP.produkId = ?';
+            productParams.push(productId);
+        }
+        
         totalProductsSoldPerLocationQuery += `
-            LEFT JOIN DetailPemesanan DP ON P.pesananid = DP.pesananid
             GROUP BY L.lokasiId, L.name
             ORDER BY L.lokasiId;
         `;
+
         const [productsSoldPerLocation] = await pool.query(totalProductsSoldPerLocationQuery, productParams);
         results.productsSoldPerLocation = productsSoldPerLocation;
 
@@ -102,7 +155,7 @@ const getDashboardSummary = async (req, res) => {
 // --- FUNGSI 2: Ringkasan Ulasan dan Penjualan Produk (Gabungan 4 Metrik) ---
 const getProductReviewSummary = async (req, res) => {
     // Query ini menggabungkan Produk, Ulasan, dan Penjualan (DetailPemesanan + Pemesanan)
-    const { startDate, endDate } = req.query;
+    const { startDate, endDate, productId, locationId, orderType } = req.query;
 
     let query = `
         SELECT 
@@ -129,6 +182,18 @@ const getProductReviewSummary = async (req, res) => {
     if (endDate) {
         query += ' AND DATE(PM.tanggalPesanan) <= ?';
         params.push(endDate);
+    }
+    if (productId) {
+        query += ' AND DP.produkId = ?';
+        params.push(productId);
+    }
+    if (locationId) {
+        query += ' AND PM.lokasiId = ?';
+        params.push(locationId);
+    }
+    if (orderType) {
+        query += ' AND PM.tipePesanan = ?';
+        params.push(orderType);
     }
 
     query += `
@@ -220,20 +285,24 @@ const getSalesReport = async (req, res) => {
 
 // --- FUNGSI 4: Ringkasan Pendapatan (Per Lokasi) ---
 const getSummaryRevenue = async (req, res) => {
-    const { startDate, endDate } = req.query;
+    const { startDate, endDate, productId, locationId, orderType } = req.query;
 
     let query = `
         SELECT
+            L.lokasiId,
             L.name AS lokasi,
-            SUM(PM.TotalHarga) AS totalPendapatan
+            COALESCE(SUM(${productId ? 'DP.subtotal' : 'PM.TotalHarga'}), 0) AS totalPendapatan
         FROM
             Pemesanan PM
         JOIN
             Lokasi L ON PM.lokasiId = L.lokasiId
-        WHERE
-            PM.statusPesanan = ?
     `;
+    
+    if (productId) {
+        query += ' JOIN DetailPemesanan DP ON PM.pesananid = DP.pesananid';
+    }
 
+    query += ' WHERE PM.statusPesanan = ?';
     const params = [SUCCESS_STATUS];
 
     if (startDate) {
@@ -244,10 +313,22 @@ const getSummaryRevenue = async (req, res) => {
         query += ' AND DATE(PM.tanggalPesanan) <= ?';
         params.push(endDate);
     }
+    if (productId) {
+        query += ' AND DP.produkId = ?';
+        params.push(productId);
+    }
+    if (locationId) {
+        query += ' AND PM.lokasiId = ?';
+        params.push(locationId);
+    }
+    if (orderType) {
+        query += ' AND PM.tipePesanan = ?';
+        params.push(orderType);
+    }
 
     query += `
         GROUP BY
-            L.name
+            L.lokasiId, L.name
     `;
 
     try {
@@ -302,10 +383,11 @@ const getSummaryQuantity = async (req, res) => {
 
 // --- FUNGSI 6: Produk Terjual per Jenis Produk (untuk Pie Chart) ---
 const getProductsSoldSummary = async (req, res) => {
-    const { startDate, endDate } = req.query;
+    const { startDate, endDate, productId, locationId, orderType } = req.query;
 
     let query = `
         SELECT 
+            P.produkId,
             P.namaProduk,
             COALESCE(SUM(DP.quantity), 0) AS total_quantity_sold
         FROM DetailPemesanan DP
@@ -323,9 +405,21 @@ const getProductsSoldSummary = async (req, res) => {
         query += ' AND DATE(PM.tanggalPesanan) <= ?';
         params.push(endDate);
     }
+    if (locationId) {
+        query += ' AND PM.lokasiId = ?';
+        params.push(locationId);
+    }
+    if (productId) {
+        query += ' AND DP.produkId = ?';
+        params.push(productId);
+    }
+    if (orderType) {
+        query += ' AND PM.tipePesanan = ?';
+        params.push(orderType);
+    }
 
     query += `
-        GROUP BY P.namaProduk
+        GROUP BY P.produkId, P.namaProduk
         ORDER BY total_quantity_sold DESC;
     `;
 
@@ -350,30 +444,46 @@ const getProductsSoldSummary = async (req, res) => {
 
 // --- FUNGSI 7: Ringkasan Penjualan per Tipe Pesanan (Online vs Offline) ---
 const getSalesByOrderTypeSummary = async (req, res) => {
-    const { startDate, endDate } = req.query;
+    const { startDate, endDate, productId, locationId, orderType } = req.query;
 
     let query = `
         SELECT 
-            tipePesanan,
-            COUNT(pesananId) as total_orders,
-            COALESCE(SUM(TotalHarga), 0) as total_revenue
-        FROM Pemesanan
-        WHERE statusPesanan = ?
+            PM.tipePesanan,
+            COUNT(PM.pesananId) as total_orders,
+            COALESCE(SUM(${productId ? 'DP.subtotal' : 'PM.TotalHarga'}), 0) as total_revenue
+        FROM Pemesanan PM
     `;
+    
+    if (productId) {
+        query += ' JOIN DetailPemesanan DP ON PM.pesananid = DP.pesananid';
+    }
 
+    query += ' WHERE PM.statusPesanan = ?';
     const params = [SUCCESS_STATUS];
 
     if (startDate) {
-        query += ' AND DATE(tanggalPesanan) >= ?';
+        query += ' AND DATE(PM.tanggalPesanan) >= ?';
         params.push(startDate);
     }
     if (endDate) {
-        query += ' AND DATE(tanggalPesanan) <= ?';
+        query += ' AND DATE(PM.tanggalPesanan) <= ?';
         params.push(endDate);
+    }
+    if (productId) {
+        query += ' AND DP.produkId = ?';
+        params.push(productId);
+    }
+    if (locationId) {
+        query += ' AND PM.lokasiId = ?';
+        params.push(locationId);
+    }
+    if (orderType) {
+        query += ' AND PM.tipePesanan = ?';
+        params.push(orderType);
     }
 
     query += `
-        GROUP BY tipePesanan
+        GROUP BY PM.tipePesanan
         ORDER BY total_revenue DESC;
     `;
 

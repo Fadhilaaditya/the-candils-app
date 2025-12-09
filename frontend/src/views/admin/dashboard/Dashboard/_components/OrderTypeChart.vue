@@ -18,7 +18,7 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps, computed } from 'vue';
+import { computed } from 'vue';
 import { Bar } from 'vue-chartjs';
 import {
   Chart as ChartJS,
@@ -35,6 +35,10 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 
 const props = defineProps<{
   summaryData: OrderTypeSummary[]; 
+}>();
+
+const emit = defineEmits<{
+  (e: 'order-type-click', orderType: string): void
 }>();
 
 const dataToWatch = computed(() => props.summaryData);
@@ -93,7 +97,16 @@ const chartOptions = {
       grid: {
         display: false
       }
+      }
+    },
+    onClick: (event: any, elements: any) => {
+      if (elements && elements.length > 0) {
+        const index = elements[0].index;
+        const selectedItem = dataToWatch.value[index];
+        if (selectedItem) {
+          emit('order-type-click', selectedItem.tipePesanan);
+        }
+      }
     }
   }
-};
 </script>

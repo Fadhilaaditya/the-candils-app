@@ -66,8 +66,14 @@
                   </tr>
                 </tbody>
                 <tfoot class="bg-gray-50">
+                  <tr v-if="pesanan.biayaPemesanan">
+                    <td colspan="3" class="px-4 py-3 text-sm font-medium text-gray-900">Ongkos Kirim</td>
+                    <td class="px-4 py-3 text-sm font-medium text-gray-900 text-right">
+                      Rp {{ formatCurrency(pesanan.biayaPemesanan) }}
+                    </td>
+                  </tr>
                   <tr>
-                    <td colspan="3" class="px-4 py-3 text-sm font-semibold text-gray-900">Total</td>
+                    <td colspan="3" class="px-4 py-3 text-sm font-bold text-gray-900">Total</td>
                     <td class="px-4 py-3 text-sm font-bold text-blue-600 text-right">
                       Rp {{ formatCurrency(pesanan.totalHarga) }}
                     </td>

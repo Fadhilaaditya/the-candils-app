@@ -43,6 +43,23 @@
           :disabled="isSubmitting"
         />
       </div>
+
+      <div class="mt-6">
+        <label for="shipping" class="block text-sm font-medium text-gray-700 mb-2">Opsi Pengiriman *</label>
+        <select
+          id="shipping"
+          :value="selectedOngkirId || ''"
+          @change="$emit('update:selectedOngkirId', Number(($event.target as HTMLSelectElement).value))"
+          class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-[#BAB772] focus:border-transparent disabled:opacity-50 disabled:bg-gray-100 bg-white"
+          required
+          :disabled="isSubmitting"
+        >
+          <option value="" disabled>-- Pilih Pengiriman --</option>
+          <option v-for="ongkir in ongkirList" :key="ongkir.ongkirId" :value="ongkir.ongkirId">
+            {{ ongkir.nama }} - Rp {{ formatPrice(ongkir.biaya) }}
+          </option>
+        </select>
+      </div>
     </fieldset>
 
     <div>
@@ -134,17 +151,26 @@ const props = defineProps<{
   isSubmitting: boolean
   filePreviewUrl: string | null
   maxFileSize?: number // Ukuran maksimal file dalam bytes (default: 3MB)
+  ongkirList: any[]
+  selectedOngkirId: number | null
 }>()
 
 const emit = defineEmits<{
   (e: 'update:fullName', value: string): void
   (e: 'update:address', value: string): void
   (e: 'update:contact', value: string): void
+  (e: 'update:selectedOngkirId', value: number): void
   (e: 'fileSelected', event: Event): void
   (e: 'fileRemoved'): void 
   (e: 'fileError', message: string): void 
   (e: 'submitOrderAndUpload'): void 
 }>()
+
+// Helper format price
+const formatPrice = (n: number | string): string => {
+  const num = Number(n);
+  return new Intl.NumberFormat('id-ID').format(isNaN(num) ? 0 : num);
+}
 
 // Default max file size: 10MB
 const DEFAULT_MAX_FILE_SIZE = 10 * 1024 * 1024

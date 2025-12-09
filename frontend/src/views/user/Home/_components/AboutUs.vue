@@ -28,34 +28,31 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import fallbackData from './data/about.json'
+import { ref, watch } from 'vue'
+import type { AboutData } from '@/services/homeService';
 
-interface CTA {
-  label: string
-  href: string
-}
-interface AboutData {
-  heading: string
-  description: string
-  imageUrl: string
-  cta: CTA
-}
+defineOptions({ name: 'HomeAboutUs' })
 
-const props = defineProps<{ endpoint?: string; initialData?: AboutData }>()
+const props = defineProps<{ initialData?: AboutData }>()
 
-const content = ref<AboutData>({ ...fallbackData })
-
-onMounted(async () => {
-  if (props.initialData) {
-    content.value = props.initialData
-    return
+// Define a default/fallback data structure if initialData is not provided
+const defaultAboutData: AboutData = {
+  heading: 'Default Heading',
+  description: 'This is a default description for the About Us section. Please provide data via props.',
+  imageUrl: '/placeholder-image.jpg', // Replace with a suitable default image path
+  cta: {
+    label: 'Learn More',
+    href: '/about'
   }
-  if (props.endpoint) {
-    try {
-      const res = await fetch(props.endpoint)
-      if (res.ok) content.value = await res.json()
-    } catch {}
-  }
-})
+};
+
+const content = ref<AboutData>(props.initialData || defaultAboutData);
+
+watch(() => props.initialData, (newVal) => {
+    if (newVal) {
+        content.value = newVal
+    } else {
+        content.value = defaultAboutData;
+    }
+}, { immediate: true })
 </script>

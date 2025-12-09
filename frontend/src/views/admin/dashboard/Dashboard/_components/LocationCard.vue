@@ -31,7 +31,7 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps } from 'vue';
+import { defineComponent } from 'vue';
 import type { RevenuePerLocation, ProductsSoldPerLocation } from '@/services/productService';
 
 interface LocationCardData extends RevenuePerLocation, ProductsSoldPerLocation {}

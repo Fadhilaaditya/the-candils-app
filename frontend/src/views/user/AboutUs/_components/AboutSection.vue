@@ -20,30 +20,23 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import fallbackData from './data/about.json'
+import { ref, watch } from 'vue'
+import type { AboutUsIntroData } from '@/services/homeService';
 
 defineOptions({ name: 'AboutSection' })
 
-interface AboutData {
-  title: string
-  paragraphs: string[]
-  images: string[]
-}
+const props = defineProps<{ initialData?: AboutUsIntroData }>()
 
-const props = defineProps<{ endpoint?: string; initialData?: AboutData }>()
-const content = ref<AboutData>({ ...fallbackData })
+const defaultAboutData: AboutUsIntroData = {
+    title: '',
+    paragraphs: [],
+    images: []
+};
+const content = ref<AboutUsIntroData>(props.initialData || defaultAboutData)
 
-onMounted(async () => {
-  if (props.initialData) {
-    content.value = props.initialData
-    return
-  }
-  if (props.endpoint) {
-    try {
-      const res = await fetch(props.endpoint)
-      if (res.ok) content.value = await res.json()
-    } catch {}
-  }
-})
+watch(() => props.initialData, (newVal) => {
+    if (newVal) {
+        content.value = newVal
+    }
+}, { immediate: true })
 </script>

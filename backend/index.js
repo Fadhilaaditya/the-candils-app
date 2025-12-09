@@ -23,6 +23,7 @@ const productRoutes = require('./routes/productRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
 const pesananRoutes = require('./routes/pesananRoutes');
 const cartRoutes = require('./routes/cart');
+const homeRoutes = require('./routes/homeRoutes');
 const salesRoutes = require('./routes/salesRoutes');
 
 const app = express();
@@ -70,6 +71,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/pesanan', pesananRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/sales', salesRoutes);
+app.use('/api/home', homeRoutes);
 
 // --- Default Route ---
 app.get('/', (req, res) => {

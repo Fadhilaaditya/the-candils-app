@@ -19,7 +19,7 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps, computed } from 'vue';
+import { computed } from 'vue';
 import { Pie } from 'vue-chartjs';
 import {
   Chart as ChartJS,
@@ -80,5 +80,18 @@ const chartOptions = {
       }
     }
   },
+  onClick: (event: any, elements: any) => {
+    if (elements && elements.length > 0) {
+      const index = elements[0].index;
+      const selectedProduct = dataToWatch.value[index];
+      if (selectedProduct) {
+        emit('product-click', selectedProduct.produkId);
+      }
+    }
+  }
 };
+
+const emit = defineEmits<{
+  (e: 'product-click', produkId: number): void
+}>();
 </script>

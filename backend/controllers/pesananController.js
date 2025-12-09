@@ -41,6 +41,21 @@ const getAllUkuran = async (req, res) => {
 };
 
 /**
+ * @desc    Mengambil semua data ongkir
+ */
+const getAllOngkir = async (req, res) => {
+  try {
+    const [ongkir] = await db.query(
+      'SELECT * FROM Ongkir ORDER BY ongkirId'
+    );
+    res.json(ongkir);
+  } catch (err) {
+    console.error('Error mengambil ongkir:', err.message);
+    res.status(500).json({ message: 'Error mengambil ongkir', error: err.message });
+  }
+};
+
+/**
  * @desc    Mengambil semua data produk
  */
 const getAllProduk = async (req, res) => {
@@ -75,14 +90,33 @@ const getAllProduk = async (req, res) => {
  */
 const getAllPesanan = async (req, res) => {
   try {
-    const [pesanan] = await db.query(
-      `SELECT
+    const { startDate, endDate, tipePesanan } = req.query;
+    let query = `SELECT
          pesananId, lokasiId, namaPelanggan, tanggalPesanan,
          statusPesanan, totalHarga, alamatPengiriman, kontakPelanggan,
-         buktiPembayaranUrl, tipePesanan
-       FROM Pemesanan
-       ORDER BY tanggalPesanan DESC`
-    );
+         buktiPembayaranUrl, tipePesanan, ongkirId, biayaOngkir as biayaPemesanan
+       FROM Pemesanan`;
+    
+    const conditions = [];
+    const params = [];
+
+    if (startDate && endDate) {
+      conditions.push(`DATE(tanggalPesanan) BETWEEN ? AND ?`);
+      params.push(startDate, endDate);
+    }
+
+    if (tipePesanan && tipePesanan !== 'all') {
+      conditions.push(`tipePesanan = ?`);
+      params.push(tipePesanan);
+    }
+
+    if (conditions.length > 0) {
+      query += ` WHERE ` + conditions.join(' AND ');
+    }
+
+    query += ` ORDER BY tanggalPesanan DESC`;
+
+    const [pesanan] = await db.query(query, params);
     res.json(pesanan);
   } catch (err) {
     console.error('Error mengambil pesanan:', err.message);
@@ -98,7 +132,13 @@ const getPesananById = async (req, res) => {
 
   try {
     const [pesananResult] = await db.query(
-      'SELECT * FROM Pemesanan WHERE pesananId = ?',
+      `SELECT 
+        p.*, 
+        p.biayaOngkir as biayaPemesanan,
+        o.nama as namaOngkir 
+       FROM Pemesanan p
+       LEFT JOIN Ongkir o ON p.ongkirId = o.ongkirId
+       WHERE p.pesananId = ?`,
       [id]
     );
 
@@ -139,7 +179,7 @@ const getPesananById = async (req, res) => {
  * @desc    Membuat pesanan baru DAN upload bukti pembayaran (1 langkah)
  */
 const createPesanan = async (req, res) => {
-  const { lokasiId, namaPelanggan, items: itemsJSON, alamatPengiriman, kontakPelanggan } = req.body;
+  const { lokasiId, namaPelanggan, items: itemsJSON, alamatPengiriman, kontakPelanggan, ongkirId, biayaOngkir } = req.body;
   const file = req.file;
 
   if (!file) {
@@ -162,6 +202,14 @@ const createPesanan = async (req, res) => {
   const totalHarga = items.reduce((total, item) => total + item.subtotal, 0);
 
   const parsedLokasiId = Number(lokasiId);
+  const parsedOngkirId = ongkirId ? Number(ongkirId) : null;
+  const parsedBiayaOngkir = biayaOngkir ? Number(biayaOngkir) : 0;
+
+  // Total harga di database harusnya Grand Total (Item + Ongkir) atau Subtotal?
+  // Biasanya TotalHarga = Subtotal + Ongkir. 
+  // Asumsi: Frontend mengirim totalHarga yang sudah termasuk ongkir, atau kita hitung ulang di sini?
+  // Untuk aman, kita gunakan total dari item + biaya ongkir.
+  const grandTotal = totalHarga + parsedBiayaOngkir;
 
   const statusAwal = 'Perlu Validasi';
   const tipePesanan = 'Online'; // ✅ NILAI BARU UNTUK PESANAN ONLINE
@@ -174,19 +222,22 @@ const createPesanan = async (req, res) => {
     const queryPemesanan = `
       INSERT INTO Pemesanan (
         lokasiId, namaPelanggan, tanggalPesanan, statusPesanan,
-        totalHarga, alamatPengiriman, kontakPelanggan, buktiPembayaranUrl, tipePesanan
+        totalHarga, alamatPengiriman, kontakPelanggan, buktiPembayaranUrl, tipePesanan,
+        ongkirId, biayaOngkir
       )
-      VALUES (?, ?, NOW(), ?, ?, ?, ?, NULL, ?)
+      VALUES (?, ?, NOW(), ?, ?, ?, ?, NULL, ?, ?, ?)
     `;
 
     const [orderResult] = await connection.execute(queryPemesanan, [
       parsedLokasiId,
       namaPelanggan,
       statusAwal,
-      totalHarga,
+      grandTotal, // Gunakan Grand Total
       alamatPengiriman,
       kontakPelanggan,
-      tipePesanan // ✅ MASUKKAN NILAI
+      tipePesanan,
+      parsedOngkirId,
+      parsedBiayaOngkir
     ]);
 
     const newPesananId = orderResult.insertId;
@@ -463,6 +514,14 @@ const updateStatusPesanan = async (req, res) => {
 
         if (orderDetails.length > 0) {
           const order = orderDetails[0];
+
+          // Fetch items for review links
+          const [items] = await db.query(
+             `SELECT dp.produkId, pr.namaProduk FROM DetailPemesanan dp JOIN Produk pr ON dp.produkId = pr.produkId WHERE dp.pesananId = ?`,
+             [id]
+          );
+          order.items = items;
+
           whatsappService.sendOrderCompleted(order.kontakPelanggan, order);
         }
       } catch (waError) {
@@ -576,5 +635,6 @@ module.exports = {
   updateStatusPesanan,
   updateLokasiPesanan,
   deletePesanan,
-  createPesananOffline
+  createPesananOffline,
+  getAllOngkir
 };

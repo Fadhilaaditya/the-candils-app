@@ -55,6 +55,9 @@
         :selected-orders="selectedOrders"
         :lokasi-list="lokasiList"
         :active-filters="activeFilters"
+        v-model:startDate="startDate"
+        v-model:endDate="endDate"
+        v-model:tipePesananFilter="tipePesananFilter"
         @change-tab="changeTab"
         @toggle-select-all="toggleSelectAll"
         @update-selected="updateSelectedOrders"
@@ -82,7 +85,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useToast } from 'vue-toastification'
 import PesananSummaryCards from './_components/PesananSummaryCards.vue'
 import PesananTable from './_components/PesananTable.vue'
@@ -129,6 +132,9 @@ const activeFilters = ref(0)
 const showDetailModal = ref(false)
 const selectedPesanan = ref<Pemesanan | null>(null)
 const showAddModal = ref(false) 
+const startDate = ref('')
+const endDate = ref('') 
+const tipePesananFilter = ref('all') 
 
 // --- Computed Properties ---
 const tabs = computed(() => [
@@ -193,7 +199,7 @@ const loadData = async () => {
   loadError.value = null
   try {
     const [pesananResponse, lokasiResponse] = await Promise.all([
-      getAllPesanan(),
+      getAllPesanan(startDate.value, endDate.value, tipePesananFilter.value),
       getAllLokasi()
     ])
     pesananList.value = pesananResponse.data
@@ -347,6 +353,10 @@ const handleCancelOrder = async (pesananId: number) => {
 
 // --- Lifecycle Hooks ---
 onMounted(() => {
+  loadData()
+})
+
+watch([startDate, endDate, tipePesananFilter], () => {
   loadData()
 })
 </script>
