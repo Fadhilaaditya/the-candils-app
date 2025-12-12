@@ -15,6 +15,10 @@ router.get('/', productController.getAllProducts);
 // (Mendapatkan daftar ID. HARUS DI ATAS /:id)
 router.get('/ids', productController.getProductIdList);
 
+// GET /api/products/best-seller
+// (Mendapatkan 3 produk top sales)
+router.get('/best-seller', productController.getBestSellerProducts);
+
 // GET /api/products/:id
 // (Mendapatkan detail satu produk)
 router.get('/:id', productController.getProductById);
@@ -36,6 +40,14 @@ router.put(
   '/:id',
   [authMiddleware, adminMiddleware, upload.single('foto')],
   productController.updateProduct
+);
+
+// PATCH /api/products/:id/status
+// (Update status aktif/nonaktif)
+router.patch(
+  '/:id/status',
+  [authMiddleware, adminMiddleware],
+  productController.updateProductStatus
 );
 
 // DELETE /api/products/:id

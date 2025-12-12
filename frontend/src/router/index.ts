@@ -46,6 +46,44 @@ const adminChildrenRoutes: RouteRecordRaw[] = [
   },
 ];
 
+const superAdminChildrenRoutes: RouteRecordRaw[] = [
+  {
+    path: '',
+    name: 'superadmin-dashboard-main',
+    component: () => import('@/views/superadmin/Dashboard/Dashboard/MainDashboard.vue'),
+  },
+  {
+    path: 'products',
+    name: 'superadmin-products',
+    redirect: '/superadmin/dashboard/products/kelola',
+  },
+  {
+    path: 'products/kelola',
+    name: 'superadmin-products-kelola',
+    component: () => import('@/views/superadmin/Dashboard/Product/KelolaProduct.vue'),
+  },
+  {
+    path: 'sales',
+    name: 'superadmin-sales',
+    component: () => import('@/views/superadmin/Dashboard/Penjualan/PenjualanProduct.vue'),
+  },
+  {
+    path: 'products/review',
+    name: 'superadmin-review',
+    component: () => import('@/views/superadmin/Dashboard/Review/ReviewProduct.vue'),
+  },
+  {
+    path: 'orders',
+    name: 'superadmin-orders',
+    component: () => import('@/views/superadmin/Dashboard/Pesanan/KelolaPesanan.vue'),
+  },
+  {
+    path: 'accounts',
+    name: 'superadmin-accounts',
+    component: () => import('@/views/superadmin/Account/KelolaAccount.vue'),
+  },
+];
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   scrollBehavior(to, from, savedPosition) {
@@ -130,6 +168,24 @@ const router = createRouter({
       name: 'admin-dashboard',
       component: () => import('@/views/admin/dashboard/App.vue'),
       children: adminChildrenRoutes,
+      beforeEnter: (to, from, next) => {
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+          next({ name: 'admin-login' });
+        } else {
+          next();
+        }
+      },
+    },
+    {
+      path: '/superadmin',
+      redirect: '/superadmin/dashboard',
+    },
+    {
+      path: '/superadmin/dashboard',
+      name: 'superadmin-dashboard',
+      component: () => import('@/views/superadmin/Dashboard/App.vue'),
+      children: superAdminChildrenRoutes,
       beforeEnter: (to, from, next) => {
         const token = localStorage.getItem('authToken');
         if (!token) {

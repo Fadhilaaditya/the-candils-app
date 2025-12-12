@@ -66,8 +66,8 @@ const validateCreatePesananOffline = (req, res, next) => {
     // Data diterima sebagai objek JSON (req.body)
     const { lokasiId, namaPelanggan, items, alamatPengiriman, kontakPelanggan } = req.body;
 
-    // 1. Validasi field utama
-    if (!namaPelanggan || !items || items.length === 0 || !alamatPengiriman || !kontakPelanggan) {
+    // 1. Validasi field utama (kontak & alamat opsional untuk offline)
+    if (!namaPelanggan || !items || items.length === 0) {
         return res.status(400).json({
             message: 'Data pesanan offline tidak lengkap. Pastikan semua field wajib terisi.'
         });

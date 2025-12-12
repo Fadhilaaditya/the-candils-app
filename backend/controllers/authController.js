@@ -53,7 +53,8 @@ exports.login = async (req, res) => {
         // 6. Kirim token ke client
         res.json({
           message: 'Login berhasil',
-          token: token
+          token: token,
+          user: payload.user // Return user info including role
         });
       }
     );

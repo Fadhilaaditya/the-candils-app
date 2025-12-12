@@ -25,6 +25,7 @@ const pesananRoutes = require('./routes/pesananRoutes');
 const cartRoutes = require('./routes/cart');
 const homeRoutes = require('./routes/homeRoutes');
 const salesRoutes = require('./routes/salesRoutes');
+const userRoutes = require('./routes/userRoutes');
 
 const app = express();
 
@@ -72,6 +73,7 @@ app.use('/api/pesanan', pesananRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/sales', salesRoutes);
 app.use('/api/home', homeRoutes);
+app.use('/api/users', userRoutes);
 
 // --- Default Route ---
 app.get('/', (req, res) => {

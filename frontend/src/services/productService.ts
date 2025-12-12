@@ -43,6 +43,7 @@ export interface ProductVariantRow {
   hargaTambahan?: number; 
   averageRating?: number;
   reviewCount?: number;
+  is_active?: boolean;
 }
 
 export interface Ulasan {
@@ -349,8 +350,8 @@ export interface PaginatedBackendResponse<T> extends BackendResponse<T> {
   meta: PaginationMeta;
 }
 
-export const getProducts = (page = 1, limit = 10) => {
-  return api.get<PaginatedBackendResponse<ProductVariantRow[]>>(`/products?page=${page}&limit=${limit}`);
+export const getProducts = (page = 1, limit = 10, showAll = false) => {
+  return api.get<PaginatedBackendResponse<ProductVariantRow[]>>(`/products?page=${page}&limit=${limit}&show_all=${showAll}`);
 };
 
 export const getProductById = (id: number) => {
@@ -359,6 +360,10 @@ export const getProductById = (id: number) => {
 
 export const getProductIdList = () => {
   return api.get<number[]>('/products/ids');
+};
+
+export const getBestSellerProducts = () => {
+  return api.get<ProductVariantRow[]>('/products/best-seller');
 };
 
 export const createProduct = (formData: FormData) => {
@@ -371,6 +376,10 @@ export const updateProduct = (id: number, formData: FormData) => {
   return api.put(`/products/${id}`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
+};
+
+export const updateProductStatus = (id: number, is_active: boolean) => {
+  return api.patch(`/products/${id}/status`, { is_active });
 };
 
 export const deleteProduct = (id: number) => {

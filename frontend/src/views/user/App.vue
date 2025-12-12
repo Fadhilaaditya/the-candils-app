@@ -29,7 +29,7 @@ const route = useRoute()
 // Buat computed property untuk mengecek apakah rute saat ini
 // adalah rute admin (diawali dengan '/admin')
 const isAdminRoute = computed(() => {
-  return route.path.startsWith('/admin')
+  return route.path.startsWith('/admin') || route.path.startsWith('/superadmin')
 })
 </script>
 

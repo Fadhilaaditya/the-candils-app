@@ -32,7 +32,7 @@
     <div v-else class="space-y-16">
       <!-- Best Seller Section (Ikut terfilter search) -->
       <BestSellerSection 
-        :products="filteredProducts" 
+        :products="filteredBestSellers" 
         :searchQuery="searchQuery"
         :isLoading="isLoading"
         @update:searchQuery="searchQuery = $event"
@@ -60,10 +60,11 @@ import { ref, onMounted, computed } from 'vue'
 import BestSellerSection from './_components/BestSellerSection.vue'
 import AllProductSection from './_components/AllProductSection.vue'
 import SkeletonProductCard from './_components/SkeletonProductCard.vue'
-import { getProducts, type ProductVariantRow } from '@/services/productService'
+import { getProducts, getBestSellerProducts, type ProductVariantRow } from '@/services/productService'
 
 // State
 const allProductVariants = ref<ProductVariantRow[]>([])
+const bestSellerProducts = ref<ProductVariantRow[]>([])
 const isLoading = ref(true)
 const errorMessage = ref<string | null>(null)
 const searchQuery = ref('')
@@ -142,10 +143,25 @@ const filteredProducts = computed(() => {
   )
 })
 
+const filteredBestSellers = computed(() => {
+  if (!searchQuery.value) {
+    return bestSellerProducts.value
+  }
+  const query = searchQuery.value.toLowerCase()
+  return bestSellerProducts.value.filter((product) =>
+    product.namaProduk.toLowerCase().includes(query)
+  )
+})
+
 // Panggil API saat komponen dimuat
 onMounted(async () => {
   // Initial fetch
-  await fetchProductsData(1)
+  await Promise.all([
+    fetchProductsData(1),
+    getBestSellerProducts().then(res => {
+      bestSellerProducts.value = res.data
+    }).catch(err => console.error("Failed to load best sellers", err))
+  ])
   
   // Recursively fetch more pages until we have at least 8 unique products
   // or we run out of pages, with a safety limit of 5 retries

@@ -122,9 +122,18 @@ const handleLogin = async () => {
     })
 
     const token = response.data.token
+    const userRole = response.data.user?.role
+    const userName = response.data.user?.namaLengkap
+    
     localStorage.setItem('authToken', token)
+    if (userName) localStorage.setItem('adminName', userName)
+    if (userRole) localStorage.setItem('adminRole', userRole)
 
-    router.push('/admin/dashboard')
+    if (userRole === 'Super Admin') {
+      router.push('/superadmin/dashboard')
+    } else {
+      router.push('/admin/dashboard')
+    }
   } catch (error: any) {
     if (error.response && error.response.data && error.response.data.message) {
       errorMessage.value = error.response.data.message

@@ -50,10 +50,10 @@ const getDashboardSummary = async (req, res) => {
     const [revenuePerLocation] = await pool.query(revenuePerLocationQuery, revenueParams)
     results.revenuePerLocation = revenuePerLocation
 
-    // 2. Total Pendapatan per Hari (untuk Grafik)
+    // FIX: Sesuaikan Timezone ke WIB (+7 jam) dan format string agar tidak dirubah JS ke UTC
     let revenuePerDayQuery = `
             SELECT 
-                DATE(P.tanggalPesanan) AS pemesanan_date,
+                DATE_FORMAT(DATE_ADD(P.tanggalPesanan, INTERVAL 7 HOUR), '%Y-%m-%d') AS pemesanan_date,
                 COALESCE(SUM(${productId ? 'DP.subtotal' : 'P.TotalHarga'}), 0) AS total_revenue
             FROM Pemesanan P
         `
@@ -85,7 +85,7 @@ const getDashboardSummary = async (req, res) => {
       revenuePerDayQuery += ' AND P.tipePesanan = ?'
       dayParams.push(orderType)
     }
-    revenuePerDayQuery += ' GROUP BY DATE(P.tanggalPesanan) ORDER BY pemesanan_date ASC;'
+    revenuePerDayQuery += ` GROUP BY DATE_FORMAT(DATE_ADD(P.tanggalPesanan, INTERVAL 7 HOUR), '%Y-%m-%d') ORDER BY pemesanan_date ASC;`
 
     const [revenuePerDay] = await pool.query(revenuePerDayQuery, dayParams)
     results.revenuePerDay = revenuePerDay

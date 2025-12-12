@@ -40,25 +40,30 @@ exports.getAllProducts = async (req, res) => {
         U.namaUkuran,
         U.hargaTambahan,
         COALESCE(AVG(R.rating), 0) as averageRating,
-        COUNT(DISTINCT R.ulasanId) as reviewCount
+        COUNT(DISTINCT R.ulasanId) as reviewCount,
+        P.is_active
       FROM
         Produk P
       LEFT JOIN
         Ukuran U ON P.produkId = U.produkId
       LEFT JOIN
         Ulasan R ON P.produkId = R.produkId
+      WHERE
+        (P.is_active = 1 OR ? = 'true')
       GROUP BY
         P.produkId, U.ukuranId
       ORDER BY
         P.produkId ASC, U.ukuranId ASC
       LIMIT ? OFFSET ?;
     `
-    const [productsWithVariantsAndRating] = await db.query(query, [limit, offset])
+    const showAll = req.query.show_all || 'false';
+    const [productsWithVariantsAndRating] = await db.query(query, [showAll, limit, offset])
 
     const result = productsWithVariantsAndRating.map((item) => ({
       ...item,
       averageRating: parseFloat(item.averageRating || 0),
       reviewCount: parseInt(item.reviewCount || 0, 10),
+      is_active: item.is_active === 1
     }))
 
     // 2. Query Total Data (untuk Metadata Pagination)
@@ -72,7 +77,7 @@ exports.getAllProducts = async (req, res) => {
         GROUP BY P.produkId, U.ukuranId
       ) as subquery
     `;
-    const [countResult] = await db.query(countQuery);
+    const [countResult] = await db.query(countQuery, [showAll]);
     const totalItems = countResult[0].total;
     const totalPages = Math.ceil(totalItems / limit);
 
@@ -111,6 +116,58 @@ exports.getProductById = async (req, res) => {
   } catch (err) {
     console.error(err.message)
     res.status(500).send('Server Error')
+  }
+}
+
+// @route   GET /api/products/best-seller
+// @desc    Mendapatkan 3 produk TERLARIS (berdasarkan quantity terjual dari pesanan 'Selesai')
+exports.getBestSellerProducts = async (req, res) => {
+  try {
+    // Query untuk mengambil top 3 produk terlaris
+    // Kita perlu join Produk -> DetailPemesanan -> Pemesanan
+    // Hanya hitung pesanan dengan status 'Selesai'
+    // Dan produk harus 'is_active' = 1
+    const query = `
+      SELECT 
+        P.produkId, P.namaProduk, P.deskripsi, P.stok, P.foto, P.hargaUnit,
+        COALESCE(SUM(DP.quantity), 0) as totalSold,
+        COALESCE(AVG(R.rating), 0) as averageRating,
+        COUNT(DISTINCT R.ulasanId) as reviewCount
+      FROM Produk P
+      LEFT JOIN DetailPemesanan DP ON P.produkId = DP.produkId
+      LEFT JOIN Pemesanan PM ON DP.pesananId = PM.pesananId AND PM.statusPesanan = 'Selesai'
+      LEFT JOIN Ulasan R ON P.produkId = R.produkId
+      WHERE P.is_active = 1
+      GROUP BY P.produkId
+      ORDER BY totalSold DESC, P.namaProduk ASC
+      LIMIT 3;
+    `;
+
+    const [bestSellers] = await db.query(query);
+
+    // Kita juga perlu detail ukuran untuk setiap produk ini agar kompatibel dengan frontend
+    // Namun untuk tampilan card sederhana, mungkin tidak wajib semua ukuran, 
+    // tapi frontend ProductCard mengharapkan array variants/ukuran jika ada.
+    // Untuk simplifikasi, kita ambil ukuran dasar atau kosongkan dulu, 
+    // karena ProductCard user biasanya menampilkan harga range atau harga unit.
+    
+    // Mari kita enrich data dengan ukuran agar tidak error di frontend
+    const enrichedResults = await Promise.all(bestSellers.map(async (product) => {
+       const [ukurans] = await db.query('SELECT * FROM Ukuran WHERE produkId = ?', [product.produkId]);
+       return {
+         ...product,
+         ukurans: ukurans,
+         averageRating: parseFloat(product.averageRating || 0),
+         reviewCount: parseInt(product.reviewCount || 0, 10),
+         totalSold: parseInt(product.totalSold || 0, 10)
+       };
+    }));
+
+    res.json(enrichedResults);
+
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server Error');
   }
 }
 
@@ -360,3 +417,29 @@ exports.deleteProduct = async (req, res) => {
     if (connection) connection.release()
   }
 }
+
+// @route   PATCH /api/products/:id/status
+// @desc    Update status aktif/nonaktif produk
+exports.updateProductStatus = async (req, res) => {
+  const { id } = req.params;
+  const { is_active } = req.body;
+
+  try {
+    const [result] = await db.query(
+      'UPDATE Produk SET is_active = ? WHERE produkId = ?',
+      [is_active ? 1 : 0, id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: 'Produk tidak ditemukan' });
+    }
+
+    res.json({
+      message: `Status produk berhasil diubah menjadi ${is_active ? 'Aktif' : 'Nonaktif'}`,
+      is_active: !!is_active
+    });
+  } catch (err) {
+    console.error('Update Status Error:', err.message);
+    res.status(500).send('Server Error');
+  }
+};

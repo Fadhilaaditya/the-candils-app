@@ -326,6 +326,9 @@ const createPesanan = async (req, res) => {
 const createPesananOffline = async (req, res) => {
   const { lokasiId, namaPelanggan, kontakPelanggan, totalHarga, items } = req.body;
 
+  // Pastikan kontakPelanggan '-' jika tidak ada/kosong (karena DB NOT NULL)
+  const finalKontak = kontakPelanggan || '-';
+
   const statusAwal = 'Selesai';
   const tipePesanan = 'Offline'; // ✅ NILAI BARU UNTUK PESANAN OFFLINE
 
@@ -340,9 +343,9 @@ const createPesananOffline = async (req, res) => {
     const queryPemesanan = `
       INSERT INTO Pemesanan (
         lokasiId, namaPelanggan, tanggalPesanan, statusPesanan,
-        totalHarga, kontakPelanggan, tipePesanan
+        totalHarga, kontakPelanggan, tipePesanan, alamatPengiriman
       )
-      VALUES (?, ?, NOW(), ?, ?, ?, ?)
+      VALUES (?, ?, NOW(), ?, ?, ?, ?, ?)
     `;
 
     const [orderResult] = await connection.execute(queryPemesanan, [
@@ -350,8 +353,9 @@ const createPesananOffline = async (req, res) => {
       namaPelanggan,
       statusAwal,
       totalHarga,
-      kontakPelanggan,
-      tipePesanan
+      finalKontak,
+      tipePesanan,
+      '-' // Default alamatPengiriman untuk pesanan offline
     ]);
 
     const newPesananId = orderResult.insertId;
