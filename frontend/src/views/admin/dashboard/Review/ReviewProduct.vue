@@ -90,7 +90,12 @@
             <!-- Rating Summary Component -->
             <ReviewSummary :reviews="productReviews" />
 
-            <CardReview v-for="review in paginatedReviews" :key="review.ulasanId" :review="review" />
+            <CardReview 
+              v-for="review in paginatedReviews" 
+              :key="review.ulasanId" 
+              :review="review" 
+              @delete-review="handleDeleteReview"
+            />
             
             <!-- Pagination Controls -->
             <div class="flex items-center justify-between pt-4 border-t border-gray-100">
@@ -142,6 +147,7 @@ import ReviewSummary from './_components/ReviewSummary.vue'
 import { 
   getProducts,
   getReviewsByProductId,
+  deleteReview,
   type Produk, 
   type Ulasan,
   type ProductVariantRow
@@ -235,6 +241,25 @@ const handleProductClicked = async (product: any) => {
     console.error(`Gagal memuat ulasan untuk ID ${product.produkId}:`, err);
   } finally {
     isLoadingReviews.value = false;
+  }
+}
+
+const handleDeleteReview = async (review: Ulasan) => {
+  if (!confirm(`Apakah Anda yakin ingin menghapus ulasan dari ${review.namaReviewer}?`)) {
+    return;
+  }
+
+  try {
+    if (review.ulasanId) {
+      await deleteReview(review.produkId, review.ulasanId);
+       // Refresh list ulasan
+      const response = await getReviewsByProductId(review.produkId);
+      productReviews.value = response.data;
+      alert('Ulasan berhasil dihapus.');
+    }
+  } catch (error) {
+    console.error('Gagal menghapus ulasan:', error);
+    alert('Gagal menghapus ulasan.');
   }
 }
 

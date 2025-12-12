@@ -14,7 +14,7 @@
 
     <SalesTable
       v-else
-      :report-data="paginatedReportData"
+      :report-data="reportData"
       :is-loading="isLoading"
       :filters="filters"
       :lokasi-list="lokasiList" 
@@ -77,6 +77,7 @@ interface SaleReport {
     totalHarga: number; 
     lokasi: string; 
     date: string; 
+    tipePesanan?: string;
 }
 
 interface Lokasi {
@@ -104,6 +105,7 @@ const filters = reactive({
     startDate: '',
     endDate: '',
     lokasiName: 'all' as string, 
+    tipePesanan: 'all' as string, // ✅ Add Order Type Filter
 });
 
 const currentPage = ref(1);
@@ -119,14 +121,14 @@ const saleToDelete = ref<SaleReport | null>(null);
 
 // --- Computed & Pagination Logic ---
 
-const totalReports = computed(() => reportData.value.length);
-const totalPages = computed(() => Math.ceil(reportData.value.length / itemsPerPage));
+const totalReports = ref(0);
+const totalPages = ref(1);
 
-const paginatedReportData = computed(() => {
-    const start = (currentPage.value - 1) * itemsPerPage;
-    const end = start + itemsPerPage;
-    return reportData.value.slice(start, end);
-});
+// const paginatedReportData = computed(() => {
+//     const start = (currentPage.value - 1) * itemsPerPage;
+//     const end = start + itemsPerPage;
+//     return reportData.value.slice(start, end);
+// });
 
 
 // --- Logic Fetching Data ---
@@ -172,7 +174,10 @@ const fetchSalesData = async () => {
         const reportParams = new URLSearchParams({
             startDate: filters.startDate,
             endDate: filters.endDate,
-            lokasiId: String(currentLokasiId)
+            lokasiId: String(currentLokasiId),
+            tipePesanan: filters.tipePesanan, // ✅ Pass Order Type to API
+            page: String(currentPage.value),
+            limit: String(itemsPerPage)
         }).toString();
 
         const [reportRes, revenueRes, quantityRes] = await Promise.all([
@@ -183,21 +188,31 @@ const fetchSalesData = async () => {
 
         const apiReportData = reportRes.data;
         const apiSummaryRevenueData = revenueRes.data;
-        const apiSummaryQuantityData = quantityRes.data;
+        // const apiSummaryQuantityData = quantityRes.data;
         
         // Pemrosesan Data Report
         if (apiReportData.success && Array.isArray(apiReportData.data)) {
             reportData.value = apiReportData.data.map((item: any) => ({
-                pesananId: Number(item.pesananId),
+                pesananId: Number(item.pesananId || item.pesananid),
                 produkId: Number(item.produkId || 0), 
                 namaProduk: item.namaProduk,
                 QTY: Number(item.QTY),
                 totalHarga: Number(item.totalHarga),
                 lokasi: item.lokasi,
                 date: item.date,
+                tipePesanan: item.tipePesanan,
             })) as SaleReport[];
+
+            // Update Pagination Meta from API
+            if ('meta' in apiReportData && apiReportData.meta) {
+               totalReports.value = apiReportData.meta.totalItems;
+               totalPages.value = apiReportData.meta.totalPages;
+            }
+
         } else {
              reportData.value = [];
+             totalReports.value = 0;
+             totalPages.value = 1;
              loadError.value = apiReportData.message || 'Data laporan tidak valid atau kosong.';
         }
 
@@ -205,9 +220,9 @@ const fetchSalesData = async () => {
         if (apiSummaryRevenueData.success) {
             revenueData.value = apiSummaryRevenueData.data; 
         }
-        if (apiSummaryQuantityData.success) {
+        // if (apiSummaryQuantityData.success) {
             productsSoldData.value = quantityRes.data.data;
-        }
+        // }
         
     } catch (error: any) {
         console.error("Error fetching sales data:", error);
@@ -218,7 +233,13 @@ const fetchSalesData = async () => {
 };
 
 // Panggil fetch data setiap kali filter berubah
-watch(filters, fetchSalesData, { deep: true });
+watch(filters, () => {
+    currentPage.value = 1; // Reset ke halaman 1 saat filter berubah
+    fetchSalesData();
+}, { deep: true });
+
+// Panggil fetch data saat page berubah
+watch(currentPage, fetchSalesData);
 
 
 // --- Handlers & Actions ---
@@ -230,7 +251,7 @@ const loadData = () => {
 
 const updateFilters = (newFilters: Partial<typeof filters>) => {
     Object.assign(filters, newFilters);
-    currentPage.value = 1; // Reset pagination
+    // currentPage.value = 1; // Reset pagination handled by watcher
 };
 
 const nextPage = () => { if (currentPage.value < totalPages.value) currentPage.value++; };

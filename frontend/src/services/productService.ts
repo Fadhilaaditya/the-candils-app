@@ -68,7 +68,7 @@ interface CreateReviewData {
 export interface CreatePesananOfflinePayload {
   lokasiId: number | null; 
   namaPelanggan: string;
-  kontakPelanggan: string;
+  kontakPelanggan: string | null | undefined;
   alamatPengiriman: string;
   totalHarga: number;
   items: {
@@ -210,8 +210,8 @@ export interface SaleQuantitySummary {
 /**
  * Mengambil data laporan penjualan (tabel detail).
  */
-export const getSalesReport = (queryString: string): Promise<AxiosResponse<BackendResponse<SaleReportItem[]>>> => {
-  return api.get<BackendResponse<SaleReportItem[]>>(`/sales/report?${queryString}`);
+export const getSalesReport = (queryString: string): Promise<AxiosResponse<PaginatedBackendResponse<SaleReportItem[]>>> => {
+  return api.get<PaginatedBackendResponse<SaleReportItem[]>>(`/sales/report?${queryString}`);
 };
 
 /**
@@ -389,6 +389,10 @@ export const createReview = (produkId: number, formData: FormData) => {
   return api.post(`/products/${produkId}/reviews`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
+};
+
+export const deleteReview = (produkId: number, ulasanId: number) => {
+  return api.delete(`/products/${produkId}/reviews/${ulasanId}`);
 };
 
 // ========================================

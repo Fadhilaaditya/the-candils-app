@@ -190,7 +190,8 @@ const handleSubmit = async () => {
     // Kita harus mencari Lokasi ID di sini untuk dikirim ke backend
     const lokasiDetail = props.lokasiList.find(l => (l.name || l.namaLokasi) === formData.lokasi);
     
-    if (!lokasiDetail || !lokasiDetail.lokasiId) {
+    // Check for either lokasiId OR id
+    if (!lokasiDetail || (!lokasiDetail.lokasiId && !lokasiDetail.id)) {
         alert('Gagal menemukan ID lokasi yang sesuai. Pilih lokasi yang valid.');
         isSubmitting.value = false;
         return;

@@ -13,4 +13,9 @@ router.get('/', reviewController.getReviewsByProduct);
 // @access  Public (TIDAK ADA authMiddleware)
 router.post('/', upload.single('foto'), reviewController.createReview); 
 
+// @route   DELETE /api/products/reviews/:ulasanId
+// @desc    Menghapus ulasan
+// @access  Public
+router.delete('/:ulasanId', reviewController.deleteReview); 
+
 module.exports = router;

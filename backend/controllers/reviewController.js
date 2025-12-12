@@ -91,3 +91,28 @@ exports.createReview = async (req, res) => {
   }
 };
 
+// @route   DELETE /api/products/reviews/:ulasanId
+// @desc    Menghapus ulasan
+// @access  Public (Seharusnya Admin)
+exports.deleteReview = async (req, res) => {
+  try {
+    const { ulasanId } = req.params;
+
+    // Cek apakah ulasan ada
+    const [existingReview] = await db.query('SELECT * FROM Ulasan WHERE ulasanId = ?', [ulasanId]);
+    
+    if (existingReview.length === 0) {
+      return res.status(404).json({ message: 'Ulasan tidak ditemukan.' });
+    }
+
+    // Hapus ulasan
+    await db.query('DELETE FROM Ulasan WHERE ulasanId = ?', [ulasanId]);
+
+    res.json({ message: 'Ulasan berhasil dihapus.' });
+
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server Error');
+  }
+};
+

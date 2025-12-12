@@ -37,8 +37,8 @@
             </div>
 
             <div>
-              <label for="kontakPelanggan" class="block text-sm font-semibold text-gray-700 mb-2">Kontak Pelanggan *</label>
-              <input type="text" v-model="form.kontakPelanggan" id="kontakPelanggan" required
+              <label for="kontakPelanggan" class="block text-sm font-semibold text-gray-700 mb-2">Kontak Pelanggan (Optional)</label>
+              <input type="text" v-model="form.kontakPelanggan" id="kontakPelanggan"
                 placeholder="Nomor telepon/WhatsApp"
                 class="block w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-200 sm:text-sm" />
             </div>
@@ -283,7 +283,7 @@ const submitPesanan = async () => {
   const payload = {
     lokasiId: form.value.lokasiId,
     namaPelanggan: form.value.namaPelanggan,
-    kontakPelanggan: form.value.kontakPelanggan,
+    kontakPelanggan: form.value.kontakPelanggan || null,
     alamatPengiriman: form.value.alamatPengiriman,
     totalHarga: grandTotal.value,
     items: formattedItems

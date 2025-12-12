@@ -139,13 +139,15 @@
                 :key="index"
                 class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg"
               >
-                <input
+                <select
                   v-model="ukuran.namaUkuran"
-                  type="text"
                   required
-                  placeholder="Nama (Cth: Large)"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-[#BAB772] focus:border-transparent"
-                />
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-[#BAB772] focus:border-transparent bg-white"
+                >
+                  <option value="" disabled>Pilih Ukuran</option>
+                  <option value="300ml">300ml</option>
+                  <option value="500ml">500ml</option>
+                </select>
                 <input
                   v-model.number="ukuran.hargaTambahan"
                   type="number"
