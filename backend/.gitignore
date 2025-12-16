@@ -3,6 +3,8 @@ node_modules/
 
 # Abaikan file environment
 .env
+.env.development
+.env.production 
 
 # Abaikan log
 npm-debug.log
