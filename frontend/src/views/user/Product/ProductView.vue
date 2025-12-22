@@ -134,23 +134,29 @@ const uniqueProducts = computed(() => {
 
 // Computed untuk memfilter produk berdasarkan pencarian
 const filteredProducts = computed(() => {
-  if (!searchQuery.value) {
-    return uniqueProducts.value
+  let products = uniqueProducts.value
+  
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase()
+    products = products.filter((product) =>
+      product.namaProduk.toLowerCase().includes(query)
+    )
   }
-  const query = searchQuery.value.toLowerCase()
-  return uniqueProducts.value.filter((product) =>
-    product.namaProduk.toLowerCase().includes(query)
-  )
+  
+  return products.slice().sort((a, b) => a.namaProduk.localeCompare(b.namaProduk))
 })
 
 const filteredBestSellers = computed(() => {
-  if (!searchQuery.value) {
-    return bestSellerProducts.value
+  let products = bestSellerProducts.value
+
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase()
+    products = products.filter((product) =>
+      product.namaProduk.toLowerCase().includes(query)
+    )
   }
-  const query = searchQuery.value.toLowerCase()
-  return bestSellerProducts.value.filter((product) =>
-    product.namaProduk.toLowerCase().includes(query)
-  )
+  
+  return products.slice().sort((a, b) => a.namaProduk.localeCompare(b.namaProduk))
 })
 
 // Panggil API saat komponen dimuat
