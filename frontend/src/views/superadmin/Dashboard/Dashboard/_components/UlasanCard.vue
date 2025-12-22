@@ -31,7 +31,10 @@
             </div>
           </div>
           
-          <button class="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 text-xs bg-white border border-gray-200 hover:border-primary/50 text-gray-600 hover:text-primary font-medium py-1.5 px-3 rounded-md shadow-sm">
+          <button 
+            @click="goToReview(review.produkId)"
+            class="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 text-xs bg-white border border-gray-200 hover:border-primary/50 text-gray-600 hover:text-primary font-medium py-1.5 px-3 rounded-md shadow-sm"
+          >
             Detail
           </button>
         </li>
@@ -47,10 +50,20 @@
 </template>
 
 <script setup lang="ts">
-import type { ProductReviewSalesSummary } from '@/services/productService'; // 🛑 GANTI JALUR INI!
+import { useRouter } from 'vue-router';
+import type { ProductReviewSalesSummary } from '@/services/productService'; 
 
 // Gunakan interface dari productservice untuk mendefinisikan props
 defineProps<{
   reviews: ProductReviewSalesSummary[]
 }>();
+
+const router = useRouter();
+
+const goToReview = (productId: number) => {
+  router.push({
+    name: 'admin-review',
+    query: { productId: productId.toString() }
+  });
+};
 </script>

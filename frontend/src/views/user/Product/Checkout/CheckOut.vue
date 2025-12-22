@@ -43,6 +43,35 @@
 
           <div class="hidden lg:block p-8 bg-indigo-50/50">
             <div v-if="isLoading" class="w-full h-[560px] bg-gray-200 rounded-2xl animate-pulse"></div>
+            
+            <!-- 1. Tampilkan Preview Bukti Bayar (Prioritas Utama) -->
+            <img
+              v-else-if="filePreviewUrl"
+              :src="filePreviewUrl"
+              alt="Bukti Pembayaran"
+              class="w-full h-[560px] object-cover rounded-2xl shadow-lg border border-indigo-200"
+            />
+
+            <!-- 2. Tampilkan Split Images jika lebih dari 1 produk -->
+            <div v-else-if="orderItems.length > 1" class="h-[560px] flex flex-col gap-2">
+              <div 
+                v-for="(item, index) in orderItems" 
+                :key="item.keranjangItemId || index"
+                class="relative flex-1 overflow-hidden rounded-2xl shadow-lg border border-indigo-200 group"
+              >
+                <img
+                  :src="getImageUrl(item.foto)"
+                  :alt="item.namaProduk"
+                  class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                />
+                <!-- Optional: Tampilkan nama produk saat hover -->
+                <div class="absolute bottom-0 left-0 right-0 bg-black/50 p-2 transform translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+                   <p class="text-white text-xs font-medium text-center truncate">{{ item.namaProduk }}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- 3. Tampilkan Single Image (Default/1 Produk) -->
             <img
               v-else
               :src="displayImageUrl"
@@ -122,19 +151,21 @@ const getItemSubtotal = (item: CartItem): number => {
 }
 
 
-// Computed property 'displayImageUrl'
-const displayImageUrl = computed(() => {
-  if (filePreviewUrl.value) return filePreviewUrl.value; // Tampilkan preview file yang diupload
-  
-  if (orderItems.value.length > 0) {
-    const fotoUrl = orderItems.value[0].foto
-    // Tentukan base URL untuk gambar default
+// Helper untuk mendapatkan URL gambar
+const getImageUrl = (fotoUrl: string | null) => {
     const imageBase = import.meta.env.PROD ? 'https://backend-the-candils.vercel.app' : 'http://localhost:3000';
-    
     if (fotoUrl && fotoUrl.startsWith('http')) {
       return fotoUrl
     }
     return `${imageBase}${fotoUrl || '/placeholder.svg'}`
+}
+
+// Computed property 'displayImageUrl' (Hanya untuk single product / fallback)
+const displayImageUrl = computed(() => {
+  if (filePreviewUrl.value) return filePreviewUrl.value; // Tampilkan preview file yang diupload
+  
+  if (orderItems.value.length > 0) {
+    return getImageUrl(orderItems.value[0].foto)
   }
   return '/placeholder.svg'
 })

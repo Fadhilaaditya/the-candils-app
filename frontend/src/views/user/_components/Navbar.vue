@@ -5,7 +5,7 @@
         <!-- Logo -->
         <div class="flex items-center">
           <router-link to="/" class="flex items-center gap-2 no-underline">
-            <span class="text-2xl font-bold text-[#BAB772] font-serif">TC</span>
+            <img src="/logo-candils.jpg" alt="The Candils Logo" class="h-12 w-auto object-contain" />
             <span class="text-xl font-semibold text-gray-800">The Candil's</span>
           </router-link>
         </div>

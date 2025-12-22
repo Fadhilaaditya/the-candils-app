@@ -1,7 +1,5 @@
 <template>
-  <div v-if="loading" class="flex justify-center items-center min-h-screen">
-      <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-yellow-600"></div>
-  </div>
+  <HomeSkeleton v-if="loading" />
   <div v-else>
     <Hero v-if="homeContent?.hero" :initial-data="homeContent.hero" />
     <AboutUs v-if="homeContent?.about" :initial-data="homeContent.about" />
@@ -12,6 +10,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
+import HomeSkeleton from './_components/HomeSkeleton.vue';
 import Hero from './_components/Hero.vue';
 import AboutUs from './_components/AboutUs.vue';
 import Product from './_components/Product.vue';

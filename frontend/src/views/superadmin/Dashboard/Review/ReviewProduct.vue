@@ -88,7 +88,11 @@
             class="flex flex-col gap-4"
           >
             <!-- Rating Summary Component -->
-            <ReviewSummary :reviews="productReviews" />
+            <ReviewSummary 
+              :reviews="productReviews" 
+              :selected-rating="selectedFilterRating"
+              @filter-rating="handleFilterRating"
+            />
 
             <CardReview 
               v-for="review in paginatedReviews" 
@@ -138,6 +142,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue' 
+import { useRoute } from 'vue-router' 
 import ProductReviewTable from './_components/DetailCardReview.vue' 
 import CardReview from './_components/CardReview.vue'       
 import SkeletonProductTable from './_components/SkeletonTableProduct.vue'
@@ -163,6 +168,7 @@ const listError = ref<string | null>(null)
 // --- State Pilihan ---
 const selectedProductId = ref<number | null>(null)
 const selectedProductName = ref<string | null>(null)
+const selectedFilterRating = ref<number | null>(null)
 
 // --- State Pagination ---
 const currentPage = ref(1)
@@ -171,12 +177,24 @@ const itemsPerPage = 10
 // --- Computed Pagination ---
 import { computed } from 'vue'
 
-const totalPages = computed(() => Math.ceil(productReviews.value.length / itemsPerPage))
+const totalPages = computed(() => {
+  const count = selectedFilterRating.value 
+    ? productReviews.value.filter(r => r.rating === selectedFilterRating.value).length
+    : productReviews.value.length
+  return Math.ceil(count / itemsPerPage)
+})
+
+const filteredReviews = computed(() => {
+  if (selectedFilterRating.value === null) {
+    return productReviews.value
+  }
+  return productReviews.value.filter(review => review.rating === selectedFilterRating.value)
+})
 
 const paginatedReviews = computed(() => {
   const start = (currentPage.value - 1) * itemsPerPage
   const end = start + itemsPerPage
-  return productReviews.value.slice(start, end)
+  return filteredReviews.value.slice(start, end)
 })
 
 const nextPage = () => {
@@ -232,6 +250,7 @@ const handleProductClicked = async (product: any) => {
 
   isLoadingReviews.value = true;
   productReviews.value = []; 
+  selectedFilterRating.value = null; // Reset filter saat ganti produk
   currentPage.value = 1; // Reset pagination 
 
   try {
@@ -263,8 +282,29 @@ const handleDeleteReview = async (review: Ulasan) => {
   }
 }
 
+const handleFilterRating = (rating: number) => {
+  if (selectedFilterRating.value === rating) {
+    selectedFilterRating.value = null // Toggle off
+  } else {
+    selectedFilterRating.value = rating
+  }
+  currentPage.value = 1 // Reset ke halaman 1 saat filter berubah
+}
+
 // --- LIFECYCLE HOOKS ---
-onMounted(() => {
-  loadProductVariantList()
+onMounted(async () => {
+  await loadProductVariantList()
+  
+  // Check for query param 'productId'
+  const route = useRoute();
+  const queryProductId = route.query.productId;
+  
+  if (queryProductId) {
+    const id = Number(queryProductId);
+    const product = productVariantList.value.find(p => p.produkId === id);
+    if (product) {
+      handleProductClicked(product);
+    }
+  }
 })
 </script>
