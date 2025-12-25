@@ -16,20 +16,20 @@
             </div>
 
             <!-- Komponen Formulir Checkout -->
-            <CheckoutFormComponent
-              v-else
-              v-model:full-name="form.fullName"
-              v-model:address="form.address"
-              v-model:contact="form.contact"
-              v-model:selected-ongkir-id="selectedOngkirId"
-              :ongkir-list="ongkirList"
-              :is-submitting="isSubmitting"
-              :file-preview-url="filePreviewUrl"
-              @file-selected="handleFileSelected"
-              @file-removed="handleFileRemoved"
-              @file-error="handleFileError"
-              @submit-order-and-upload="submitOrderAndUpload"
-            >
+              <CheckoutFormComponent
+                v-else
+                v-model:full-name="form.fullName"
+                v-model:address="form.address"
+                v-model:contact="form.contact"
+                v-model:selected-ongkir-id="selectedOngkirId"
+                :ongkir-list="processedOngkirList"
+                :is-submitting="isSubmitting"
+                :file-preview-url="filePreviewUrl"
+                @file-selected="handleFileSelected"
+                @file-removed="handleFileRemoved"
+                @file-error="handleFileError"
+                @submit-order-and-upload="submitOrderAndUpload"
+              >
               <template #summary>
                 <OrderSummaryComponent 
                   :items="summaryItems" 
@@ -138,6 +138,87 @@ const toast = useToast()
 // Ongkir State
 const ongkirList = ref<any[]>([])
 const selectedOngkirId = ref<number | null>(null)
+
+// Definisi Jadwal Operasional
+const SCHEDULES = [
+  {
+    keywords: ['ciputat'],
+    days: [1, 2, 3, 4], // Senin - Kamis (0=Minggu, 1=Senin, dst)
+    startHour: 16,
+    endHour: 19,
+    message: 'Senin - Kamis (16:00 - 19:00)'
+  },
+  {
+    keywords: ['bukit indah'],
+    days: [1, 2, 3, 4], // Senin - Kamis
+    startHour: 6,
+    endHour: 10,
+    message: 'Senin - Kamis (06:00 - 10:00)'
+  },
+  {
+    keywords: ['pamulang'],
+    days: [6, 0], // Sabtu - Minggu
+    startHour: 6,
+    endHour: 10,
+    message: 'Sabtu - Minggu (06:00 - 10:00)'
+  }
+]
+
+// Fungsi Validasi Jadwal
+const validateSchedule = (ongkirName: string): { isOpen: boolean; message?: string } => {
+  const nameLower = ongkirName.toLowerCase()
+  
+  // Cari jadwal yang cocok berdasarkan nama
+  const schedule = SCHEDULES.find(s => s.keywords.some(k => nameLower.includes(k)))
+  
+  // Jika tidak ada jadwal khusus (misal JNE, GoSend, atau lokasi lain), anggap BUKA
+  if (!schedule) return { isOpen: true }
+
+  const now = new Date()
+  const currentDay = now.getDay() // 0 = Minggu, 1 = Senin, ...
+  const currentHour = now.getHours()
+
+  // Cek Hari
+  if (!schedule.days.includes(currentDay)) {
+    return { isOpen: false, message: schedule.message }
+  }
+
+  // Cek Jam
+  if (currentHour < schedule.startHour || currentHour >= schedule.endHour) {
+    return { isOpen: false, message: schedule.message }
+  }
+
+  return { isOpen: true }
+}
+
+// Computed Ongkir List dengan Status Validasi
+const processedOngkirList = computed(() => {
+  return ongkirList.value.map(ongkir => {
+    const check = validateSchedule(ongkir.nama)
+    return {
+      ...ongkir,
+      isDisabled: !check.isOpen,
+      // Jika tutup, tambahkan info jam operasional di label
+      displayLabel: check.isOpen 
+        ? `${ongkir.nama} - Rp ${toNumber(ongkir.biaya).toLocaleString('id-ID')}`
+        : `${ongkir.nama} (TUTUP - ${check.message})`
+    }
+  })
+})
+
+import { watch } from 'vue'
+
+// Watcher untuk validasi saat user memilih ongkir (Safety check)
+watch(selectedOngkirId, (newId) => {
+  if (!newId) return
+
+  const selectedOption = processedOngkirList.value.find(o => o.ongkirId === newId)
+  if (selectedOption && selectedOption.isDisabled) {
+    toast.error(`Maaf, toko ${selectedOption.nama} sedang tutup.`)
+    // Reset pilihan jika user memaksa memilih (walaupun disabled di UI)
+    selectedOngkirId.value = null
+  }
+})
 
 // Helper function untuk konversi nilai string/number ke number
 const toNumber = (value: number | string): number => {

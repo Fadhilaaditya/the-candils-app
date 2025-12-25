@@ -55,8 +55,13 @@
           :disabled="isSubmitting"
         >
           <option value="" disabled>-- Pilih Pengiriman --</option>
-          <option v-for="ongkir in ongkirList" :key="ongkir.ongkirId" :value="ongkir.ongkirId">
-            {{ ongkir.nama }} - Rp {{ formatPrice(ongkir.biaya) }}
+          <option 
+            v-for="ongkir in ongkirList" 
+            :key="ongkir.ongkirId" 
+            :value="ongkir.ongkirId"
+            :disabled="ongkir.isDisabled"
+          >
+            {{ ongkir.displayLabel || `${ongkir.nama} - Rp ${formatPrice(ongkir.biaya)}` }}
           </option>
         </select>
       </div>
