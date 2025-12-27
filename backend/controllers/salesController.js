@@ -258,6 +258,7 @@ const getSalesReport = async (req, res) => {
         SELECT
             P.namaProduk AS namaProduk,
             P.produkId,
+            U.namaUkuran,
             SUM(DP.quantity) AS QTY,
             SUM(DP.subtotal) AS totalHarga,
             L.name AS lokasi,
@@ -270,12 +271,14 @@ const getSalesReport = async (req, res) => {
             DetailPemesanan DP ON PM.pesananid = DP.pesananid
         JOIN
             Produk P ON DP.produkId = P.produkId
+        LEFT JOIN
+            Ukuran U ON DP.ukuranId = U.ukuranId
         JOIN
             Lokasi L ON PM.lokasiId = L.lokasiId
         WHERE
             ${whereString}
         GROUP BY
-            P.namaProduk, P.produkId, L.name, DATE(PM.tanggalPesanan), PM.pesananid
+            P.namaProduk, P.produkId, U.namaUkuran, L.name, DATE(PM.tanggalPesanan), PM.pesananid
         ORDER BY
             PM.tanggalPesanan DESC, P.namaProduk ASC
         LIMIT ? OFFSET ?
@@ -291,12 +294,14 @@ const getSalesReport = async (req, res) => {
                 DetailPemesanan DP ON PM.pesananid = DP.pesananid
             JOIN
                 Produk P ON DP.produkId = P.produkId
+            LEFT JOIN
+                Ukuran U ON DP.ukuranId = U.ukuranId
             JOIN
                 Lokasi L ON PM.lokasiId = L.lokasiId
             WHERE
                 ${whereString}
             GROUP BY
-                P.namaProduk, P.produkId, L.name, DATE(PM.tanggalPesanan), PM.pesananid
+                P.namaProduk, P.produkId, U.namaUkuran, L.name, DATE(PM.tanggalPesanan), PM.pesananid
         ) as subquery
   `
 

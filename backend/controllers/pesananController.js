@@ -324,7 +324,7 @@ const createPesanan = async (req, res) => {
  * @desc    Membuat pesanan baru untuk laporan offline (JSON Body)
  */
 const createPesananOffline = async (req, res) => {
-  const { lokasiId, namaPelanggan, kontakPelanggan, totalHarga, items } = req.body;
+  const { lokasiId, namaPelanggan, kontakPelanggan, totalHarga, items, tanggalPesanan } = req.body;
 
   // Pastikan kontakPelanggan '-' jika tidak ada/kosong (karena DB NOT NULL)
   const finalKontak = kontakPelanggan || '-';
@@ -333,6 +333,12 @@ const createPesananOffline = async (req, res) => {
   const tipePesanan = 'Offline'; // ✅ NILAI BARU UNTUK PESANAN OFFLINE
 
   const parsedLokasiId = lokasiId === null ? null : Number(lokasiId);
+
+  // Use provided date or default to NOW()
+  // Ensure we handle the date string safely if passing directly to SQL, 
+  // but parameterized query (?) handles escaping.
+  // We can use IFNULL logic in SQL or ternary here.
+  const finalTanggal = tanggalPesanan ? new Date(tanggalPesanan) : new Date();
 
   let connection;
   try {
@@ -345,12 +351,13 @@ const createPesananOffline = async (req, res) => {
         lokasiId, namaPelanggan, tanggalPesanan, statusPesanan,
         totalHarga, kontakPelanggan, tipePesanan, alamatPengiriman
       )
-      VALUES (?, ?, NOW(), ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const [orderResult] = await connection.execute(queryPemesanan, [
       parsedLokasiId,
       namaPelanggan,
+      finalTanggal,
       statusAwal,
       totalHarga,
       finalKontak,

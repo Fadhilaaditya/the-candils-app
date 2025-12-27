@@ -5,6 +5,22 @@
         <h2 class="text-2xl font-bold text-gray-800">Laporan Penjualan</h2>
         <p class="text-gray-600 mt-1">Data penjualan produk per lokasi</p>
       </div>
+      <div class="mt-4 lg:mt-0 flex gap-2">
+        <button 
+           @click="$emit('exportData')" 
+           class="bg-[#BAB772] text-white px-4 py-2 rounded-lg hover:bg-[#a8a668] flex items-center gap-2"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+          Export Data
+        </button>
+        <button 
+           @click="$emit('openImport')" 
+           class="bg-[#BAB772] text-white px-4 py-2 rounded-lg hover:bg-[#a8a668] flex items-center gap-2"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+          Import Data
+        </button>
+      </div>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -12,6 +28,7 @@
         <label class="block text-sm font-medium text-gray-700 mb-2">Dari Tanggal</label>
         <input
           :value="filters.startDate"
+          :max="today"
           @change="updateFilter('startDate', ($event.target as HTMLInputElement).value)"
           type="date"
           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#BAB772] focus:border-transparent"
@@ -21,6 +38,8 @@
         <label class="block text-sm font-medium text-gray-700 mb-2">Sampai Tanggal</label>
         <input
           :value="filters.endDate"
+          :min="filters.startDate"
+          :max="today"
           @change="updateFilter('endDate', ($event.target as HTMLInputElement).value)"
           type="date"
           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#BAB772] focus:border-transparent"
@@ -59,6 +78,7 @@
           <tr class="bg-gray-50 border-b border-gray-200">
             <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">NO</th>
             <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">NAMA PRODUK</th>
+            <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">UKURAN</th>
             <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">QTY</th>
             <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">TOTAL HARGA</th>
             <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">TIPE PESANAN</th>
@@ -77,6 +97,7 @@
           >
             <td class="px-4 py-4"><div class="h-4 bg-gray-200 rounded w-8"></div></td>
             <td class="px-4 py-4"><div class="h-4 bg-gray-200 rounded w-32"></div></td>
+            <td class="px-4 py-4"><div class="h-4 bg-gray-200 rounded w-16"></div></td>
             <td class="px-4 py-4"><div class="h-4 bg-gray-200 rounded w-12"></div></td>
             <td class="px-4 py-4"><div class="h-4 bg-gray-200 rounded w-24"></div></td>
             <td class="px-4 py-4"><div class="h-4 bg-gray-200 rounded w-20"></div></td>
@@ -101,6 +122,10 @@
               {{ (currentPage - 1) * itemsPerPage + index + 1 }}
             </td>
             <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ sale.namaProduk }}</td>
+            <td class="px-4 py-3 text-sm text-gray-700">
+              <span v-if="sale.ukuran" class="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs font-medium">{{ sale.ukuran }}</span>
+              <span v-else>-</span>
+            </td>
             <td class="px-4 py-3 text-sm text-gray-700">{{ sale.QTY }}</td>
             <td class="px-4 py-3 text-sm text-gray-700">{{ formatCurrency(sale.totalHarga) }}</td>
             <td class="px-4 py-3 text-sm text-gray-700">
@@ -188,6 +213,7 @@ interface SaleReport {
   pesananId: number
   produkId: number
   namaProduk: string
+  ukuran?: string // [NEW]
   QTY: number
   totalHarga: number
   tipePesanan?: string
@@ -223,6 +249,8 @@ const emit = defineEmits<{
   addReport: []
   editSale: [sale: SaleReport]
   deleteSale: [sale: SaleReport]
+  openImport: []
+  exportData: []
 }>()
 
 // Methods
@@ -256,4 +284,6 @@ function getTipeClass(tipe: string | undefined): string {
   }
   return 'bg-indigo-100 text-indigo-800 border border-indigo-300' // Tipe Online (Default)
 }
+
+const today = new Date().toISOString().split('T')[0];
 </script>
