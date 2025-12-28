@@ -390,8 +390,15 @@ export const deleteProduct = (id: number) => {
 // API ULASAN
 // ========================================
 
-export const getReviewsByProductId = (produkId: number) => {
-  return api.get<Ulasan[]>(`/products/${produkId}/reviews`);
+export const getReviewsByProductId = (produkId: number, page?: number, limit?: number) => {
+  let url = `/products/${produkId}/reviews`;
+  const params = new URLSearchParams();
+  if (page) params.append('page', page.toString());
+  if (limit) params.append('limit', limit.toString());
+  
+  if (params.toString()) url += `?${params.toString()}`;
+  
+  return api.get<Ulasan[]>(url);
 };
 
 export const createReview = (produkId: number, formData: FormData) => {

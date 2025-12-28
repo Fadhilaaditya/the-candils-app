@@ -126,12 +126,12 @@
       </div>
 
       <!-- Load More Button -->
-      <div v-if="reviews.length > visibleCount" class="text-center mt-6">
+      <div v-if="hasMore" class="text-center mt-6">
         <button 
-          @click="loadMoreReviews"
+          @click="$emit('loadMore')"
           class="text-[#BAB772] hover:text-[#A3A065] font-medium transition-colors"
         >
-          Lihat Ulasan Lainnya ({{ reviews.length - visibleCount }} lagi)
+          Lihat Ulasan Lainnya
         </button>
       </div>
     </div>
@@ -293,14 +293,15 @@ import { createReview } from '@/services/productService'
 const props = defineProps<{
   product: Produk
   reviews: Ulasan[]
+  hasMore: boolean
 }>()
 
 const emit = defineEmits<{
   reviewAdded: []
+  loadMore: []
 }>()
 
 // State
-const visibleCount = ref(10) // Tampilkan 10 ulasan awal
 const newReview = ref({
   rating: 0,
   namaReviewer: '',
@@ -325,7 +326,7 @@ const averageRating = computed(() => {
 })
 
 const displayedReviews = computed(() => {
-  return props.reviews.slice(0, visibleCount.value)
+  return props.reviews // Display all (parent handles accumulation)
 })
 
 const isReviewValid = computed(() => {
@@ -333,11 +334,6 @@ const isReviewValid = computed(() => {
          newReview.value.namaReviewer.trim() !== '' && 
          newReview.value.komentar.trim() !== ''
 })
-
-// Methods
-const loadMoreReviews = () => {
-  visibleCount.value += 10
-}
 
 // Methods
 const getRatingCount = (rating: number) => {

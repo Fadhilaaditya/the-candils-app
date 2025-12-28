@@ -7,9 +7,10 @@ const cloudinary = require('cloudinary').v2; // Import Cloudinary
 exports.getReviewsByProduct = async (req, res) => {
   try {
     const { produkId } = req.params;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit);
 
-    // Query SELECT sederhana, tidak perlu JOIN
-    const query = `
+    let query = `
       SELECT 
         ulasanId, produkId, namaReviewer, rating, komentar, foto, tanggalUlasan
       FROM 
@@ -17,10 +18,18 @@ exports.getReviewsByProduct = async (req, res) => {
       WHERE 
         produkId = ?
       ORDER BY 
-        tanggalUlasan DESC; 
+        tanggalUlasan DESC
     `;
+    
+    const queryParams = [produkId];
 
-    const [reviews] = await db.query(query, [produkId]);
+    if (limit) {
+      const offset = (page - 1) * limit;
+      query += ` LIMIT ? OFFSET ?`;
+      queryParams.push(limit, offset);
+    }
+
+    const [reviews] = await db.query(query, queryParams);
 
     res.json(reviews);
 

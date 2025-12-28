@@ -52,6 +52,8 @@
         <ProductReviewsRatings 
           :product="product" 
           :reviews="reviews" 
+          :has-more="hasMoreReviews"
+          @load-more="loadMoreReviews"
           @review-added="fetchData" 
         />
         <!-- ------------------------- -->
@@ -80,14 +82,22 @@ import SkeletonDetailProduct from './_components/SkeletonDetailProduct.vue'
 
 const route = useRoute()
 
+// State
 const product = ref<Produk | null>(null)
 const reviews = ref<Ulasan[]>([])
 const loading = ref(true)
 const error = ref<string | null>(null)
 
+// Pagination State
+const currentPage = ref(1)
+const reviewLimit = 10
+const hasMoreReviews = ref(false)
+const loadingMoreReviews = ref(false)
+
 const fetchData = async () => {
   loading.value = true
   error.value = null
+  currentPage.value = 1 // Reset page
 
   try {
     const productId = Number(route.params.id)
@@ -95,9 +105,10 @@ const fetchData = async () => {
       throw new Error('ID Produk tidak valid')
     }
 
+    // Fetch Product & First Page of Reviews
     const [productResponse, reviewsResponse] = await Promise.all([
       getProductById(productId),
-      getReviewsByProductId(productId)
+      getReviewsByProductId(productId, 1, reviewLimit)
     ])
 
     if (!productResponse.data) {
@@ -105,7 +116,11 @@ const fetchData = async () => {
     }
 
     product.value = productResponse.data
-    reviews.value = reviewsResponse.data
+    
+    // Handle Review Pagination
+    const fetchedReviews = reviewsResponse.data || []
+    reviews.value = fetchedReviews
+    hasMoreReviews.value = fetchedReviews.length === reviewLimit
 
   } catch (err: any) {
     console.error("❌ Error loading product:", err)
@@ -117,13 +132,41 @@ const fetchData = async () => {
       error.value = 'Terjadi kesalahan saat memuat data.'
     }
     
-    // Jangan set product jadi null jika 404, agar judul tetap tampil
     if (!(err.response && err.response.status === 404)) {
       product.value = null
     }
     reviews.value = []
   } finally {
     loading.value = false
+  }
+}
+
+const loadMoreReviews = async () => {
+  if (loadingMoreReviews.value || !hasMoreReviews.value || !product.value?.produkId) return
+  
+  loadingMoreReviews.value = true
+  const nextPage = currentPage.value + 1
+
+  try {
+    const response = await getReviewsByProductId(product.value.produkId, nextPage, reviewLimit)
+    const newReviews = response.data || []
+    
+    if (newReviews.length > 0) {
+      reviews.value = [...reviews.value, ...newReviews]
+      currentPage.value = nextPage
+      
+      // If we got fewer than limit, we reached the end
+      if (newReviews.length < reviewLimit) {
+        hasMoreReviews.value = false
+      }
+    } else {
+      hasMoreReviews.value = false
+    }
+
+  } catch (err) {
+    console.error("Error loading more reviews:", err)
+  } finally {
+    loadingMoreReviews.value = false
   }
 }
 
