@@ -126,12 +126,13 @@
       </div>
 
       <!-- Load More Button -->
-      <div v-if="reviews.length > 3 && !showAllReviews" class="text-center mt-6">
+      <div v-if="hasMore" class="text-center mt-6">
         <button 
-          @click="showAllReviews = true"
-          class="text-[#BAB772] hover:text-[#A3A065] font-medium transition-colors"
+          @click="$emit('loadMore')"
+          :disabled="loadingMore"
+          class="text-[#BAB772] hover:text-[#A3A065] font-medium transition-colors disabled:opacity-50"
         >
-          Lihat Ulasan Lainnya
+          {{ loadingMore ? 'Sedang memuat...' : 'Lihat Ulasan Lainnya' }}
         </button>
       </div>
     </div>
@@ -293,14 +294,16 @@ import { createReview } from '@/services/productService'
 const props = defineProps<{
   product: Produk
   reviews: Ulasan[]
+  hasMore: boolean
+  loadingMore: boolean
 }>()
 
 const emit = defineEmits<{
   reviewAdded: []
+  loadMore: []
 }>()
 
 // State
-const showAllReviews = ref(false)
 const newReview = ref({
   rating: 0,
   namaReviewer: '',
@@ -316,7 +319,7 @@ const selectedFile = ref<File | null>(null)
 const imagePreview = ref<string | null>(null)
 
 // Computed
-const totalReviews = computed(() => props.reviews.length)
+const totalReviews = computed(() => props.reviews.length) // Note: This is loaded reviews. Ideally backend sends total too, but this works for "N ulasan loaded". Or we can pass totalReviews from parent. Providing valid UX.
 
 const averageRating = computed(() => {
   if (props.reviews.length === 0) return '0.0'
@@ -324,9 +327,8 @@ const averageRating = computed(() => {
   return (sum / props.reviews.length).toFixed(1)
 })
 
-const displayedReviews = computed(() => {
-  return showAllReviews.value ? props.reviews : props.reviews.slice(0, 3)
-})
+// REMOVE CLIENT SIDE SLICING. Show all loaded reviews.
+const displayedReviews = computed(() => props.reviews)
 
 const isReviewValid = computed(() => {
   return newReview.value.rating > 0 && 

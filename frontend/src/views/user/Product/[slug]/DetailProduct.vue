@@ -51,8 +51,11 @@
         <!-- Komponen ini sekarang AKAN SELALU TAMPIL -->
         <ProductReviewsRatings 
           :product="product" 
-          :reviews="reviews" 
-          @review-added="fetchData" 
+          :reviews="reviews"
+          :has-more="hasMore"
+          :loading-more="isFetchingMore"
+          @load-more="loadMoreReviews" 
+          @review-added="refreshReviews" 
         />
         <!-- ------------------------- -->
       </div>
@@ -79,15 +82,20 @@ import ProductReviewsRatings from './_components/ProductReviewsRatings.vue'
 import SkeletonDetailProduct from './_components/SkeletonDetailProduct.vue'
 
 const route = useRoute()
-
 const product = ref<Produk | null>(null)
 const reviews = ref<Ulasan[]>([])
 const loading = ref(true)
 const error = ref<string | null>(null)
 
+// Pagination State
+const currentPage = ref(1)
+const hasMore = ref(false)
+const isFetchingMore = ref(false)
+
 const fetchData = async () => {
   loading.value = true
   error.value = null
+  currentPage.value = 1 // Reset page
 
   try {
     const productId = Number(route.params.id)
@@ -97,7 +105,7 @@ const fetchData = async () => {
 
     const [productResponse, reviewsResponse] = await Promise.all([
       getProductById(productId),
-      getReviewsByProductId(productId)
+      getReviewsByProductId(productId, 1, 10) // Initial Page 1
     ])
 
     if (!productResponse.data) {
@@ -105,7 +113,18 @@ const fetchData = async () => {
     }
 
     product.value = productResponse.data
-    reviews.value = reviewsResponse.data
+    
+    // Handle Paginated Response
+    if (reviewsResponse.data && Array.isArray(reviewsResponse.data.data)) {
+        reviews.value = reviewsResponse.data.data
+        // Check if more pages exist
+        const meta = reviewsResponse.data.meta
+        hasMore.value = meta.page < meta.totalPages
+    } else {
+        // Fallback incase backend format is weird or empty
+        reviews.value = []
+        hasMore.value = false
+    }
 
   } catch (err: any) {
     console.error("❌ Error loading product:", err)
@@ -117,7 +136,6 @@ const fetchData = async () => {
       error.value = 'Terjadi kesalahan saat memuat data.'
     }
     
-    // Jangan set product jadi null jika 404, agar judul tetap tampil
     if (!(err.response && err.response.status === 404)) {
       product.value = null
     }
@@ -125,6 +143,44 @@ const fetchData = async () => {
   } finally {
     loading.value = false
   }
+}
+
+const loadMoreReviews = async () => {
+    if (isFetchingMore.value || !hasMore.value || !product.value) return;
+    
+    isFetchingMore.value = true;
+    try {
+        const nextPage = currentPage.value + 1;
+        const response = await getReviewsByProductId(product.value.produkId!, nextPage, 10);
+        
+        if (response.data && Array.isArray(response.data.data)) {
+            reviews.value.push(...response.data.data); // Append
+            currentPage.value = nextPage;
+            
+            const meta = response.data.meta;
+            hasMore.value = meta.page < meta.totalPages;
+        }
+    } catch (err) {
+        console.error("Failed to load more reviews", err);
+    } finally {
+        isFetchingMore.value = false;
+    }
+}
+
+// Reload just reviews (for example after posting new review)
+const refreshReviews = async () => {
+    if (!product.value) return;
+    currentPage.value = 1;
+    try {
+        const response = await getReviewsByProductId(product.value.produkId!, 1, 10);
+         if (response.data && Array.isArray(response.data.data)) {
+            reviews.value = response.data.data;
+            const meta = response.data.meta;
+            hasMore.value = meta.page < meta.totalPages;
+        }
+    } catch (err) {
+        console.error("Failed to refresh reviews", err);
+    }
 }
 
 onMounted(() => {

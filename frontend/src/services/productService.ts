@@ -390,8 +390,8 @@ export const deleteProduct = (id: number) => {
 // API ULASAN
 // ========================================
 
-export const getReviewsByProductId = (produkId: number) => {
-  return api.get<Ulasan[]>(`/products/${produkId}/reviews`);
+export const getReviewsByProductId = (produkId: number, page = 1, limit = 10) => {
+  return api.get<PaginatedBackendResponse<Ulasan[]>>(`/products/${produkId}/reviews?page=${page}&limit=${limit}`);
 };
 
 export const createReview = (produkId: number, formData: FormData) => {
