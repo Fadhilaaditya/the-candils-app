@@ -509,6 +509,7 @@ const updateStatusPesanan = async (req, res) => {
 
         if (orderDetails.length > 0) {
           const order = orderDetails[0];
+          order.trackingInfo = req.body.trackingInfo; // [NEW] Attach tracking info
           await whatsappService.sendOrderShipped(order.kontakPelanggan, order);
         }
       } catch (waError) {

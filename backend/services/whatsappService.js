@@ -64,13 +64,12 @@ const sendOrderShipped = async (phoneNumber, orderDetails) => {
 
     if (!API_TOKEN) return;
 
-    const message = `
 Halo *${orderDetails.namaPelanggan}*,
 Pesanan Anda *#${orderDetails.pesananId}* sedang *DIKIRIM*! 🚚
 
 Kurir kami sedang menuju ke lokasi Anda.
 Mohon pastikan ada penerima di alamat tujuan.
-
+${orderDetails.trackingInfo ? `\n*Link Tracking / Resi:*\n${orderDetails.trackingInfo}\n` : ''}
 *Alamat Pengiriman:*
 ${orderDetails.alamatPengiriman}
 

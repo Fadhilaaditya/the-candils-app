@@ -281,6 +281,42 @@ const handleUpdateStatus = async (pesanan: Pemesanan) => {
       return; 
   }
 
+  // 1.5. SKENARIO KHUSUS: DIKIRIM (Boleh Input Link Tracking/Resi)
+  if (pesanan.statusPesanan === 'Dikirim') {
+      const result = await confirmModalRef.value?.open({
+          title: 'Konfirmasi Pengiriman',
+          message: 'Apakah pesanan ini sudah diserahkan ke kurir? Anda dapat memasukkan Link Tracking atau Resi (Opsional).',
+          confirmButtonText: 'Ya, Ubah Status',
+          cancelButtonText: 'Batal',
+          variant: 'warning',
+          showInput: true,
+          inputPlaceholder: 'Masukkan Link Tracking / Nomor Resi (Opsional)...'
+      });
+
+      if (!result?.confirmed) {
+          await loadData(); 
+          return;
+      }
+      
+      const trackingInfo = result.value || ''; // Optional
+
+      try {
+          await updateStatusPesanan(pesanan.pesananId, 'Dikirim', undefined, trackingInfo);
+          toast.success(`Status pesanan #${pesanan.pesananId} diperbarui ke Dikirim.`);
+          
+           const index = pesananList.value.findIndex(p => p.pesananId === pesanan.pesananId)
+            if (index !== -1) {
+              pesananList.value[index].statusPesanan = 'Dikirim'
+            }
+          await loadData(); 
+      } catch (error: any) {
+          console.error('Error update status:', error);
+          toast.error((error as any).response?.data?.message || 'Gagal mengubah status pesanan.');
+          await loadData(); 
+      }
+      return; 
+  }
+
   // 2. SKENARIO UMUM: STATUS LAIN (Konfirmasi Biasa)
   const result = await confirmModalRef.value?.open({
       title: 'Konfirmasi Perubahan Status',

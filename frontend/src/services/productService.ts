@@ -454,8 +454,8 @@ export const createPesananOffline = (payload: CreatePesananOfflinePayload) => {
   return api.post('/pesanan/offline', payload); 
 };
 
-export const updateStatusPesanan = (id: number, statusPesanan: string, alasanPembatalan?: string) => {
-  return api.patch(`/pesanan/${id}/status`, { statusPesanan, alasanPembatalan });
+export const updateStatusPesanan = (id: number, statusPesanan: string, alasanPembatalan?: string, trackingInfo?: string) => {
+  return api.patch(`/pesanan/${id}/status`, { statusPesanan, alasanPembatalan, trackingInfo });
 };
 
 export const updateLokasiPesanan = (id: number, lokasiId: number) => {
