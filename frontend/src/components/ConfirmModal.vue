@@ -101,6 +101,7 @@ interface RuntimePayload {
     cancelButtonText?: string
     variant?: 'danger' | 'warning'
     showInput?: boolean // [NEW] Option to show input
+    inputRequired?: boolean // [NEW] Validation flag
     inputPlaceholder?: string // [NEW] Placeholder for input
 }
 
@@ -128,6 +129,7 @@ const currentConfig = computed(() => ({
     cancelButtonText: runtimeConfig.value.cancelButtonText || props.cancelButtonText,
     variant: runtimeConfig.value.variant || props.variant,
     showInput: runtimeConfig.value.showInput,
+    inputRequired: runtimeConfig.value.inputRequired, // Pass through
     inputPlaceholder: runtimeConfig.value.inputPlaceholder || 'Masukkan alasan...',
 }))
 
@@ -143,8 +145,10 @@ const open = (payload: RuntimePayload = {}): Promise<{ confirmed: boolean; value
 }
 
 const confirm = () => {
-  if (currentConfig.value.showInput && !userInput.value.trim()) {
-      // Prevent confirm if input is required but empty
+  // Check validasi input HANYA JIKA showInput=true DAN inputRequired=true (default)
+  const isInputRequired = currentConfig.value.inputRequired !== false; // Default true if undefined
+  
+  if (currentConfig.value.showInput && isInputRequired && !userInput.value.trim()) {
       return; 
   }
   showModal.value = false

@@ -113,6 +113,7 @@ interface ConfirmModalPayload {
     cancelButtonText?: string;
     variant?: 'danger' | 'warning';
     showInput?: boolean;
+    inputRequired?: boolean; // [NEW]
     inputPlaceholder?: string;
 }
 
@@ -290,6 +291,7 @@ const handleUpdateStatus = async (pesanan: Pemesanan) => {
           cancelButtonText: 'Batal',
           variant: 'warning',
           showInput: true,
+          inputRequired: false, // [NEW] Optional Input
           inputPlaceholder: 'Masukkan Link Tracking / Nomor Resi (Opsional)...'
       });
 
