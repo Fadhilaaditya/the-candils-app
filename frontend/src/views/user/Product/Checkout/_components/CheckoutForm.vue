@@ -76,7 +76,7 @@
         </p>
         
         <img 
-          src="/QRIS.jpg" 
+          src="https://res.cloudinary.com/dosfggbxu/image/upload/v1766898291/WhatsApp_Image_2025-12-28_at_11.23.15_aystuu.jpg" 
           alt="Kode QRIS Pembayaran"
           class="w-full max-w-[250px] mx-auto rounded-md border"
         />
