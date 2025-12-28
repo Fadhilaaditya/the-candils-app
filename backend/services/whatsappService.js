@@ -104,7 +104,7 @@ const sendOrderCompleted = async (phoneNumber, orderDetails) => {
 
     if (!API_TOKEN) return;
 
-    let frontendUrl = process.env.FRONTEND_URL || 'https://the-candils.com';
+    let frontendUrl = process.env.FRONTEND_URL || 'https://dev-the-candils-app.vercel.app';
     if (!frontendUrl.startsWith('http')) {
         frontendUrl = `https://${frontendUrl}`;
     }
