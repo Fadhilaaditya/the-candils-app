@@ -126,12 +126,12 @@
       </div>
 
       <!-- Load More Button -->
-      <div v-if="reviews.length > 3 && !showAllReviews" class="text-center mt-6">
+      <div v-if="reviews.length > visibleCount" class="text-center mt-6">
         <button 
-          @click="showAllReviews = true"
+          @click="loadMoreReviews"
           class="text-[#BAB772] hover:text-[#A3A065] font-medium transition-colors"
         >
-          Lihat Ulasan Lainnya
+          Lihat Ulasan Lainnya ({{ reviews.length - visibleCount }} lagi)
         </button>
       </div>
     </div>
@@ -300,7 +300,7 @@ const emit = defineEmits<{
 }>()
 
 // State
-const showAllReviews = ref(false)
+const visibleCount = ref(10) // Tampilkan 10 ulasan awal
 const newReview = ref({
   rating: 0,
   namaReviewer: '',
@@ -325,7 +325,7 @@ const averageRating = computed(() => {
 })
 
 const displayedReviews = computed(() => {
-  return showAllReviews.value ? props.reviews : props.reviews.slice(0, 3)
+  return props.reviews.slice(0, visibleCount.value)
 })
 
 const isReviewValid = computed(() => {
@@ -333,6 +333,11 @@ const isReviewValid = computed(() => {
          newReview.value.namaReviewer.trim() !== '' && 
          newReview.value.komentar.trim() !== ''
 })
+
+// Methods
+const loadMoreReviews = () => {
+  visibleCount.value += 10
+}
 
 // Methods
 const getRatingCount = (rating: number) => {
