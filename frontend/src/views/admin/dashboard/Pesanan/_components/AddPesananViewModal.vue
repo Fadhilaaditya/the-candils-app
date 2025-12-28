@@ -1,5 +1,7 @@
 <template>
-  <div class="fixed inset-0 z-40 bg-black bg-opacity-60 backdrop-blur-sm overflow-y-auto h-full w-full transition-all duration-300" @click.self="$emit('close')">
+  <div class="fixed inset-0 z-40 overflow-y-auto h-full w-full transition-all duration-300" 
+    style="background-color: rgba(0, 0, 0, 0.7)"
+    @click.self="$emit('close')">
 
     <div class="relative top-10 mx-auto p-6 w-full max-w-4xl shadow-2xl rounded-2xl bg-white mb-10 transform transition-all duration-300">
 
