@@ -52,11 +52,6 @@
         <ProductReviewsRatings 
           :product="product" 
           :reviews="reviews" 
-          :total-reviews-count="reviewMeta?.total || 0"
-          :server-average-rating="reviewMeta?.average"
-          :has-more="hasMoreReviews"
-          :loading-more="loadingMoreReviews"
-          @load-more="handleLoadMoreReviews" 
           @review-added="fetchData" 
         />
         <!-- ------------------------- -->
@@ -72,15 +67,10 @@
 </template>
 
 <script setup lang="ts">
+// Script tetap sama seperti sebelumnya
 import { ref, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { 
-  getProductById, 
-  getReviewsByProductId, 
-  type Produk, 
-  type Ulasan,
-  type ReviewResponse 
-} from '@/services/productService'
+import { getProductById, getReviewsByProductId, type Produk, type Ulasan } from '@/services/productService'
 
 import ProductImage from './_components/ProductImage.vue'
 import ProductInfo from './_components/ProductInfo.vue'
@@ -95,17 +85,9 @@ const reviews = ref<Ulasan[]>([])
 const loading = ref(true)
 const error = ref<string | null>(null)
 
-// Pagination State
-const currentPage = ref(1)
-const hasMoreReviews = ref(false)
-const loadingMoreReviews = ref(false)
-// Simpan meta untuk total count dan average
-const reviewMeta = ref<ReviewResponse['meta'] | null>(null)
-
 const fetchData = async () => {
   loading.value = true
   error.value = null
-  currentPage.value = 1 // Reset page
 
   try {
     const productId = Number(route.params.id)
@@ -113,10 +95,9 @@ const fetchData = async () => {
       throw new Error('ID Produk tidak valid')
     }
 
-    // Fetch Page 1 reviews
     const [productResponse, reviewsResponse] = await Promise.all([
       getProductById(productId),
-      getReviewsByProductId(productId, 1, 10) // Limit 10
+      getReviewsByProductId(productId)
     ])
 
     if (!productResponse.data) {
@@ -124,14 +105,7 @@ const fetchData = async () => {
     }
 
     product.value = productResponse.data
-    
-    // Handle Review Response
-    const rData = reviewsResponse.data
-    reviews.value = rData.data
-    reviewMeta.value = rData.meta
-    
-    // Determine if has more
-    hasMoreReviews.value = rData.meta.page < rData.meta.totalPages
+    reviews.value = reviewsResponse.data
 
   } catch (err: any) {
     console.error("❌ Error loading product:", err)
@@ -143,6 +117,7 @@ const fetchData = async () => {
       error.value = 'Terjadi kesalahan saat memuat data.'
     }
     
+    // Jangan set product jadi null jika 404, agar judul tetap tampil
     if (!(err.response && err.response.status === 404)) {
       product.value = null
     }
@@ -150,34 +125,6 @@ const fetchData = async () => {
   } finally {
     loading.value = false
   }
-}
-
-const handleLoadMoreReviews = async () => {
-  if (loadingMoreReviews.value || !hasMoreReviews.value || !product.value?.produkId) return
-  
-  loadingMoreReviews.value = true
-  try {
-    const nextPage = currentPage.value + 1
-    const response = await getReviewsByProductId(product.value.produkId, nextPage, 10)
-    
-    // Append new reviews
-    reviews.value = [...reviews.value, ...response.data.data]
-    
-    // Update meta
-    reviewMeta.value = response.data.meta
-    currentPage.value = nextPage
-    hasMoreReviews.value = response.data.meta.page < response.data.meta.totalPages
-    
-  } catch (error) {
-    console.error("Failed to load more reviews:", error)
-  } finally {
-    loadingMoreReviews.value = false
-  }
-}
-
-// Refresh fetches initial data again
-const refreshReviews = () => {
-    fetchData()
 }
 
 onMounted(() => {

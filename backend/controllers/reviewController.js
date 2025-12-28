@@ -7,21 +7,8 @@ const cloudinary = require('cloudinary').v2; // Import Cloudinary
 exports.getReviewsByProduct = async (req, res) => {
   try {
     const { produkId } = req.params;
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const offset = (page - 1) * limit;
 
-    // 1. Get Total Count & Average Rating
-    const statsQuery = `
-      SELECT COUNT(*) as total, AVG(rating) as average
-      FROM Ulasan
-      WHERE produkId = ?
-    `;
-    const [statsResult] = await db.query(statsQuery, [produkId]);
-    const totalReviews = statsResult[0].total || 0;
-    const averageRating = statsResult[0].average || 0;
-
-    // 2. Get Paginated Reviews
+    // Query SELECT sederhana, tidak perlu JOIN
     const query = `
       SELECT 
         ulasanId, produkId, namaReviewer, rating, komentar, foto, tanggalUlasan
@@ -30,22 +17,12 @@ exports.getReviewsByProduct = async (req, res) => {
       WHERE 
         produkId = ?
       ORDER BY 
-        tanggalUlasan DESC
-      LIMIT ? OFFSET ?; 
+        tanggalUlasan DESC; 
     `;
 
-    const [reviews] = await db.query(query, [produkId, limit, offset]);
+    const [reviews] = await db.query(query, [produkId]);
 
-    res.json({
-      data: reviews,
-      meta: {
-        total: totalReviews,
-        average: parseFloat(averageRating).toFixed(1),
-        page,
-        limit,
-        totalPages: Math.ceil(totalReviews / limit)
-      }
-    });
+    res.json(reviews);
 
   } catch (err) {
     console.error(err.message);
