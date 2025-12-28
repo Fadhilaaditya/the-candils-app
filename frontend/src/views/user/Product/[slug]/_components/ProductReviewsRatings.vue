@@ -126,13 +126,18 @@
       </div>
 
       <!-- Load More Button -->
+      <!-- Tampilkan jika ada lebih banyak review di server -->
       <div v-if="hasMore" class="text-center mt-6">
         <button 
           @click="$emit('loadMore')"
           :disabled="loadingMore"
-          class="text-[#BAB772] hover:text-[#A3A065] font-medium transition-colors disabled:opacity-50"
+          class="text-[#BAB772] hover:text-[#A3A065] font-medium transition-colors flex items-center justify-center gap-2 mx-auto disabled:opacity-50"
         >
-          {{ loadingMore ? 'Sedang memuat...' : 'Lihat Ulasan Lainnya' }}
+          <svg v-if="loadingMore" class="animate-spin h-5 w-5" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          {{ loadingMore ? 'Memuat...' : 'Lihat Ulasan Lainnya' }}
         </button>
       </div>
     </div>
@@ -294,13 +299,16 @@ import { createReview } from '@/services/productService'
 const props = defineProps<{
   product: Produk
   reviews: Ulasan[]
-  hasMore: boolean
-  loadingMore: boolean
+  // Pagination Props
+  totalReviewsCount?: number
+  serverAverageRating?: string
+  hasMore?: boolean
+  loadingMore?: boolean
 }>()
 
 const emit = defineEmits<{
   reviewAdded: []
-  loadMore: []
+  loadMore: [] // New event
 }>()
 
 // State
@@ -319,16 +327,23 @@ const selectedFile = ref<File | null>(null)
 const imagePreview = ref<string | null>(null)
 
 // Computed
-const totalReviews = computed(() => props.reviews.length) // Note: This is loaded reviews. Ideally backend sends total too, but this works for "N ulasan loaded". Or we can pass totalReviews from parent. Providing valid UX.
+const totalReviews = computed(() => {
+    return props.totalReviewsCount ?? props.reviews.length;
+})
 
 const averageRating = computed(() => {
+  // Use server stats if available
+  if (props.serverAverageRating) return props.serverAverageRating;
+  
   if (props.reviews.length === 0) return '0.0'
   const sum = props.reviews.reduce((acc, review) => acc + review.rating, 0)
   return (sum / props.reviews.length).toFixed(1)
 })
 
-// REMOVE CLIENT SIDE SLICING. Show all loaded reviews.
-const displayedReviews = computed(() => props.reviews)
+const displayedReviews = computed(() => {
+  // Show all reviews passed from parent (parent handles accumulation)
+  return props.reviews
+})
 
 const isReviewValid = computed(() => {
   return newReview.value.rating > 0 && 

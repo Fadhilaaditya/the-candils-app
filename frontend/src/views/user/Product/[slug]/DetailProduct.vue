@@ -51,11 +51,13 @@
         <!-- Komponen ini sekarang AKAN SELALU TAMPIL -->
         <ProductReviewsRatings 
           :product="product" 
-          :reviews="reviews"
-          :has-more="hasMore"
-          :loading-more="isFetchingMore"
-          @load-more="loadMoreReviews" 
-          @review-added="refreshReviews" 
+          :reviews="reviews" 
+          :total-reviews-count="reviewMeta?.total || 0"
+          :server-average-rating="reviewMeta?.average"
+          :has-more="hasMoreReviews"
+          :loading-more="loadingMoreReviews"
+          @load-more="handleLoadMoreReviews" 
+          @review-added="fetchData" 
         />
         <!-- ------------------------- -->
       </div>
@@ -70,10 +72,15 @@
 </template>
 
 <script setup lang="ts">
-// Script tetap sama seperti sebelumnya
 import { ref, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { getProductById, getReviewsByProductId, type Produk, type Ulasan } from '@/services/productService'
+import { 
+  getProductById, 
+  getReviewsByProductId, 
+  type Produk, 
+  type Ulasan,
+  type ReviewResponse 
+} from '@/services/productService'
 
 import ProductImage from './_components/ProductImage.vue'
 import ProductInfo from './_components/ProductInfo.vue'
@@ -82,6 +89,7 @@ import ProductReviewsRatings from './_components/ProductReviewsRatings.vue'
 import SkeletonDetailProduct from './_components/SkeletonDetailProduct.vue'
 
 const route = useRoute()
+
 const product = ref<Produk | null>(null)
 const reviews = ref<Ulasan[]>([])
 const loading = ref(true)
@@ -89,8 +97,10 @@ const error = ref<string | null>(null)
 
 // Pagination State
 const currentPage = ref(1)
-const hasMore = ref(false)
-const isFetchingMore = ref(false)
+const hasMoreReviews = ref(false)
+const loadingMoreReviews = ref(false)
+// Simpan meta untuk total count dan average
+const reviewMeta = ref<ReviewResponse['meta'] | null>(null)
 
 const fetchData = async () => {
   loading.value = true
@@ -103,9 +113,10 @@ const fetchData = async () => {
       throw new Error('ID Produk tidak valid')
     }
 
+    // Fetch Page 1 reviews
     const [productResponse, reviewsResponse] = await Promise.all([
       getProductById(productId),
-      getReviewsByProductId(productId, 1, 10) // Initial Page 1
+      getReviewsByProductId(productId, 1, 10) // Limit 10
     ])
 
     if (!productResponse.data) {
@@ -114,22 +125,13 @@ const fetchData = async () => {
 
     product.value = productResponse.data
     
-    // Handle Paginated Response (checks for both new object format and old array format)
-    if (reviewsResponse.data && Array.isArray(reviewsResponse.data.data)) {
-        // New Backend Format: { data: [...], meta: ... }
-        reviews.value = reviewsResponse.data.data
-        const meta = reviewsResponse.data.meta
-        hasMore.value = meta ? (meta.page < meta.totalPages) : false
-    } else if (Array.isArray(reviewsResponse.data)) {
-        // Old Backend Format Fallback: [...]
-        // If backend hasn't updated yet, it returns a direct array of all reviews
-        reviews.value = reviewsResponse.data as any
-        hasMore.value = false // Old API returns all data, so no more pages
-    } else {
-        // Fallback incase backend format is weird or empty
-        reviews.value = []
-        hasMore.value = false
-    }
+    // Handle Review Response
+    const rData = reviewsResponse.data
+    reviews.value = rData.data
+    reviewMeta.value = rData.meta
+    
+    // Determine if has more
+    hasMoreReviews.value = rData.meta.page < rData.meta.totalPages
 
   } catch (err: any) {
     console.error("❌ Error loading product:", err)
@@ -150,42 +152,32 @@ const fetchData = async () => {
   }
 }
 
-const loadMoreReviews = async () => {
-    if (isFetchingMore.value || !hasMore.value || !product.value) return;
+const handleLoadMoreReviews = async () => {
+  if (loadingMoreReviews.value || !hasMoreReviews.value || !product.value?.produkId) return
+  
+  loadingMoreReviews.value = true
+  try {
+    const nextPage = currentPage.value + 1
+    const response = await getReviewsByProductId(product.value.produkId, nextPage, 10)
     
-    isFetchingMore.value = true;
-    try {
-        const nextPage = currentPage.value + 1;
-        const response = await getReviewsByProductId(product.value.produkId!, nextPage, 10);
-        
-        if (response.data && Array.isArray(response.data.data)) {
-            reviews.value.push(...response.data.data); // Append
-            currentPage.value = nextPage;
-            
-            const meta = response.data.meta;
-            hasMore.value = meta.page < meta.totalPages;
-        }
-    } catch (err) {
-        console.error("Failed to load more reviews", err);
-    } finally {
-        isFetchingMore.value = false;
-    }
+    // Append new reviews
+    reviews.value = [...reviews.value, ...response.data.data]
+    
+    // Update meta
+    reviewMeta.value = response.data.meta
+    currentPage.value = nextPage
+    hasMoreReviews.value = response.data.meta.page < response.data.meta.totalPages
+    
+  } catch (error) {
+    console.error("Failed to load more reviews:", error)
+  } finally {
+    loadingMoreReviews.value = false
+  }
 }
 
-// Reload just reviews (for example after posting new review)
-const refreshReviews = async () => {
-    if (!product.value) return;
-    currentPage.value = 1;
-    try {
-        const response = await getReviewsByProductId(product.value.produkId!, 1, 10);
-         if (response.data && Array.isArray(response.data.data)) {
-            reviews.value = response.data.data;
-            const meta = response.data.meta;
-            hasMore.value = meta.page < meta.totalPages;
-        }
-    } catch (err) {
-        console.error("Failed to refresh reviews", err);
-    }
+// Refresh fetches initial data again
+const refreshReviews = () => {
+    fetchData()
 }
 
 onMounted(() => {

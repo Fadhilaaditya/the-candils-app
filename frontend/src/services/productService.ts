@@ -390,8 +390,20 @@ export const deleteProduct = (id: number) => {
 // API ULASAN
 // ========================================
 
+// --- REVISI: Response Review dengan Pagination ---
+export interface ReviewResponse {
+  data: Ulasan[];
+  meta: {
+    total: number;
+    average: string;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
 export const getReviewsByProductId = (produkId: number, page = 1, limit = 10) => {
-  return api.get<PaginatedBackendResponse<Ulasan[]>>(`/products/${produkId}/reviews?page=${page}&limit=${limit}`);
+  return api.get<ReviewResponse>(`/products/${produkId}/reviews?page=${page}&limit=${limit}`);
 };
 
 export const createReview = (produkId: number, formData: FormData) => {

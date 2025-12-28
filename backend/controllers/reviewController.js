@@ -7,20 +7,21 @@ const cloudinary = require('cloudinary').v2; // Import Cloudinary
 exports.getReviewsByProduct = async (req, res) => {
   try {
     const { produkId } = req.params;
-    
-    // Pagination params
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const offset = (page - 1) * limit;
 
-    // 1. Get total count
-    const [countResult] = await db.query(
-      `SELECT COUNT(*) as total FROM Ulasan WHERE produkId = ?`,
-      [produkId]
-    );
-    const totalItems = countResult[0].total;
+    // 1. Get Total Count & Average Rating
+    const statsQuery = `
+      SELECT COUNT(*) as total, AVG(rating) as average
+      FROM Ulasan
+      WHERE produkId = ?
+    `;
+    const [statsResult] = await db.query(statsQuery, [produkId]);
+    const totalReviews = statsResult[0].total || 0;
+    const averageRating = statsResult[0].average || 0;
 
-    // 2. Get paginated data
+    // 2. Get Paginated Reviews
     const query = `
       SELECT 
         ulasanId, produkId, namaReviewer, rating, komentar, foto, tanggalUlasan
@@ -33,17 +34,16 @@ exports.getReviewsByProduct = async (req, res) => {
       LIMIT ? OFFSET ?; 
     `;
 
-    // Note: MySQL requires integers for LIMIT/OFFSET
     const [reviews] = await db.query(query, [produkId, limit, offset]);
 
-    // 3. Return paginated format
     res.json({
       data: reviews,
       meta: {
+        total: totalReviews,
+        average: parseFloat(averageRating).toFixed(1),
         page,
         limit,
-        totalItems,
-        totalPages: Math.ceil(totalItems / limit)
+        totalPages: Math.ceil(totalReviews / limit)
       }
     });
 
