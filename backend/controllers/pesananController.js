@@ -490,8 +490,8 @@ const updateStatusPesanan = async (req, res) => {
           
           order.items = items;
 
-          // Kirim WA (Async, jangan tunggu response agar tidak blocking)
-          whatsappService.sendOrderConfirmation(order.kontakPelanggan, order);
+          // Kirim WA (Await agar tidak ter-kill oleh Vercel serverless)
+          await whatsappService.sendOrderConfirmation(order.kontakPelanggan, order);
         }
       } catch (waError) {
         console.error('⚠️ Gagal memproses notifikasi WA:', waError.message);
@@ -509,7 +509,7 @@ const updateStatusPesanan = async (req, res) => {
 
         if (orderDetails.length > 0) {
           const order = orderDetails[0];
-          whatsappService.sendOrderShipped(order.kontakPelanggan, order);
+          await whatsappService.sendOrderShipped(order.kontakPelanggan, order);
         }
       } catch (waError) {
         console.error('⚠️ Gagal memproses notifikasi WA (Dikirim):', waError.message);
@@ -534,7 +534,7 @@ const updateStatusPesanan = async (req, res) => {
           );
           order.items = items;
 
-          whatsappService.sendOrderCompleted(order.kontakPelanggan, order);
+          await whatsappService.sendOrderCompleted(order.kontakPelanggan, order);
         }
       } catch (waError) {
         console.error('⚠️ Gagal memproses notifikasi WA (Selesai):', waError.message);
@@ -552,7 +552,7 @@ const updateStatusPesanan = async (req, res) => {
         if (orderDetails.length > 0) {
           const order = orderDetails[0];
           order.alasan = alasanPembatalan; // [UPDATED] Inject alasan to order object
-          whatsappService.sendOrderCancelled(order.kontakPelanggan, order);
+          await whatsappService.sendOrderCancelled(order.kontakPelanggan, order);
         }
       } catch (waError) {
         console.error('⚠️ Gagal memproses notifikasi WA (Dibatalkan):', waError.message);
