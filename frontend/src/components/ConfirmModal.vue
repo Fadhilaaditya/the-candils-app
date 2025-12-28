@@ -46,8 +46,18 @@
       <div class="px-8 pb-6 text-center">
         <h2 class="text-2xl font-bold text-gray-900 mb-3">
           {{ currentConfig.title }} </h2>
-        <p class="text-gray-600 leading-relaxed">
+        <p class="text-gray-600 leading-relaxed mb-4">
           {{ currentConfig.message }} </p>
+          
+          <!-- [NEW] Input Field -->
+          <div v-if="currentConfig.showInput" class="text-left">
+            <textarea
+              v-model="userInput"
+              rows="3"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none transition-all"
+              :placeholder="currentConfig.inputPlaceholder"
+            ></textarea>
+          </div>
       </div>
 
       <div class="flex gap-3 px-8 pb-8">
@@ -90,6 +100,8 @@ interface RuntimePayload {
     confirmButtonText?: string
     cancelButtonText?: string
     variant?: 'danger' | 'warning'
+    showInput?: boolean // [NEW] Option to show input
+    inputPlaceholder?: string // [NEW] Placeholder for input
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -103,8 +115,10 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits(['confirm', 'cancel'])
 
 const showModal = ref(false)
-let resolvePromise: ((value: boolean | PromiseLike<boolean>) => void) | undefined
-const runtimeConfig = ref<RuntimePayload>({}) // ✅ STATE BARU: Untuk menyimpan konfigurasi runtime
+// Update resolvePromise type to allow returning data object
+let resolvePromise: ((value: { confirmed: boolean; value?: string } | PromiseLike<{ confirmed: boolean; value?: string }>) => void) | undefined
+const runtimeConfig = ref<RuntimePayload>({}) 
+const userInput = ref('') // [NEW] State for input
 
 // ✅ COMPUTED: Menggabungkan props default dan konfigurasi runtime
 const currentConfig = computed(() => ({
@@ -113,12 +127,15 @@ const currentConfig = computed(() => ({
     confirmButtonText: runtimeConfig.value.confirmButtonText || props.confirmButtonText,
     cancelButtonText: runtimeConfig.value.cancelButtonText || props.cancelButtonText,
     variant: runtimeConfig.value.variant || props.variant,
+    showInput: runtimeConfig.value.showInput,
+    inputPlaceholder: runtimeConfig.value.inputPlaceholder || 'Masukkan alasan...',
 }))
 
 
 // ✅ PERBAIKAN FUNGSI OPEN: Menerima payload konfigurasi
-const open = (payload: RuntimePayload = {}): Promise<boolean> => {
-  runtimeConfig.value = payload // ✅ Simpan konfigurasi baru
+const open = (payload: RuntimePayload = {}): Promise<{ confirmed: boolean; value?: string }> => {
+  runtimeConfig.value = payload 
+  userInput.value = '' // Reset input
   showModal.value = true
   return new Promise((resolve) => {
     resolvePromise = resolve
@@ -126,22 +143,26 @@ const open = (payload: RuntimePayload = {}): Promise<boolean> => {
 }
 
 const confirm = () => {
+  if (currentConfig.value.showInput && !userInput.value.trim()) {
+      // Prevent confirm if input is required but empty
+      return; 
+  }
   showModal.value = false
-  resolvePromise?.(true)
+  resolvePromise?.({ confirmed: true, value: userInput.value })
   emit('confirm')
 }
 
 const cancel = () => {
   showModal.value = false
-  resolvePromise?.(false)
+  resolvePromise?.({ confirmed: false })
   emit('cancel')
 }
 
 // Untuk memastikan resolve dipanggil jika modal ditutup dari luar
 const onBeforeOpen = () => {
   if (resolvePromise === undefined) {
-    resolvePromise = (value) => { 
-      if (!value) { 
+    resolvePromise = (result) => { 
+      if (!result) { 
         console.warn('ConfirmModal closed without explicit action, resolving as false')
       }
     }

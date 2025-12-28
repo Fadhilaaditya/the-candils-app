@@ -112,11 +112,13 @@ interface ConfirmModalPayload {
     confirmButtonText?: string;
     cancelButtonText?: string;
     variant?: 'danger' | 'warning';
+    showInput?: boolean;
+    inputPlaceholder?: string;
 }
 
 // Define the instance type based on the expected exposed method
 type ConfirmModalInstance = {
-    open(payload: ConfirmModalPayload): Promise<boolean>;
+    open(payload: ConfirmModalPayload): Promise<{ confirmed: boolean; value?: string }>;
 };
 
 // --- State ---
@@ -243,6 +245,45 @@ const updateSelectedOrders = (ids: number[]) => {
 }
 
 const handleUpdateStatus = async (pesanan: Pemesanan) => {
+  // 🛑 [INTERCEPT] Jika status diubah jadi 'Dibatalkan', minta alasan dulu (seperti di modal detail)
+  if (pesanan.statusPesanan === 'Dibatalkan') {
+      const result = await confirmModalRef.value?.open({
+          title: 'Batalkan Pesanan',
+          message: 'Anda yakin ingin membatalkan pesanan ini? Aksi ini tidak dapat dikembalikan.',
+          confirmButtonText: 'Ya, Batalkan',
+          cancelButtonText: 'Tutup',
+          variant: 'danger',
+          showInput: true,
+          inputPlaceholder: 'Masukkan alasan pembatalan...'
+      });
+
+      if (!result?.confirmed) {
+          await loadData(); // Revert UI dropdown change if cancelled
+          return;
+      }
+      
+      const cancellationReason = result.value || '-';
+      
+      try {
+          // Pass reason to updateStatusPesanan
+          await updateStatusPesanan(pesanan.pesananId, 'Dibatalkan', cancellationReason);
+          toast.success(`Pesanan #${pesanan.pesananId} berhasil dibatalkan.`);
+          
+          // Update local state and refresh
+           const index = pesananList.value.findIndex(p => p.pesananId === pesanan.pesananId)
+            if (index !== -1) {
+              pesananList.value[index].statusPesanan = 'Dibatalkan'
+            }
+          await loadData(); 
+      } catch (error: any) {
+          console.error('Error membatalkan pesanan:', error);
+          toast.error((error as any).response?.data?.message || 'Gagal membatalkan pesanan.');
+          await loadData(); // Revert UI on error
+      }
+      return; // Exit normal flow
+  }
+
+  // Normal flow for other statuses
   try {
     await updateStatusPesanan(pesanan.pesananId, pesanan.statusPesanan)
     // Update local state
@@ -300,9 +341,10 @@ const handleOrderReported = () => {
 }
 
 // ✅ HANDLER VALIDASI (Menggunakan ConfirmModal)
+// ✅ HANDLER VALIDASI (Menggunakan ConfirmModal)
 const handleValidateOrder = async (pesananId: number) => {
     // 1. Panggil modal konfirmasi
-    const confirmed = await confirmModalRef.value?.open({
+    const result = await confirmModalRef.value?.open({
         title: 'Validasi Pesanan',
         message: 'Anda yakin ingin memvalidasi pesanan ini dan mengubah status menjadi "Perlu Dikirim"?',
         confirmButtonText: 'Ya, Validasi',
@@ -310,7 +352,7 @@ const handleValidateOrder = async (pesananId: number) => {
         variant: 'warning'
     });
 
-    if (!confirmed) {
+    if (!result?.confirmed) {
         return;
     }
     
@@ -327,21 +369,26 @@ const handleValidateOrder = async (pesananId: number) => {
 
 // ✅ HANDLER PEMBATALAN (Menggunakan ConfirmModal)
 const handleCancelOrder = async (pesananId: number) => {
-    // 1. Panggil modal konfirmasi
-    const confirmed = await confirmModalRef.value?.open({
+    // 1. Panggil modal konfirmasi dengan INPUT
+    const result = await confirmModalRef.value?.open({
         title: 'Batalkan Pesanan',
-        message: 'Anda yakin ingin membatalkan pesanan ini? Status akan diubah menjadi "Dibatalkan". Aksi ini tidak dapat dikembalikan.',
+        message: 'Anda yakin ingin membatalkan pesanan ini? Aksi ini tidak dapat dikembalikan.',
         confirmButtonText: 'Ya, Batalkan',
         cancelButtonText: 'Tutup',
-        variant: 'danger'
+        variant: 'danger',
+        showInput: true, // [NEW] Enable input
+        inputPlaceholder: 'Masukkan alasan pembatalan...'
     });
 
-    if (!confirmed) {
+    if (!result?.confirmed) {
         return;
     }
 
+    const cancellationReason = result.value || '-';
+
     try {
-        await updateStatusPesanan(pesananId, 'Dibatalkan');
+        // Pass reason to updateStatusPesanan (3rd arg is optional reason)
+        await updateStatusPesanan(pesananId, 'Dibatalkan', cancellationReason);
         toast.success(`Pesanan #${pesananId} berhasil dibatalkan.`);
         await loadData(); 
         closeDetailModal(); 

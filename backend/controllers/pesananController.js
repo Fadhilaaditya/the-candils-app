@@ -427,9 +427,10 @@ const whatsappService = require('../services/whatsappService'); // Import Servic
 /**
  * @desc    Update status pesanan
  */
+// pesananController.js
 const updateStatusPesanan = async (req, res) => {
   const { id } = req.params;
-  const { statusPesanan } = req.body;
+  const { statusPesanan, alasanPembatalan } = req.body; // [UPDATED] Extract alasanPembatalan
 
   try {
     // 1. Cek status saat ini
@@ -550,6 +551,7 @@ const updateStatusPesanan = async (req, res) => {
 
         if (orderDetails.length > 0) {
           const order = orderDetails[0];
+          order.alasan = alasanPembatalan; // [UPDATED] Inject alasan to order object
           whatsappService.sendOrderCancelled(order.kontakPelanggan, order);
         }
       } catch (waError) {

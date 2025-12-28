@@ -171,6 +171,8 @@ const sendOrderCancelled = async (phoneNumber, orderDetails) => {
 Halo *${orderDetails.namaPelanggan}*,
 Pesanan Anda *#${orderDetails.pesananId}* telah *DIBATALKAN* ❌
 
+Alasan: *${orderDetails.alasan || 'Permintaan Pelanggan / Stok Kosong'}*
+
 Mohon maaf atas ketidaknyamanan ini. 
 Jika Anda sudah melakukan pembayaran, silakan hubungi admin kami untuk proses pengembalian dana (refund).
 
