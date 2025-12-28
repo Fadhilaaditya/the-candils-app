@@ -26,6 +26,8 @@
       @next-page="nextPage"
       @previous-page="previousPage"
       @add-report="handleAddReport"
+      @open-import="isImportModalVisible = true"
+      @export-data="handleExportData"
       
       @edit-sale="handleEditSale as any" 
       @delete-sale="handleDeleteSale as any"
@@ -45,17 +47,28 @@
       @close="handleDeleteModalClose"
       @confirm="handleDeleteConfirm"
     />
+
+    <ImportSalesModal
+      :is-visible="isImportModalVisible"
+      :product-list="masterProductList"
+      :lokasi-list="lokasiList"
+      :ukuran-list="ukuranList"
+      @close="isImportModalVisible = false"
+      @import-success="handleImportSuccess"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, watch } from 'vue';
 import { useToast } from 'vue-toastification';
+import * as XLSX from 'xlsx';
 
 // 1. Import semua komponen tampilan
 import SalesTable from './_components/SalesTable.vue';
 import EditReportModal from './_components/EditReportModal.vue';
 import DeleteConfirmModal from './_components/DeleteConfirmModal.vue';
+import ImportSalesModal from './_components/ImportSalesModal.vue';
 
 // 2. Import service API
 import { 
@@ -65,7 +78,9 @@ import {
     updateSalesTransaction, 
     deleteSalesTransaction,
     getAllLokasi,
-    getAllProduk 
+    getAllProduk,
+    createPesananOffline,
+    getAllUkuran
 } from '@/services/productService'; 
 
 // 3. Define Interfaces
@@ -73,6 +88,7 @@ interface SaleReport {
     pesananId: number; 
     produkId: number; 
     namaProduk: string;
+    ukuran?: string;
     QTY: number; 
     totalHarga: number; 
     lokasi: string; 
@@ -97,8 +113,8 @@ const reportData = ref<SaleReport[]>([]);
 const revenueData = ref<any[]>([]); 
 const productsSoldData = ref<any[]>([]); 
 const lokasiList = ref<Lokasi[]>([]); 
-const masterProductList = ref<{ name: string; price: number }[]>([]); 
-
+const masterProductList = ref<any[]>([]); // Changed to any[]
+const ukuranList = ref<any[]>([]);
 
 // --- State Filter & Pagination ---
 const filters = reactive({
@@ -115,6 +131,7 @@ const itemsPerPage = 10;
 // --- State Modal CRUD ---
 const isEditModalVisible = ref(false);
 const isDeleteModalVisible = ref(false);
+const isImportModalVisible = ref(false);
 const saleToEdit = ref<SaleReport | null>(null); 
 const saleToDelete = ref<SaleReport | null>(null); 
 
@@ -135,14 +152,17 @@ const totalPages = ref(1);
 
 const fetchMasterData = async () => {
     try {
-        const [lokasiRes, produkRes] = await Promise.all([
+        const [lokasiRes, produkRes, ukuranRes] = await Promise.all([
             getAllLokasi(),
-            getAllProduk()
+            getAllProduk(),
+            getAllUkuran()
         ]);
         
         lokasiList.value = lokasiRes.data as Lokasi[];
+        ukuranList.value = ukuranRes.data;
         
         masterProductList.value = produkRes.data.map((p: any) => ({
+            ...p,
             name: p.namaProduk,
             price: p.harga 
         }));
@@ -196,6 +216,7 @@ const fetchSalesData = async () => {
                 pesananId: Number(item.pesananId || item.pesananid),
                 produkId: Number(item.produkId || 0), 
                 namaProduk: item.namaProduk,
+                ukuran: item.namaUkuran || '-',
                 QTY: Number(item.QTY),
                 totalHarga: Number(item.totalHarga),
                 lokasi: item.lokasi,
@@ -310,6 +331,107 @@ const handleDeleteConfirm = async () => {
     } catch (error) {
         console.error('Error deleting sale:', error);
         toast.error('Gagal menghapus transaksi.');
+    }
+};
+
+const handleExportData = async () => {
+    try {
+        toast.info("Sedang menyiapkan data export...");
+        
+        let currentLokasiId: string | number = 'all';
+        if (filters.lokasiName && filters.lokasiName !== 'all') {
+            const filterNameLower = filters.lokasiName.toLowerCase();
+            const selectedLokasi = lokasiList.value.find(l => {
+                const locationName = (l.name || l.namaLokasi || '').toLowerCase();
+                return locationName === filterNameLower;
+            });
+            currentLokasiId = selectedLokasi?.lokasiId || selectedLokasi?.id || 'all'; 
+        }
+
+        const reportParams = new URLSearchParams({
+            startDate: filters.startDate,
+            endDate: filters.endDate,
+            lokasiId: String(currentLokasiId),
+            tipePesanan: filters.tipePesanan,
+            page: '1',
+            limit: '999999' 
+        }).toString();
+
+        const response = await getSalesReport(reportParams);
+        
+        if (!response.data || !response.data.success || !Array.isArray(response.data.data)) {
+            throw new Error("Gagal mengambil data untuk export.");
+        }
+
+        const allData = response.data.data;
+
+        if (allData.length === 0) {
+            toast.warning("Tidak ada data untuk diexport.");
+            return;
+        }
+
+        const rows = allData.map((item: any, index: number) => ({
+            'No': index + 1,
+            'Lokasi': item.lokasi,
+            'Nama Produk': item.namaProduk,
+            'Ukuran': item.namaUkuran || '-',
+            'QTY': Number(item.QTY),
+            'Total Harga': Number(item.totalHarga),
+            'Tipe Pesanan': item.tipePesanan || 'Online',
+            'Tanggal': item.date
+        }));
+
+        const ws = XLSX.utils.json_to_sheet(rows);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Laporan Penjualan");
+
+        XLSX.writeFile(wb, `Laporan_Penjualan_${new Date().toISOString().slice(0,10)}.xlsx`);
+        
+        toast.success("Berhasil download file Excel.");
+
+    } catch (error) {
+        console.error("Export failed:", error);
+        toast.error("Gagal melakukan export data.");
+    }
+};
+
+const handleImportSuccess = async (validRows: any[]) => {
+    let successCount = 0;
+    let failCount = 0;
+    
+    for (const row of validRows) {
+        try {
+            const payload = {
+                lokasiId: row.lokasiId,
+                namaPelanggan: row.rawPelanggan || '-',
+                kontakPelanggan: '-',
+                alamatPengiriman: '-',
+                tanggalPesanan: row.rawDate,
+                totalHarga: row.estimatedTotal,
+                items: [{
+                    produkId: row.produkId,
+                    ukuranId: row.ukuranId,
+                    quantity: row.qty,
+                    subtotal: row.estimatedTotal
+                }]
+            };
+            
+            await createPesananOffline(payload);
+            successCount++;
+        } catch (err) {
+            console.error("Failed to import row", row, err);
+            failCount++;
+        }
+    }
+    
+    if (successCount > 0) {
+        toast.success(`Berhasil mengimpor ${successCount} data transaksi.`);
+        isImportModalVisible.value = false;
+        loadData();
+    }
+    
+    if (failCount > 0) {
+        toast.warning(`${failCount} data gagal diimpor. Cek console.`);
     }
 };
 
