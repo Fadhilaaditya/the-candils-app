@@ -160,8 +160,48 @@ const formatCurrency = (value) => {
   }).format(value);
 };
 
+const sendOrderCancelled = async (phoneNumber, orderDetails) => {
+  try {
+    const API_URL = process.env.WHATSAPP_API_URL || 'https://api.fonnte.com/send';
+    const API_TOKEN = process.env.WHATSAPP_API_TOKEN;
+
+    if (!API_TOKEN) return;
+
+    const message = `
+Halo *${orderDetails.namaPelanggan}*,
+Pesanan Anda *#${orderDetails.pesananId}* telah *DIBATALKAN* ❌
+
+Mohon maaf atas ketidaknyamanan ini. 
+Jika Anda sudah melakukan pembayaran, silakan hubungi admin kami untuk proses pengembalian dana (refund).
+
+Terima kasih.
+    `.trim();
+
+    const payload = {
+      target: phoneNumber,
+      message: message,
+      countryCode: '62',
+    };
+
+    await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': API_TOKEN,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    console.log(`📤 Notifikasi Drop pesanan #${orderDetails.pesananId} dikirim ke ${phoneNumber}`);
+
+  } catch (error) {
+    console.error('❌ Gagal mengirim WhatsApp (Dibatalkan):', error.message);
+  }
+};
+
 module.exports = {
   sendOrderConfirmation,
   sendOrderShipped,
-  sendOrderCompleted
+  sendOrderCompleted,
+  sendOrderCancelled
 };

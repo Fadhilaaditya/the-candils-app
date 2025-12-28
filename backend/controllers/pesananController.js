@@ -540,6 +540,23 @@ const updateStatusPesanan = async (req, res) => {
       }
     }
 
+    // ❌ [BARU] Kirim Notifikasi WhatsApp jika status berubah jadi "Dibatalkan"
+    if (statusPesanan === 'Dibatalkan') {
+      try {
+        const [orderDetails] = await db.query(
+          `SELECT pesananId, namaPelanggan, kontakPelanggan FROM Pemesanan WHERE pesananId = ?`,
+          [id]
+        );
+
+        if (orderDetails.length > 0) {
+          const order = orderDetails[0];
+          whatsappService.sendOrderCancelled(order.kontakPelanggan, order);
+        }
+      } catch (waError) {
+        console.error('⚠️ Gagal memproses notifikasi WA (Dibatalkan):', waError.message);
+      }
+    }
+
     res.json({
       message: `Status pesanan #${id} diperbarui ke ${statusPesanan}`,
       pesananId: id,
