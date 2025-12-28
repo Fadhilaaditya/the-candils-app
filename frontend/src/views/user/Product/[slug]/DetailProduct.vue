@@ -114,12 +114,17 @@ const fetchData = async () => {
 
     product.value = productResponse.data
     
-    // Handle Paginated Response
+    // Handle Paginated Response (checks for both new object format and old array format)
     if (reviewsResponse.data && Array.isArray(reviewsResponse.data.data)) {
+        // New Backend Format: { data: [...], meta: ... }
         reviews.value = reviewsResponse.data.data
-        // Check if more pages exist
         const meta = reviewsResponse.data.meta
-        hasMore.value = meta.page < meta.totalPages
+        hasMore.value = meta ? (meta.page < meta.totalPages) : false
+    } else if (Array.isArray(reviewsResponse.data)) {
+        // Old Backend Format Fallback: [...]
+        // If backend hasn't updated yet, it returns a direct array of all reviews
+        reviews.value = reviewsResponse.data as any
+        hasMore.value = false // Old API returns all data, so no more pages
     } else {
         // Fallback incase backend format is weird or empty
         reviews.value = []
