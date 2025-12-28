@@ -104,14 +104,17 @@ const sendOrderCompleted = async (phoneNumber, orderDetails) => {
 
     if (!API_TOKEN) return;
 
-    const frontendUrl = process.env.FRONTEND_URL || 'https://the-candils.com';
+    let frontendUrl = process.env.FRONTEND_URL || 'https://the-candils.com';
+    if (!frontendUrl.startsWith('http')) {
+        frontendUrl = `https://${frontendUrl}`;
+    }
     
     // Generate Review Links
     let reviewSection = '';
     if (orderDetails.items && orderDetails.items.length > 0) {
       const links = orderDetails.items.map(item => 
-        `- ${item.namaProduk}: ${frontendUrl}/products/${item.produkId}`
-      ).join('\n');
+        `- ${item.namaProduk}:\n  ${frontendUrl}/products/${item.produkId}`
+      ).join('\n\n');
       
       reviewSection = `
 *Berikan Ulasan Produk:*

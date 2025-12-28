@@ -245,7 +245,7 @@ const updateSelectedOrders = (ids: number[]) => {
 }
 
 const handleUpdateStatus = async (pesanan: Pemesanan) => {
-  // 🛑 [INTERCEPT] Jika status diubah jadi 'Dibatalkan', minta alasan dulu (seperti di modal detail)
+  // 1. SKENARIO KHUSUS: PEMBATALAN (Butuh Input Alasan)
   if (pesanan.statusPesanan === 'Dibatalkan') {
       const result = await confirmModalRef.value?.open({
           title: 'Batalkan Pesanan',
@@ -265,11 +265,9 @@ const handleUpdateStatus = async (pesanan: Pemesanan) => {
       const cancellationReason = result.value || '-';
       
       try {
-          // Pass reason to updateStatusPesanan
           await updateStatusPesanan(pesanan.pesananId, 'Dibatalkan', cancellationReason);
           toast.success(`Pesanan #${pesanan.pesananId} berhasil dibatalkan.`);
           
-          // Update local state and refresh
            const index = pesananList.value.findIndex(p => p.pesananId === pesanan.pesananId)
             if (index !== -1) {
               pesananList.value[index].statusPesanan = 'Dibatalkan'
@@ -278,12 +276,27 @@ const handleUpdateStatus = async (pesanan: Pemesanan) => {
       } catch (error: any) {
           console.error('Error membatalkan pesanan:', error);
           toast.error((error as any).response?.data?.message || 'Gagal membatalkan pesanan.');
-          await loadData(); // Revert UI on error
+          await loadData(); 
       }
-      return; // Exit normal flow
+      return; 
   }
 
-  // Normal flow for other statuses
+  // 2. SKENARIO UMUM: STATUS LAIN (Konfirmasi Biasa)
+  const result = await confirmModalRef.value?.open({
+      title: 'Konfirmasi Perubahan Status',
+      message: `Anda yakin ingin mengubah status pesanan #${pesanan.pesananId} menjadi "${pesanan.statusPesanan}"?`,
+      confirmButtonText: 'Ya, Ubah Status',
+      cancelButtonText: 'Batal',
+      variant: 'warning',
+      showInput: false 
+  });
+
+  if (!result?.confirmed) {
+      await loadData(); // Revert UI dropdown change if cancelled
+      return;
+  }
+
+  // Lanjut update jika dikonfirmasi
   try {
     await updateStatusPesanan(pesanan.pesananId, pesanan.statusPesanan)
     // Update local state
