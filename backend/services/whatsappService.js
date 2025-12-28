@@ -64,6 +64,7 @@ const sendOrderShipped = async (phoneNumber, orderDetails) => {
 
     if (!API_TOKEN) return;
 
+    const message = `
 Halo *${orderDetails.namaPelanggan}*,
 Pesanan Anda *#${orderDetails.pesananId}* sedang *DIKIRIM*! 🚚
 
