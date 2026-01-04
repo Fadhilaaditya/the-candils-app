@@ -39,9 +39,9 @@ const allowedOrigins = [
     'http://localhost:5173', 
     // Frontend Deployed (Vercel)
     'https://dev-the-candils-app.vercel.app',
-    // Frontend Deployed (Hostinger)
     'https://the-candils.com',
-    'https://www.the-candils.com'
+    'https://www.the-candils.com',
+    'https://the-candils.vercel.app'
 ];
 
 const corsOptions = {
